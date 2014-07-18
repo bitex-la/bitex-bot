@@ -1,7 +1,7 @@
 require 'settingslogic'
 require 'debugger'
 class BitexBot::Settings < Settingslogic
-  path = File.expand_path('bitex_bot_settings.yml', Dir.pwd)
+  path = ARGV[0] || File.expand_path('bitex_bot_settings.yml', Dir.pwd)
   unless FileTest.exists?(path)
     sample_path = File.expand_path('../../../settings.yml.sample', __FILE__)
     FileUtils.cp(sample_path, path)
