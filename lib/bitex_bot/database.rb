@@ -1,6 +1,6 @@
 module BitexBot
   module Database
-    ActiveRecord::Base.logger = Logger.new(File.open('database.log', 'w'))
+    #ActiveRecord::Base.logger = Logger.new(File.open('database.log', 'w'))
     ActiveRecord::Base.establish_connection(Settings.database)
 
     if ActiveRecord::Base.connection.tables.empty?
