@@ -1,4 +1,3 @@
-require 'debugger'
 module BitexBot
   module Database
     #ActiveRecord::Base.logger = Logger.new(File.open('database.log', 'w'))
