@@ -74,10 +74,6 @@ module BitexBot
     def self.get_remote_value_to_use(value_to_use_needed, safest_price)
       value_to_use_needed / safest_price
     end
-    
-    def self.order_is_executing?(order)
-      order.status != :executing && order.remaining_amount == order.amount
-    end
 
     def self.get_bitex_price(usd_to_spend, bitcoin_to_resell) 
      (usd_to_spend / bitcoin_to_resell) * (1 - Settings.buying.profit / 100.0)

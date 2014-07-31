@@ -61,11 +61,11 @@ describe BitexBot::BuyClosingFlow do
       stub_bitstamp_orders_into_transactions
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       close = flow.close_positions.last
-      close.amount.should == 624.1
+      close.amount.should == '624.1000000044'.to_d
       close.quantity.should == 2.01
       flow.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == 20.1
+      flow.usd_profit.should == '20.1000000044'.to_d
     end
   
     it "retries closing at a lower price every minute" do
@@ -97,7 +97,7 @@ describe BitexBot::BuyClosingFlow do
         flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       end.to change{ BitexBot::CloseBuy.count }.by(1)
       flow.close_positions.first.tap do |close|
-        close.amount.should == 312.05
+        close.amount.should == '312.0500000022'.to_d
         close.quantity.should == 1.005
       end
 
@@ -106,12 +106,12 @@ describe BitexBot::BuyClosingFlow do
       stub_bitstamp_orders_into_transactions
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       flow.close_positions.last.tap do |close|
-        close.amount.should == 312.0299
+        close.amount.should == '312.0299000022'.to_d
         close.quantity.should == 1.005
       end
       flow.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == 20.0799
+      flow.usd_profit.should == '20.0799000044001'.to_d
     end
     
     it "does not retry for an amount less than minimum_for_closing" do
@@ -126,7 +126,7 @@ describe BitexBot::BuyClosingFlow do
 
       flow.should be_done
       flow.btc_profit.should == 0.00201
-      flow.usd_profit.should == 19.4759
+      flow.usd_profit.should == '19.4759000043956'.to_d
     end
     
     it "can lose USD if price had to be dropped dramatically" do
@@ -144,7 +144,7 @@ describe BitexBot::BuyClosingFlow do
 
       flow.reload.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == -16.08
+      flow.usd_profit.should == '-16.0799999956'.to_d
     end
   end
 end

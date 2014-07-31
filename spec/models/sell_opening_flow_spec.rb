@@ -14,7 +14,7 @@ describe BitexBot::SellOpeningFlow do
 
   describe "when creating a selling flow" do
     it "sells 2 bitcoin" do
-      stub_bitex_ask_create
+      stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 2, profit: 0))
 
@@ -29,7 +29,7 @@ describe BitexBot::SellOpeningFlow do
     end
 
     it "sells 4 bitcoin" do
-      stub_bitex_ask_create
+      stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 0))
 
@@ -44,7 +44,7 @@ describe BitexBot::SellOpeningFlow do
     end
     
     it "raises the price to charge on bitex to take a profit" do
-      stub_bitex_ask_create
+      stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
@@ -75,7 +75,7 @@ describe BitexBot::SellOpeningFlow do
     end
     
     it "fails when there are not enough USD to re-buy in the other exchange" do
-      stub_bitex_bid_create
+      stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
@@ -138,7 +138,7 @@ describe BitexBot::SellOpeningFlow do
   end
   
   it 'cancels the associated bitex bid' do
-    stub_bitex_ask_create
+    stub_bitex_orders
     BitexBot::Settings.stub(time_to_live: 3,
       selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
@@ -147,9 +147,6 @@ describe BitexBot::SellOpeningFlow do
     
     flow.finalise!
     flow.should be_settling
-    flow.finalise!
-    flow.should be_settling
-    Bitex::Order.stub(active: [])
     flow.finalise!
     flow.should be_finalised
   end

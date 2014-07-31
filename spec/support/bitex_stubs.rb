@@ -1,14 +1,22 @@
 module BitexStubs
-  def ensure_bitex_orders_stub
-    begin
-      Bitex::Order.active
-    rescue Exception => e
-      Bitex::Order.stub(active: [])
-    end
-  end
+  mattr_accessor(:bids){ {} }
+  mattr_accessor(:asks){ {} }
+  mattr_accessor(:active_bids){ {} }
+  mattr_accessor(:active_asks){ {} }
 
-  def stub_bitex_bid_create
-    ensure_bitex_orders_stub
+  def stub_bitex_orders
+    Bitex::Order.stub(:all) do
+      BitexStubs.active_bids + BitexStubs.active_asks
+    end
+
+    Bitex::Bid.stub(:find) do |id|
+      BitexStubs.bids[id]
+    end
+
+    Bitex::Ask.stub(:find) do |id|
+      BitexStubs.asks[id]
+    end
+
     Bitex::Bid.stub(:create!) do |specie, to_spend, price|
       bid = Bitex::Bid.new
       bid.id = 12345
@@ -18,17 +26,16 @@ module BitexStubs
       bid.remaining_amount = to_spend
       bid.status = :executing 
       bid.specie = specie
-      bid.stub(cancel!: true) do
-        bid.status = :cancelling
+      bid.stub(:cancel!) do
+        bid.status = :cancelled
+        BitexStubs.active_bids.delete(bid.id)
         bid
       end
-      Bitex::Order.stub(active: Bitex::Order.active + [bid])
+      BitexStubs.bids[bid.id] = bid
+      BitexStubs.active_bids[bid.id] = bid
       bid
     end
-  end
 
-  def stub_bitex_ask_create
-    ensure_bitex_orders_stub
     Bitex::Ask.stub(:create!) do |specie, to_sell, price|
       ask = Bitex::Ask.new
       ask.id = 12345
@@ -38,15 +45,16 @@ module BitexStubs
       ask.remaining_quantity = to_sell
       ask.status = :executing 
       ask.specie = specie
-      ask.stub(cancel!: true) do
-        ask.status = :cancelling
+      ask.stub(:cancel!) do
+        ask.status = :cancelled
+        BitexStubs.active_asks.delete(ask.id)
         ask
       end
-      Bitex::Order.stub(active: Bitex::Order.active + [ask])
+      BitexStubs.asks[ask.id] = ask
+      BitexStubs.active_asks[ask.id] = ask
       ask
     end
   end
-  
   
   def stub_bitex_transactions(*extra_transactions)
     Bitex::Transaction.stub(all: extra_transactions + [
