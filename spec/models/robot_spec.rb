@@ -18,7 +18,18 @@ describe BitexBot::Robot do
       )
     )
     Bitex.api_key = "valid_key"
-    Bitex::Profile.stub(get: {fee: 0.5})
+    Bitex::Profile.stub(get: {
+      fee: 0.5,
+      usd_balance:       10000.00,   # Total USD balance
+      usd_reserved:       2000.00,   # USD reserved in open orders
+      usd_available:      8000.00,   # USD available for trading
+      btc_balance:    20.00000000,   # Total BTC balance
+      btc_reserved:    5.00000000,   # BTC reserved in open orders
+      btc_available:  15.00000000,   # BTC available for trading
+      ltc_balance:   250.00000000,   # Total LTC balance
+      ltc_reserved:  100.00000000,   # LTC reserved in open orders
+      ltc_available: 150.00000000,
+    })
     stub_bitex_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
@@ -92,16 +103,83 @@ describe BitexBot::Robot do
       bot.should_not be_active_closing_flows
     end.to change{ BitexBot::BuyOpeningFlow.count }.by(1)
   end
+  
+  it 'does not place new opening flows when ordered to hold' do
+    other_bot = BitexBot::Robot.new
+    other_bot.store.hold = true
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.not_to change{ BitexBot::BuyOpeningFlow.count }
+  end
+
+  it 'stops trading when btc stop is reached' do
+    other_bot = BitexBot::Robot.new
+    other_bot.store.usd_stop = 11000
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.not_to change{ BitexBot::BuyOpeningFlow.count }
+  end
+
+  it 'stops trading when usd stop is reached' do
+    other_bot = BitexBot::Robot.new
+    other_bot.store.btc_stop = 30
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.not_to change{ BitexBot::BuyOpeningFlow.count }
+  end
+
+  it 'warns every 30 minutes when usd warn is reached' do
+    Bitex::Transaction.stub(all: [])
+    other_bot = BitexBot::Robot.new
+    other_bot.store.usd_warning = 11000
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.to change{ Mail::TestMailer.deliveries.count }.by(1)
+    Timecop.travel 1.minute.from_now
+    expect do
+      bot.trade!
+    end.not_to change{ Mail::TestMailer.deliveries.count }
+    Timecop.travel 31.minutes.from_now
+    expect do
+      bot.trade!
+    end.to change{ Mail::TestMailer.deliveries.count }.by(1)
+  end
+
+  it 'warns every 30 minutes when btc warn is reached' do
+    Bitex::Transaction.stub(all: [])
+    other_bot = BitexBot::Robot.new
+    other_bot.store.btc_warning = 30
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.to change{ Mail::TestMailer.deliveries.count }.by(1)
+    Timecop.travel 1.minute.from_now
+    expect do
+      bot.trade!
+    end.not_to change{ Mail::TestMailer.deliveries.count }
+    Timecop.travel 31.minutes.from_now
+    expect do
+      bot.trade!
+    end.to change{ Mail::TestMailer.deliveries.count }.by(1)
+  end
+  
+  it 'updates bitstamp_usd and bitstamp_btc' do
+    bot.trade!
+    bot.store.bitstamp_usd.should_not be_nil
+    bot.store.bitstamp_btc.should_not be_nil
+  end
  
   it 'notifies exceptions and sleeps' do
     Bitstamp.stub(:balance) do
       raise StandardError.new('oh moova')
     end
-    bot.trade!
-    Mail::TestMailer.deliveries.count.should == 1
+    expect do
+      bot.trade!
+    end.to change{ Mail::TestMailer.deliveries.count }.by(1)
   end
 
-  #it 'goes through all the motions buying and selling' do
-  #  pending
-  #end
 end

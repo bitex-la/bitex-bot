@@ -101,9 +101,9 @@ module BitexBot
     
     def finalise!
       order = self.class.order_class.find(order_id)
-      if order.status == :cancelled
+      if order.status == :cancelled || order.status == :completed
         Robot.logger.info(
-          "Opening: #{self.class.order_class.name} ##{order_id} was too old.")
+          "Opening: #{self.class.order_class.name} ##{order_id} finalised.")
         self.status = 'finalised'
         save!
       else

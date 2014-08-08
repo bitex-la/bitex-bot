@@ -23,15 +23,25 @@ module BitexBot
         quantity: quantity,
         amount: amount,
         open_positions: open_positions)
-
-      flow.create_order_and_close_position(quantity, price)
-
+      
+      flow.create_initial_order_and_close_position
+      
       return flow
     end
     
+    def create_initial_order_and_close_position
+      create_order_and_close_position(quantity, desired_price)
+    end
+
     def create_order_and_close_position(quantity, price)
       order = Bitstamp.orders.send(order_method,
-        amount: quantity.round(8), price: price.round(8))
+        amount: quantity.round(4), price: price.round(2))
+      if order.nil? || order.id.nil?
+        Robot.logger.error("Closing: Error on #{order_method} for "\
+          "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
+          "#{order.to_s}")
+        return
+      end
       Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for"\
         "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
       close_positions.create!(order_id: order.id.to_i)
@@ -39,6 +49,14 @@ module BitexBot
 
     def sync_closed_positions(orders, transactions)
       latest_close = close_positions.last
+
+      # Maybe we couldn't create the bitstamp order when this flow
+      # was created, so we try again when syncing.
+      if latest_close.nil?
+        create_initial_order_and_close_position
+        return
+      end
+
       order = orders.find{|x| x.id.to_s == latest_close.order_id.to_s }
       
       # When ask is nil it means the other exchange is done executing it

@@ -3,8 +3,8 @@ module BitexBot
     #ActiveRecord::Base.logger = Logger.new(File.open('database.log', 'w'))
     ActiveRecord::Base.establish_connection(Settings.database)
 
-    if ActiveRecord::Base.connection.tables.empty?
-      ActiveRecord::Schema.define(version: 1) do
+    ActiveRecord::Schema.define(version: 1) do
+      if ActiveRecord::Base.connection.tables.empty?
         create_table :buy_opening_flows do |t|
           t.decimal :price, precision: 30, scale: 15
           t.decimal :value_to_use, precision: 30, scale: 15
@@ -87,7 +87,23 @@ module BitexBot
         end
         add_index :close_sells, :order_id
       end
+
+      unless ActiveRecord::Base.connection.table_exists?('stores')
+        create_table "stores", force: true do |t|
+          t.decimal  "bitstamp_usd",                precision: 20, scale: 8
+          t.decimal  "bitstamp_btc",                precision: 20, scale: 8
+          t.boolean  "hold", default: false
+          t.text     "log"
+          t.decimal  "usd_stop",  precision: 20, scale: 8
+          t.decimal  "usd_warning",  precision: 20, scale: 8
+          t.decimal  "btc_stop",  precision: 20, scale: 8
+          t.decimal  "btc_warning",         precision: 20, scale: 8
+          t.datetime "last_warning"
+          t.timestamps
+        end
+      end
     end
+
   end
 end
 

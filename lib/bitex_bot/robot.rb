@@ -1,3 +1,5 @@
+require 'debugger'
+
 trap "INT" do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
@@ -14,7 +16,10 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor :test_mode
     cattr_accessor :logger do
-      Logger.new(Settings.log.try(:file) || STDOUT, 10, 10240000).tap do |l|
+      logfile = Settings.log.try(:file) ? File.open(Settings.log.file, 'a') : STDOUT
+      logfile.sync = true
+      $stderr = logfile
+      Logger.new(logfile, 10, 10240000).tap do |l|
         l.level = Logger.const_get(Settings.log.level.upcase)
         l.formatter = proc do |severity, datetime, progname, msg|
           date = datetime.strftime("%m/%d %H:%M:%S.%L")
@@ -23,7 +28,7 @@ module BitexBot
       end
     end
     cattr_accessor :current_cooldowns do 0 end
-
+  
     # Trade constantly respecting cooldown times so that we don't get
     # banned by api clients.
     def self.run!
@@ -112,10 +117,9 @@ module BitexBot
     end
     
     def start_opening_flows_if_needed
-      return if open_positions?
+      return if store.reload.hold?
       return if active_closing_flows?
       return if self.class.graceful_shutdown
-      
       
       recent_buying, recent_selling =
         [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
@@ -126,6 +130,31 @@ module BitexBot
       return if recent_buying && recent_selling
       
       balances = with_cooldown{ Bitstamp.balance }
+      profile = Bitex::Profile.get
+      
+      total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
+      total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
+      
+      store.update_attributes(bitstamp_usd: balances['usd_balance'],
+        bitstamp_btc: balances['btc_balance'])
+      
+      if store.last_warning.nil? || store.last_warning < 30.minutes.ago 
+        if store.usd_warning && total_usd <= store.usd_warning
+          notify("USD balance is too low, it's #{total_usd},"\
+            "make it #{store.usd_warning} to stop this warning.")
+          store.update_attributes(last_warning: Time.now)
+        end
+
+        if store.btc_warning && total_btc <= store.btc_warning
+          notify("BTC balance is too low, it's #{total_btc},"\
+            "make it #{store.btc_warning} to stop this warning.")
+          store.update_attributes(last_warning: Time.now)
+        end
+      end
+
+      return if store.usd_stop && total_usd <= store.usd_stop
+      return if store.btc_stop && total_btc <= store.btc_stop
+
       order_book = with_cooldown{ Bitstamp.order_book }
       transactions = with_cooldown{ Bitstamp.transactions }
       
@@ -134,7 +163,7 @@ module BitexBot
           balances['btc_available'].to_d,
           order_book['bids'],
           transactions,
-          Bitex::Profile.get[:fee],
+          profile[:fee],
           balances['fee'].to_d )
       end
       unless recent_selling
@@ -142,7 +171,7 @@ module BitexBot
           balances['usd_available'].to_d,
           order_book['asks'],
           transactions,
-          Bitex::Profile.get[:fee],
+          profile[:fee],
           balances['fee'].to_d )
       end
     end
@@ -168,6 +197,11 @@ module BitexBot
           Settings.mailer.options.symbolize_keys)
         mail.deliver!
       end
+    end
+
+    # The trader has a Store
+    def store
+      @store ||= Store.first || Store.create
     end
   end
 end
