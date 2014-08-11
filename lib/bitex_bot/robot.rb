@@ -1,5 +1,3 @@
-require 'debugger'
-
 trap "INT" do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
