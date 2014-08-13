@@ -14,10 +14,7 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor :test_mode
     cattr_accessor :logger do
-      logfile = Settings.log.try(:file) ? File.open(Settings.log.file, 'a') : STDOUT
-      logfile.sync = true
-      $stderr = logfile
-      Logger.new(logfile, 10, 10240000).tap do |l|
+      Logger.new(Settings.log.try(:file) || STDOUT, 10, 10240000).tap do |l|
         l.level = Logger.const_get(Settings.log.level.upcase)
         l.formatter = proc do |severity, datetime, progname, msg|
           date = datetime.strftime("%m/%d %H:%M:%S.%L")
@@ -37,7 +34,7 @@ module BitexBot
 
       while true
         start_time = Time.now
-        return if start_time < cooldown_until
+        next if start_time < cooldown_until
         self.current_cooldowns = 0
         bot.trade!
         self.cooldown_until = start_time + current_cooldowns.seconds
