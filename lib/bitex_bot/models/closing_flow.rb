@@ -92,7 +92,7 @@ module BitexBot
     end
     
     def self.close_time_to_live
-      60
+      30
     end
   end
 end

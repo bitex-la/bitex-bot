@@ -130,12 +130,12 @@ describe BitexBot::BuyClosingFlow do
       stub_bitstamp_orders_into_transactions
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       flow.close_positions.last.tap do |close|
-        close.amount.should == '312.0324'.to_d
+        close.amount.should == '312.02235'.to_d
         close.quantity.should == 1.005
       end
       flow.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == '20.0849000000001'.to_d
+      flow.usd_profit.should == '20.07485'.to_d
     end
     
     it "does not retry for an amount less than minimum_for_closing" do
@@ -168,7 +168,7 @@ describe BitexBot::BuyClosingFlow do
 
       flow.reload.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == '-16.075'.to_d
+      flow.usd_profit.should == '-34.165'.to_d
     end
   end
 end

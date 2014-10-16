@@ -132,12 +132,12 @@ describe BitexBot::SellClosingFlow do
       stub_bitstamp_orders_into_transactions
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       flow.close_positions.last.tap do |close|
-        close.amount.should == "291.943548".to_d
+        close.amount.should == "291.953597".to_d
         close.quantity.should == '1.0049'.to_d
       end
       flow.should be_done
       flow.btc_profit.should == '-0.0001'.to_d
-      flow.usd_profit.should == '20.1039519999999'.to_d
+      flow.usd_profit.should == '20.093903'.to_d
 
     end
     
@@ -157,8 +157,8 @@ describe BitexBot::SellClosingFlow do
       end.not_to change{ BitexBot::CloseSell.count }
 
       flow.should be_done
-      flow.btc_profit.should == '-0.0156963'.to_d
-      flow.usd_profit.should == '20.66616775'.to_d
+      flow.btc_profit.should == '-0.0224895'.to_d
+      flow.usd_profit.should == '20.66566825'.to_d
     end
     
     it "can lose BTC if price had to be raised dramatically" do
@@ -175,11 +175,11 @@ describe BitexBot::SellClosingFlow do
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
 
       flow.reload.should be_done
-      flow.btc_profit.should == "-0.1173".to_d
-      flow.usd_profit.should == "20.10205".to_d
+      flow.btc_profit.should == "-0.1709".to_d
+      flow.usd_profit.should == "20.08575".to_d
       close = flow.close_positions.last
       (close.amount / close.quantity)
-        .should == '308.5'.to_d
+        .should == '317.5'.to_d
     end
   end
 end

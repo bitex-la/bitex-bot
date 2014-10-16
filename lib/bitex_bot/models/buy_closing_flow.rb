@@ -26,7 +26,7 @@ module BitexBot
 
     def get_next_price_and_quantity
       closes = close_positions
-      next_price = desired_price - ((closes.count * (closes.count * 2)) / 100.0)
+      next_price = desired_price - ((closes.count * (closes.count * 3)) / 100.0)
       next_quantity = quantity - closes.sum(:quantity)
       [next_price, next_quantity]
     end

@@ -37,6 +37,8 @@ module BitexBot
         next if start_time < cooldown_until
         self.current_cooldowns = 0
         bot.trade!
+        # This global sleep is so that we don't stress bitex too much.
+        sleep 0.1 unless test_mode
         self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end
@@ -75,10 +77,10 @@ module BitexBot
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
       self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
-      BitexBot::Robot.graceful_shutdown = true
+      sleep (60 * 3) unless self.class.test_mode
     rescue StandardError => e
       self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep 30 unless self.class.test_mode
+      sleep 60 unless self.class.test_mode
     end
     
     def finalise_some_opening_flows
@@ -112,9 +114,20 @@ module BitexBot
     end
     
     def start_opening_flows_if_needed
-      return if store.reload.hold?
-      return if active_closing_flows?
-      return if self.class.graceful_shutdown
+      if store.reload.hold?
+        BitexBot::Robot.logger.debug("Not placing new orders because of hold")
+        return
+      end
+      
+      if active_closing_flows?
+        BitexBot::Robot.logger.debug("Not placing new orders, closing flows.")
+        return
+      end
+      
+      if self.class.graceful_shutdown
+        BitexBot::Robot.logger.debug("Not placing new orders, shutting down.")
+        return
+      end
       
       recent_buying, recent_selling =
         [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
@@ -122,7 +135,10 @@ module BitexBot
           kind.active.where('created_at > ?', threshold).first
         end
 
-      return if recent_buying && recent_selling
+      if recent_buying && recent_selling
+        BitexBot::Robot.logger.debug("Not placing new orders, recent ones exist.")
+        return
+      end
       
       balances = with_cooldown{ Bitstamp.balance }
       profile = Bitex::Profile.get
@@ -147,8 +163,14 @@ module BitexBot
         end
       end
 
-      return if store.usd_stop && total_usd <= store.usd_stop
-      return if store.btc_stop && total_btc <= store.btc_stop
+      if store.usd_stop && total_usd <= store.usd_stop
+        BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
+        return
+      end
+      if store.btc_stop && total_btc <= store.btc_stop
+        BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
+        return
+      end
 
       order_book = with_cooldown{ Bitstamp.order_book }
       transactions = with_cooldown{ Bitstamp.transactions }
