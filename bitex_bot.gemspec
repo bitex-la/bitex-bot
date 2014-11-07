@@ -27,7 +27,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "sqlite3"
   spec.add_dependency "bitstamp"
   spec.add_dependency "bitex", "0.1.4"
+  spec.add_dependency "itbit", "0.0.2"
   spec.add_dependency "mail"
+  spec.add_dependency "hashie"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"

@@ -12,6 +12,14 @@ log:
 # competitive. About 20 seconds is a good number here.
 time_to_live: 20
 
+# Use sandbox environments instead of live environments
+# only available for bitex and itbit
+sandbox: false
+
+# Which market to use for taking (we're always makers on bitex)
+# itbit or bitstamp
+taker: bitstamp
+
 # Settings for buying on bitex and selling on bitstamp.
 buying:
   # Dollars to spend on each initial bitex bid.
@@ -57,6 +65,14 @@ bitstamp:
   key: YOUR_API_KEY
   secret: YOUR_API_SECRET
   client_id: YOUR_BITSTAMP_USERNAME
+
+# These are passed in to the itbit gem:
+# see https://github.com/bitex-la/itbit for more info.
+itbit:
+  client_key = 'the-client-key'
+  secret = 'the-secret'
+  user_id = 'the-user-id'
+  default_wallet_id = 'wallet-000'
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:

@@ -1,4 +1,5 @@
 require "bitex_bot/version"
+require 'hashie'
 require "active_support"
 require "active_record"
 require "active_model"
@@ -6,6 +7,7 @@ require "mail"
 require "logger"
 require "bitex"
 require "bitstamp"
+require "itbit"
 require "bitex_bot/settings"
 require "bitex_bot/database"
 require "bitex_bot/models/opening_flow.rb"

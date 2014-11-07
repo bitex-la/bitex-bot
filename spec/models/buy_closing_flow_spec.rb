@@ -12,7 +12,7 @@ describe BitexBot::BuyClosingFlow do
     flow.btc_profit.should be_nil
     flow.usd_profit.should be_nil
     close = flow.close_positions.first
-    close.order_id.should == 1
+    close.order_id.should == '1'
     close.amount.should be_nil
     close.quantity.should be_nil
   end
@@ -30,7 +30,7 @@ describe BitexBot::BuyClosingFlow do
     flow.quantity.should == 2.01
     flow.btc_profit.should be_nil
     flow.usd_profit.should be_nil
-    close.order_id.should == 1
+    close.order_id.should == '1'
     close.amount.should be_nil
     close.quantity.should be_nil
   end
@@ -54,7 +54,7 @@ describe BitexBot::BuyClosingFlow do
     stub_bitstamp_sell
     flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
     close = flow.close_positions.first
-    close.order_id.should == 1
+    close.order_id.should == '1'
     close.amount.should be_nil
     close.quantity.should be_nil
   end

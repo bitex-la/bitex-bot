@@ -13,6 +13,9 @@ module BitexBot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor :test_mode
+    cattr_accessor :taker do
+      Settings.taker == 'itbit' ? ItbitApiWrapper : BitstampApiWrapper
+    end
     cattr_accessor :logger do
       Logger.new(Settings.log.try(:file) || STDOUT, 10, 10240000).tap do |l|
         l.level = Logger.const_get(Settings.log.level.upcase)
@@ -45,11 +48,8 @@ module BitexBot
     
     def self.setup
       Bitex.api_key = Settings.bitex
-      Bitstamp.setup do |config|
-        config.key = Settings.bitstamp.key
-        config.secret = Settings.bitstamp.secret
-        config.client_id = Settings.bitstamp.client_id.to_s
-      end
+      Bitex.sandbox = Settings.sandbox
+      taker.setup(Settings)
     end
   
     def self.with_cooldown(&block)
@@ -99,8 +99,8 @@ module BitexBot
     end
     
     def sync_closing_flows
-      orders = with_cooldown{ Bitstamp.orders.all }
-      transactions = with_cooldown{ Bitstamp.user_transactions.all }
+      orders = with_cooldown{ BitexBot::Robot.taker.orders }
+      transactions = with_cooldown{ BitexBot::Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
         kind.active.each do |flow|
@@ -140,14 +140,14 @@ module BitexBot
         return
       end
       
-      balances = with_cooldown{ Bitstamp.balance }
+      balances = with_cooldown{ BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
       
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
       total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
       
-      store.update_attributes(bitstamp_usd: balances['usd_balance'],
-        bitstamp_btc: balances['btc_balance'])
+      store.update_attributes(taker_usd: balances['usd_balance'],
+        taker_btc: balances['btc_balance'])
       
       if store.last_warning.nil? || store.last_warning < 30.minutes.ago 
         if store.usd_warning && total_usd <= store.usd_warning
@@ -172,8 +172,8 @@ module BitexBot
         return
       end
 
-      order_book = with_cooldown{ Bitstamp.order_book }
-      transactions = with_cooldown{ Bitstamp.transactions }
+      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
+      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
       
       unless recent_buying
         BuyOpeningFlow.create_for_market(

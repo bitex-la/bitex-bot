@@ -167,10 +167,10 @@ describe BitexBot::Robot do
     end.to change{ Mail::TestMailer.deliveries.count }.by(1)
   end
   
-  it 'updates bitstamp_usd and bitstamp_btc' do
+  it 'updates taker_usd and taker_btc' do
     bot.trade!
-    bot.store.bitstamp_usd.should_not be_nil
-    bot.store.bitstamp_btc.should_not be_nil
+    bot.store.taker_usd.should_not be_nil
+    bot.store.taker_btc.should_not be_nil
   end
  
   it 'notifies exceptions and sleeps' do
@@ -182,4 +182,8 @@ describe BitexBot::Robot do
     end.to change{ Mail::TestMailer.deliveries.count }.by(1)
   end
 
+  it 'knows how to setup sandbox mode for both gems' do
+    pending
+    fail
+  end
 end

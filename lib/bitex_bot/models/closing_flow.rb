@@ -34,8 +34,8 @@ module BitexBot
     end
 
     def create_order_and_close_position(quantity, price)
-      order = Bitstamp.orders.send(order_method,
-        amount: quantity.round(4), price: price.round(2))
+      order = BitexBot::Robot.taker.place_order(
+        order_method, price.round(2), quantity.round(4))
       if order.nil? || order.id.nil?
         Robot.logger.error("Closing: Error on #{order_method} for "\
           "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
@@ -44,7 +44,7 @@ module BitexBot
       end
       Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for"\
         "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
-      close_positions.create!(order_id: order.id.to_i)
+      close_positions.create!(order_id: order.id)
     end
 
     def sync_closed_positions(orders, transactions)
@@ -57,14 +57,14 @@ module BitexBot
         return
       end
 
-      order = orders.find{|x| x.id.to_s == latest_close.order_id.to_s }
-      
+      order_id = latest_close.order_id.to_s
+      order = orders.find{|x| x.id.to_s == order_id }
+
       # When ask is nil it means the other exchange is done executing it
       # so we can now have a look of all the sales that were spawned from it.
       if order.nil?
-        closes = transactions.select{|t| t.order_id.to_s == latest_close.order_id.to_s}
-        latest_close.amount = closes.collect{|x| x.usd.to_d }.sum.abs
-        latest_close.quantity = closes.collect{|x| x.btc.to_d }.sum.abs
+        latest_close.amount, latest_close.quantity =
+          BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
         latest_close.save!
         
         next_price, next_quantity = get_next_price_and_quantity

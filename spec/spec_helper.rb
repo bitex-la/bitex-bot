@@ -43,3 +43,5 @@ RSpec.configure do |config|
   config.order = "random"
 end
 
+I18n.enforce_available_locales = false
+

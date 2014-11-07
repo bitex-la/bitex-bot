@@ -73,7 +73,7 @@ module BitexBot
           t.belongs_to :closing_flow
           t.decimal :amount, precision: 30, scale: 15
           t.decimal :quantity, precision: 30, scale: 15
-          t.integer :order_id
+          t.string :order_id
           t.timestamps
         end
         add_index :close_buys, :order_id
@@ -82,7 +82,7 @@ module BitexBot
           t.belongs_to :closing_flow
           t.decimal :amount, precision: 30, scale: 15
           t.decimal :quantity, precision: 30, scale: 15
-          t.integer :order_id
+          t.string :order_id
           t.timestamps
         end
         add_index :close_sells, :order_id
@@ -90,8 +90,8 @@ module BitexBot
 
       unless ActiveRecord::Base.connection.table_exists?('stores')
         create_table "stores", force: true do |t|
-          t.decimal  "bitstamp_usd",                precision: 20, scale: 8
-          t.decimal  "bitstamp_btc",                precision: 20, scale: 8
+          t.decimal  "taker_usd",                precision: 20, scale: 8
+          t.decimal  "taker_btc",                precision: 20, scale: 8
           t.boolean  "hold", default: false
           t.text     "log"
           t.decimal  "usd_stop",  precision: 20, scale: 8
