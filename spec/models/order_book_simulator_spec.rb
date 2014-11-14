@@ -26,6 +26,10 @@ describe BitexBot::OrderBookSimulator do
     it 'big orders with high volatility' do
       simulate(6, 100).should == 10
     end
+
+    it 'still returns a price on very high volatility and low liquidity' do
+      simulate(10000, 10000).should == 10
+    end
   end
 
   describe 'when selling on bitex to buy somewhere else' do

@@ -61,6 +61,8 @@ class BitexBot::OrderBookSimulator
         end
       end
     end
+    
+    return order_book.last.first.to_d
   end
 
 private
