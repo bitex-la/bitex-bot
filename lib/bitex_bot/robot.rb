@@ -65,13 +65,13 @@ module BitexBot
     end
 
     def trade!
+      sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
       if(!active_opening_flows? && !open_positions? &&
         !active_closing_flows? && self.class.graceful_shutdown)
         self.class.logger.info("Shutdown completed")
         exit
       end
-      sync_opening_flows if active_opening_flows?
       start_closing_flows if open_positions?
       sync_closing_flows if active_closing_flows?
       start_opening_flows_if_needed
