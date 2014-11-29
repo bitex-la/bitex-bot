@@ -23,8 +23,18 @@ class BitstampApiWrapper
   #    'asks' =>
   #      [['10', '2'], ['15', '3'], ['20', '1.5'], ['25', '3'], ['30', '3']]
   #  }
-  def self.order_book
-    Bitstamp.order_book
+  def self.order_book(retries = 20)
+    begin
+      Bitstamp.order_book
+    rescue StandardError => e
+      if retries == 0
+        raise
+      else
+        Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
+        sleep 1
+        self.order_book(retries - 1)
+      end
+    end
   end
 
   # {"btc_balance"=> "10.0", "btc_reserved"=> "0", "btc_available"=> "10.0",

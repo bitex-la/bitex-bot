@@ -57,17 +57,8 @@ module BitexStubs
   end
   
   def stub_bitex_transactions(*extra_transactions)
-    Bitex::Transaction.stub(all: extra_transactions + [
-      build(:bitex_buy),
-      build(:bitex_sell),
-      Bitex::SpecieWithdrawal
-        .from_json([6,Time.now.to_i,946685400,1,100.00000000,1,0]),
-      Bitex::UsdWithdrawal
-        .from_json([8,Time.now.to_i,946685400,100.00000000,1,0]),
-      Bitex::UsdDeposit
-        .from_json([7,Time.now.to_i,946685400,1000.00000000,1,1,0]),
-      Bitex::SpecieDeposit
-        .from_json([5,Time.now.to_i,946685400,1,100.00000000]),
+    Bitex::Trade.stub(all: extra_transactions + [
+      build(:bitex_buy), build(:bitex_sell)
     ])
   end
 end

@@ -26,8 +26,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activesupport"
   spec.add_dependency "sqlite3"
   spec.add_dependency "bitstamp"
-  spec.add_dependency "bitex", "0.1.8"
-  spec.add_dependency "itbit", "0.0.2"
+  spec.add_dependency "bitex", "0.1.9"
+  spec.add_dependency "itbit", "0.0.3"
   spec.add_dependency "mail"
   spec.add_dependency "hashie"
 

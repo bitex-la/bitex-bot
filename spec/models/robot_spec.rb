@@ -59,7 +59,7 @@ describe BitexBot::Robot do
   end
   
   it 'creates alternating opening flows' do
-    Bitex::Transaction.stub(all: [])
+    Bitex::Trade.stub(all: [])
     bot.trade!
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 2.seconds.from_now
@@ -132,7 +132,7 @@ describe BitexBot::Robot do
   end
 
   it 'warns every 30 minutes when usd warn is reached' do
-    Bitex::Transaction.stub(all: [])
+    Bitex::Trade.stub(all: [])
     other_bot = BitexBot::Robot.new
     other_bot.store.usd_warning = 11000
     other_bot.store.save!
@@ -150,7 +150,7 @@ describe BitexBot::Robot do
   end
 
   it 'warns every 30 minutes when btc warn is reached' do
-    Bitex::Transaction.stub(all: [])
+    Bitex::Trade.stub(all: [])
     other_bot = BitexBot::Robot.new
     other_bot.store.btc_warning = 30
     other_bot.store.save!

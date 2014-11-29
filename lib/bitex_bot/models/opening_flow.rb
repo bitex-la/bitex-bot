@@ -83,9 +83,9 @@ module BitexBot
     def self.sync_open_positions
       threshold = open_position_class
         .order('created_at DESC').first.try(:created_at)
-      Bitex::Transaction.all.collect do |transaction|
+      Bitex::Trade.all.collect do |transaction|
         next unless transaction.is_a?(transaction_class)
-        next if threshold && transaction.created_at < (threshold - 15.minutes)
+        next if threshold && transaction.created_at < (threshold - 30.minutes)
         next if open_position_class.find_by_transaction_id(transaction.id)
         next if transaction.specie != :btc
         next unless flow = find_by_order_id(transaction_order_id(transaction))

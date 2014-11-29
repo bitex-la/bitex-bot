@@ -122,7 +122,7 @@ describe BitexBot::SellOpeningFlow do
     
     it 'does not register litecoin buys' do
       flow.order_id.should == 12345
-      Bitex::Transaction.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
+      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
       expect do
         BitexBot::SellOpeningFlow.sync_open_positions.should be_empty
       end.not_to change{ BitexBot::OpenSell.count }
