@@ -30,7 +30,7 @@ class BitstampApiWrapper
       if retries == 0
         raise
       else
-        Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
+        BitexBot::Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
         sleep 1
         self.order_book(retries - 1)
       end
