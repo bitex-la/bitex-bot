@@ -46,6 +46,6 @@ class ItbitApiWrapper
   end
   
   def self.place_order(type, price, quantity)
-    Itbit::Order.create!(type, :xbtusd, quantity, price)
+    Itbit::Order.create!(type, :xbtusd, quantity, price, wait: true)
   end
 end
