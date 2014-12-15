@@ -41,7 +41,7 @@ module BitexBot
         self.current_cooldowns = 0
         bot.trade!
         # This global sleep is so that we don't stress bitex too much.
-        sleep 0.1 unless test_mode
+        sleep 0.3 unless test_mode
         self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end
