@@ -4,6 +4,9 @@ module BitexBot
   # transactions spawn from that order as Open positions.
   class OpeningFlow < ActiveRecord::Base
     self.abstract_class = true
+
+    # The updated config store as passed from the robot
+    cattr_accessor :store
     
     def self.active
       where('status != "finalised"')
@@ -38,7 +41,9 @@ module BitexBot
     validates_presence_of :price, :value_to_use
 
     def self.create_for_market(remote_balance, order_book, transactions,
-      bitex_fee, other_fee)
+      bitex_fee, other_fee, store)
+
+      self.store = store
 
       plus_bitex = value_to_use + (value_to_use * bitex_fee / 100.0)
       value_to_use_needed = plus_bitex / (1 - other_fee / 100.0)

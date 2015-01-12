@@ -4,6 +4,7 @@ describe BitexBot::SellOpeningFlow do
   before(:each) do
     Bitex.api_key = "valid_key"
   end
+  let(:store){ BitexBot::Store.create }
 
   it { should validate_presence_of :status }
   it { should validate_presence_of :price }
@@ -19,7 +20,7 @@ describe BitexBot::SellOpeningFlow do
         selling: double(quantity_to_sell_per_order: 2, profit: 0))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
-        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
       
       flow.value_to_use.should == 2
       flow.price.should >= flow.suggested_closing_price
@@ -34,7 +35,7 @@ describe BitexBot::SellOpeningFlow do
         selling: double(quantity_to_sell_per_order: 4, profit: 0))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
-        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
       
       flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
@@ -49,7 +50,7 @@ describe BitexBot::SellOpeningFlow do
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
-        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
       
       flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
@@ -68,7 +69,7 @@ describe BitexBot::SellOpeningFlow do
 
       expect do
         flow = BitexBot::SellOpeningFlow.create_for_market(100000,
-          bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+          bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
         flow.should be_nil
         BitexBot::SellOpeningFlow.count.should == 0
       end.to raise_exception(BitexBot::CannotCreateFlow)
@@ -81,10 +82,22 @@ describe BitexBot::SellOpeningFlow do
 
       expect do
         flow = BitexBot::SellOpeningFlow.create_for_market(1,
-          bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+          bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
         flow.should be_nil
         BitexBot::SellOpeningFlow.count.should == 0
       end.to raise_exception(BitexBot::CannotCreateFlow)
+    end
+
+    it "Prioritizes profit from store" do
+      store = BitexBot::Store.new(selling_profit: 0.5)
+      stub_bitex_orders
+      BitexBot::Settings.stub(time_to_live: 3,
+        selling: double(quantity_to_sell_per_order: 2, profit: 0))
+
+      flow = BitexBot::SellOpeningFlow.create_for_market(1000,
+        bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
+      
+      flow.price.should == "20.25112781954887".to_d
     end
   end
   
@@ -143,7 +156,7 @@ describe BitexBot::SellOpeningFlow do
       selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
     flow = BitexBot::SellOpeningFlow.create_for_market(1000,
-      bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25)
+      bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
     
     flow.finalise!
     flow.should be_settling

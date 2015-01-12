@@ -26,7 +26,7 @@ module BitexBot
       end
     end
     cattr_accessor :current_cooldowns do 0 end
-  
+    
     # Trade constantly respecting cooldown times so that we don't get
     # banned by api clients.
     def self.run!
@@ -34,7 +34,7 @@ module BitexBot
       logger.info("Loading trading robot, ctrl+c *once* to exit gracefully.")
       self.cooldown_until = Time.now
       bot = new
-
+      
       while true
         start_time = Time.now
         next if start_time < cooldown_until
@@ -146,8 +146,10 @@ module BitexBot
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
       total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
       
+      last_log = `tail -n 500 #{Settings.log.try(:file)}` if Settings.log.try(:file)
+  
       store.update_attributes(taker_usd: balances['usd_balance'],
-        taker_btc: balances['btc_balance'])
+        taker_btc: balances['btc_balance'], log: last_log)
       
       if store.last_warning.nil? || store.last_warning < 30.minutes.ago 
         if store.usd_warning && total_usd <= store.usd_warning
@@ -181,7 +183,8 @@ module BitexBot
           order_book['bids'],
           transactions,
           profile[:fee],
-          balances['fee'].to_d )
+          balances['fee'].to_d,
+          store)
       end
       unless recent_selling
         SellOpeningFlow.create_for_market(
@@ -189,7 +192,8 @@ module BitexBot
           order_book['asks'],
           transactions,
           profile[:fee],
-          balances['fee'].to_d )
+          balances['fee'].to_d,
+          store)
       end
     end
     

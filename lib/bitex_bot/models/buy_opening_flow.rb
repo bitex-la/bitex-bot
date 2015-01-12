@@ -32,13 +32,14 @@ module BitexBot
     # @param bitex_fee [BigDecimal] the transaction fee to pay on bitex.
     # @param other_fee [BigDecimal] the transaction fee to pay on the other
     #   exchange.
+    # @param store [Store] An updated config for this robot, mainly to use for profit.
     #
     # @return [BuyOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for
     #   example when you run out of USD on bitex or out of BTC on the other
     #   exchange.
     def self.create_for_market(btc_balance, order_book, transactions,
-      bitex_fee, other_fee)
+      bitex_fee, other_fee, store)
       super
     end
     
@@ -63,7 +64,7 @@ module BitexBot
     end
     
     def self.profit
-      Settings.buying.profit
+      store.buying_profit || Settings.buying.profit
     end
     
     def self.get_safest_price(transactions, order_book, dollars_to_use)
@@ -76,7 +77,7 @@ module BitexBot
     end
 
     def self.get_bitex_price(usd_to_spend, bitcoin_to_resell) 
-     (usd_to_spend / bitcoin_to_resell) * (1 - Settings.buying.profit / 100.0)
+     (usd_to_spend / bitcoin_to_resell) * (1 - self.profit / 100.0)
     end
   end
 end

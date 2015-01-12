@@ -88,7 +88,7 @@ module BitexBot
         add_index :close_sells, :order_id
       end
 
-      unless ActiveRecord::Base.connection.table_exists?('stores')
+      unless ActiveRecord::Base.connection.column_exists?('stores', 'buying_profit')
         create_table "stores", force: true do |t|
           t.decimal  "taker_usd",                precision: 20, scale: 8
           t.decimal  "taker_btc",                precision: 20, scale: 8
@@ -99,6 +99,8 @@ module BitexBot
           t.decimal  "btc_stop",  precision: 20, scale: 8
           t.decimal  "btc_warning",         precision: 20, scale: 8
           t.datetime "last_warning"
+          t.decimal "buying_profit", precision: 20, scale: 8
+          t.decimal "selling_profit", precision: 20, scale: 8
           t.timestamps
         end
       end
