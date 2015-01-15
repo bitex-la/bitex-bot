@@ -60,7 +60,7 @@ module BitexBot
     end
 
     def self.value_to_use
-      Settings.selling.quantity_to_sell_per_order
+      store.selling_quantity_to_sell_per_order || Settings.selling.quantity_to_sell_per_order
     end
     
     def self.get_safest_price(transactions, order_book, bitcoins_to_use)

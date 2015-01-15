@@ -60,7 +60,7 @@ module BitexBot
     end
     
     def self.value_to_use
-      Settings.buying.amount_to_spend_per_order
+      store.buying_amount_to_spend_per_order || Settings.buying.amount_to_spend_per_order
     end
     
     def self.profit
