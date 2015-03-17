@@ -48,15 +48,21 @@ class ItbitApiWrapper
   def self.place_order(type, price, quantity)
     begin
       return Itbit::Order.create!(type, :xbtusd, quantity, price, wait: true)
-    rescue StandardError => e
+    rescue RestClient::RequestTimeout => e
       # On timeout errors, we still look for the latest active closing order
-      # that may be available. We have a magic threshold of 20 seconds
+      # that may be available. We have a magic threshold of 5 minutes
       # and also use the price to recognize an order as the current one.
+      # TODO: Maybe we can identify the order using metadata instead of price.
+      BitexBot::Robot.logger.error("Captured Timeout on itbit")
       latest = Itbit::Order.all.select do |x|
-        x.price.floor(2) == price.floor(2) && (x.created_time - Time.now.to_i).abs < 20
-      end.last
-      return latest.first unless latest.empty
+        x.price == price && (x.created_time - Time.now.to_i).abs < 500
+      end.first
+      if latest
+        return latest
+      else
+        BitexBot::Robot.logger.error("Could not find my order")
+        raise e
+      end
     end
-    return nil
   end
 end

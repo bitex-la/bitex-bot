@@ -79,7 +79,13 @@ module BitexBot
           save!
         end
       elsif latest_close.created_at < self.class.close_time_to_live.seconds.ago
-        Robot.with_cooldown{ order.cancel! }
+        Robot.with_cooldown do
+          begin
+            order.cancel!
+          rescue StandardError => e
+            nil # just pass, we'll keep on trying until it's not in orders anymore.
+          end
+        end
       end
     end
     
