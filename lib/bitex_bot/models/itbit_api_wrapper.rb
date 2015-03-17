@@ -46,6 +46,17 @@ class ItbitApiWrapper
   end
   
   def self.place_order(type, price, quantity)
-    Itbit::Order.create!(type, :xbtusd, quantity, price, wait: true)
+    begin
+      return Itbit::Order.create!(type, :xbtusd, quantity, price, wait: true)
+    rescue StandardError => e
+      # On timeout errors, we still look for the latest active closing order
+      # that may be available. We have a magic threshold of 20 seconds
+      # and also use the price to recognize an order as the current one.
+      latest = Itbit::Order.all.select do |x|
+        x.price.floor(2) == price.floor(2) && (x.created_time - Time.now.to_i).abs < 20
+      end.last
+      return latest.first unless latest.empty
+    end
+    return nil
   end
 end
