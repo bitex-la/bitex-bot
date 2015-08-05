@@ -25,7 +25,14 @@ class BitstampApiWrapper
   #  }
   def self.order_book(retries = 20)
     begin
-      Bitstamp.order_book
+      book = Bitstamp.order_book
+      age = Time.now.to_i - book["timestamp"].to_i)
+      if age > 300
+        BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
+        self.order_book(retries)
+      else
+        book
+      end
     rescue StandardError => e
       if retries == 0
         raise
