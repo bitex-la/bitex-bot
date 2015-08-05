@@ -146,7 +146,7 @@ module BitexBot
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
       total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
       
-      last_log = `tail -n 500 #{Settings.log.try(:file)}` if Settings.log.try(:file)
+      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
   
       store.update_attributes(taker_usd: balances['usd_balance'],
         taker_btc: balances['btc_balance'], log: last_log)
