@@ -14,7 +14,7 @@ module BitstampStubs
   end
   
   def bitstamp_order_book_stub
-    { 'timestamp' => DateTime.now.to_i.to_s,
+    { 'timestamp' => Time.now.to_i.to_s,
       'bids' =>
         [['30', '3'], ['25', '2'], ['20', '1.5'], ['15', '4'], ['10', '5']],
       'asks' =>
