@@ -8,6 +8,7 @@ require "logger"
 require "bitex"
 require "bitstamp"
 require "itbit"
+require 'bitfinex'
 require "bitex_bot/settings"
 require "bitex_bot/database"
 require "bitex_bot/models/opening_flow.rb"

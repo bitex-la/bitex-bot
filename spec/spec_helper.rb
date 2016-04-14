@@ -22,6 +22,8 @@ DatabaseCleaner.strategy = :truncation
 
 RSpec.configure do |config|
   config.include(FactoryGirl::Syntax::Methods)
+  config.include(Shoulda::Matchers::ActiveModel)
+  config.include(Shoulda::Matchers::ActiveRecord)
   config.mock_with :rspec do |mocks|
     mocks.yield_receiver_to_any_instance_implementation_blocks = true
     mocks.syntax = [:expect, :should]

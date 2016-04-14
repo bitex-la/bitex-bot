@@ -14,7 +14,14 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor :test_mode
     cattr_accessor :taker do
-      Settings.taker == 'itbit' ? ItbitApiWrapper : BitstampApiWrapper
+      case Settings.taker
+      when 'itbit'
+        ItbitApiWrapper
+      when 'bitstamp'
+        BitstampApiWrapper
+      when 'bitfinex'
+        BitfinexApiWrapper
+      end
     end
     cattr_accessor :logger do
       Logger.new(Settings.log.try(:file) || STDOUT, 10, 10240000).tap do |l|

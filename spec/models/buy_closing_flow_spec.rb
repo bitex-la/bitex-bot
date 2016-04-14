@@ -26,7 +26,7 @@ describe BitexBot::BuyClosingFlow do
     open_one.reload.closing_flow.should == flow
     open_two.reload.closing_flow.should == flow
     flow.open_positions.should == [open_one, open_two]
-    flow.desired_price.should == '310.497512437810945273631840797'.to_d
+    flow.desired_price.round(15).should == '310.497512437810945'.to_d
     flow.quantity.should == 2.01
     flow.btc_profit.should be_nil
     flow.usd_profit.should be_nil

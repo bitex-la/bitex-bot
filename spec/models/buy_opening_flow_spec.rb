@@ -10,7 +10,7 @@ describe BitexBot::BuyOpeningFlow do
   it { should validate_presence_of :price }
   it { should validate_presence_of :value_to_use }
   it { should validate_presence_of :order_id }
-  it { should(ensure_inclusion_of(:status)
+  it { should(validate_inclusion_of(:status)
     .in_array(BitexBot::BuyOpeningFlow.statuses)) }
 
   describe "when creating a buying flow" do
@@ -24,7 +24,7 @@ describe BitexBot::BuyOpeningFlow do
       
       flow.value_to_use.should == 50
       flow.price.should <= flow.suggested_closing_price
-      flow.price.should == "19.85074626865672".to_d
+      flow.price.round(14).should == "19.85074626865672".to_d
       flow.suggested_closing_price.should == 20
       flow.order_id.should == 12345
     end
@@ -52,7 +52,7 @@ describe BitexBot::BuyOpeningFlow do
         bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
       flow.value_to_use.should == 100
       flow.price.should <= flow.suggested_closing_price
-      flow.price.should == "7.444029850746269".to_d
+      flow.price.round(15).should == "7.44402985074627".to_d
       flow.suggested_closing_price.should == 15
       flow.order_id.should == 12345
     end
@@ -95,7 +95,7 @@ describe BitexBot::BuyOpeningFlow do
       flow = BitexBot::BuyOpeningFlow.create_for_market(100,
         bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
       
-      flow.price.should == "19.75149253731344".to_d
+      flow.price.round(13).should == "19.7514925373134".to_d
     end
   end
   
