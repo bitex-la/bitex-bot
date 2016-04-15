@@ -22,11 +22,12 @@ class BitfinexApiWrapper
   def self.transactions
     with_retry 'transactions' do
       Bitfinex::Client.new.trades.collect do |t|
-        { tid: t['tid'].to_i,
+        Hashie::Mash.new({
+          tid: t['tid'].to_i,
           price: t['price'],
           amount: t['amount'],
           date: t['timestamp']
-        }
+        })
       end
     end
   end
