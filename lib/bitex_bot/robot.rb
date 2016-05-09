@@ -24,7 +24,8 @@ module BitexBot
       end
     end
     cattr_accessor :logger do
-      Logger.new(Settings.log.try(:file) || STDOUT, 10, 10240000).tap do |l|
+      STDOUT.sync = true unless logdev = Settings.log.try(:file)
+      Logger.new(logdev || STDOUT, 10, 10240000).tap do |l|
         l.level = Logger.const_get(Settings.log.level.upcase)
         l.formatter = proc do |severity, datetime, progname, msg|
           date = datetime.strftime("%m/%d %H:%M:%S.%L")
