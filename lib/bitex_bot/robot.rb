@@ -86,9 +86,12 @@ module BitexBot
     rescue CannotCreateFlow => e
       self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep (60 * 3) unless self.class.test_mode
+    rescue Curl::Err::TimeoutError => e
+      self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      sleep 15 unless self.class.test_mode
     rescue StandardError => e
-      self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep 60 unless self.class.test_mode
+      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      sleep 120 unless self.class.test_mode
     end
     
     def finalise_some_opening_flows
