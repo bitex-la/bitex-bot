@@ -13,7 +13,7 @@ describe BitexBot::Robot do
       mailer: double(
         from: 'test@test.com',
         to: 'test@test.com',
-        method: :test,
+        delivery_method: :test,
         options: {}
       )
     )
