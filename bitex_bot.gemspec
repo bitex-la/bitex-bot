@@ -21,9 +21,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
   
-  spec.add_dependency "settingslogic"
   spec.add_dependency "activerecord"
-  spec.add_dependency "activesupport"
   spec.add_dependency "sqlite3"
   spec.add_dependency "bitstamp"
   spec.add_dependency "bitex", "0.3"

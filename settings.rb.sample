@@ -1,0 +1,97 @@
+# File to write log to. The log is rotated every 10240000 bytes, 10 oldest
+# logs are kept around.
+# If you want to log to stdout you can set 'file' to nil or remove the key.
+# How much information to show in the log, valid values are debug, info, error
+log file: 'bitex_bot.log', level: :info
+
+# Seconds to keep an order alive before recalculating the price and replacing it.
+# Given the way in which the robot tries to find the safest price to place an
+# order, if the time to live is too long the price is not going to be
+# competitive. About 20 seconds is a good number here.
+time_to_live 20
+
+# Use sandbox environments instead of live environments
+# only available for bitex and itbit
+sandbox false
+
+# Which market to use for taking (we're always makers on bitex)
+# 'itbit', 'bitstamp' or 'bitfinex'
+taker 'bitstamp'
+
+# Settings for buying on bitex and selling on bitstamp.
+# amount_to_spend_per_order:
+#   Dollars to spend on each initial bitex bid.
+#   Should at least be 10.0 which is the current minimum order size on Bitex.
+#   if it's too large you're taking a higher risk if whatever happens and you
+#   cannot re sell it afterwards. Also, higher amounts result in your bitex
+#   bid price not being competitive.
+#   A number between 10.0 and 1000.0 is reccommended.
+# profit:
+#   Your profit when buying on bitex, 0.5 means 0.5%.
+#   After calculating the price at which bitcoins can be sold on bitstamp, the
+#   robot deduces your profit from that price, and places a bid on bitex paying
+#   a lower price.
+buying amount_to_spend_per_order: 10.0, profit: 0.5
+
+# Settings for selling on bitex and buying on bitstamp.
+# quantity_to_sell_per_order:
+#   Quantity to sell on each initial bitex Ask.
+#   It should be at least 10 USD worth of BTC at current market prices, a bit
+#   more just to be safe. Otherwise Bitex will reject your orders for being too
+#   small.
+#   If it's too large then you're taking a risk if whatever happens and you 
+#   If it's too small then the robot is pointless, and if it's too large you're
+#   taking a higher risk if whatever happens ad you cannot re buy afterwards.
+#   Also, higher amounts result in your bitex bid price not being competitive.
+#   A number between 0.05 and 2.0 is recommended.
+# profit:
+#   Your profit when selling on bitex, 0.5 means 0.5%.
+#   After calculating the price at which bitcoins can be bought on bitstamp,
+#   the robot deduces your profit from that price and places an ask on bitex
+#   charging a higher price.
+selling quantity_to_sell_per_order: 0.1, profit: 0.5
+
+# This is your bitex api key, it's passed in to the
+# bitex gem: https://github.com/bitex-la/bitex-ruby
+bitex 'your_bitex_api_key_which_should_be_kept_safe'
+
+# These are passed in to the bitstamp gem:
+# see https://github.com/kojnapp/bitstamp for more info.
+bitstamp api_key: 'YOUR_API_KEY',
+  secret: 'YOUR_API_SECRET',
+  client_id: 'YOUR_BITSTAMP_USERNAME'
+
+# These are passed in to the itbit gem:
+# see https://github.com/bitex-la/itbit for more info.
+itbit client_key: 'the-client-key',
+  secret: 'the-secret',
+  user_id: 'the-user-id',
+  default_wallet_id: 'wallet-000'
+
+# These are passed in to the bitfinex gem:
+# see https://github.com/bitfinexcom/bitfinex-api-rb for more info.
+bitfinex api_key: 'your_api_key',
+  api_secret: 'your_api_secret'
+
+# Settings for the ActiveRecord Database to use.
+# sqlite is just fine. Check this link for more options:
+# http://apidock.com/rails/ActiveRecord/Base/establish_connection/class
+database adapter: :sqlite3, database: 'bitex_bot.db'
+
+# The robot sends you emails whenever a problem occurs.
+# If you do not want to receive emails just remove this 'mailer'
+# key and everything under it.
+# It uses https://github.com/mikel/mail under the hood, so method
+# is any valid delivery_method for teh mail gem.
+# Options is the options hash passed in to delivery_method.
+mailer from: 'robot@example.com',
+  to: 'you@example.com',
+  delivery_method: :smtp,
+  options: {
+    address: "your_smtp_server_address.com",
+    port: 587,
+    authentication: "plain",
+    enable_starttls_auto: true,
+    user_name: 'your_user_name',
+    password: 'your_smtp_password'
+  }

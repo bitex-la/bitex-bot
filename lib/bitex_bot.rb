@@ -1,8 +1,6 @@
 require "bitex_bot/version"
 require 'hashie'
-require "active_support"
 require "active_record"
-require "active_model"
 require "mail"
 require "logger"
 require "bitex"
