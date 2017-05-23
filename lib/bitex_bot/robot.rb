@@ -225,8 +225,8 @@ module BitexBot
           subject 'Notice from your robot trader'
           body message
         end
-        mail.delivery_method(Settings.mailer.method.to_sym,
-          Settings.mailer.options.symbolize_keys)
+        mail.delivery_method(Settings.mailer.delivery_method.to_sym,
+          Settings.mailer.options.to_hash)
         mail.deliver!
       end
     end

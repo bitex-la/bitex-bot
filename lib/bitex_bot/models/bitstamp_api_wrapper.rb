@@ -1,7 +1,7 @@
 class BitstampApiWrapper
   def self.setup(settings)
     Bitstamp.setup do |config|
-      config.key = settings.bitstamp.key
+      config.key = settings.bitstamp.api_key
       config.secret = settings.bitstamp.secret
       config.client_id = settings.bitstamp.client_id.to_s
     end
