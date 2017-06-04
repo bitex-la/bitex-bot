@@ -1,6 +1,20 @@
 require "bigdecimal"
 require "bigdecimal/util"
 
+module Bitfinex
+  module WithUserAgent
+    def new_rest_connection
+      super.tap do |conn|
+        conn.headers['User-Agent'] = BitexBot.user_agent
+      end
+    end
+  end
+
+  class Client
+    prepend WithUserAgent
+  end
+end
+
 class BitfinexApiWrapper
   def self.setup(settings)
     Bitfinex::Client.configure do |conf|
@@ -13,6 +27,7 @@ class BitfinexApiWrapper
     begin
       block.call
     rescue StandardError, Bitfinex::ClientError => e
+      raise e if BitexBot::Robot.test_mode
       BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
       sleep 5
       retry

@@ -8,6 +8,7 @@ require 'factory_girl'
 require 'database_cleaner'
 require 'shoulda/matchers'
 require 'timecop'
+require 'webmock/rspec'
 FactoryGirl.find_definitions
 
 Dir[File.dirname(__FILE__) + '/support/*.rb'].each {|file| require file }
