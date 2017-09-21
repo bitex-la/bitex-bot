@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
   
-  spec.add_dependency "activerecord"
+  spec.add_dependency "activerecord", "4.2"
   spec.add_dependency "sqlite3"
   spec.add_dependency "bitstamp"
   spec.add_dependency "bitex", "0.3"
@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "mail"
   spec.add_dependency "hashie"
 
-  spec.add_development_dependency "bundler", "~> 1.3"
+  spec.add_development_dependency "bundler"
   spec.add_development_dependency "byebug"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
