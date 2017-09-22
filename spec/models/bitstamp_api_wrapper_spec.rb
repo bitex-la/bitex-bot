@@ -8,7 +8,7 @@ describe BitstampApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    stub_request(:post, "https://www.bitstamp.net/api/balance/")
+    stub_request(:post, "https://www.bitstamp.net/api/v2/balance/btcusd/")
       .with(headers: { 'User-Agent': BitexBot.user_agent })
     BitstampApiWrapper.balance rescue nil # we don't care about the response
   end
