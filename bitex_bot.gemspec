@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "itbit", "0.0.6"
   spec.add_dependency "bitfinex-rb", "0.0.6"
   spec.add_dependency "mail"
-  spec.add_dependency "hashie"
+  spec.add_dependency "hashie", "~> 3.5.4"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "byebug"

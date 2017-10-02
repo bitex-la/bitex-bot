@@ -9,7 +9,7 @@ module BitexBot
   end
 
   class SettingsClass < ::Hashie::Mash
-    include ::Hashie::Extensions::SymbolizeKeys
+    include ::Hashie::Extensions::Mash::SymbolizeKeys
 
     def load_default
       path = ARGV[0] || 'bitex_bot_settings.rb'
