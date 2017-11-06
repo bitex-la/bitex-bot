@@ -21,6 +21,8 @@ module BitexBot
         BitstampApiWrapper
       when 'bitfinex'
         BitfinexApiWrapper
+      when 'kraken'
+        KrakenApiWrapper
       end
     end
     cattr_accessor :logger do
