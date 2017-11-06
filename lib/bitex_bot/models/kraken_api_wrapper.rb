@@ -101,6 +101,9 @@ class KrakenOrder
 
   def cancel!
     self.class.client.private.cancel_order(txid: id)
+  rescue KrakenClient::ErrorResponse => e
+    retry if e.message == 'EService:Unavailable'
+    raise
   end
 
   def ==(order)
@@ -150,7 +153,7 @@ class KrakenOrder
     BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
     order = closed(start: last_closed_order).detect { |o| o == order_descr }
     if order && order.id != last_closed_order
-      BitexBot::Robot.logger.debug("Found closed order with ID #{id}")
+      BitexBot::Robot.logger.debug("Found closed order with ID #{order.id}")
       return order
     end
   end

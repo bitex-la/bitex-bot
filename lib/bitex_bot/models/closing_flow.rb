@@ -43,7 +43,7 @@ module BitexBot
         return
       end
       Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
-        "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
+        "#{self.class.name} ##{id} #{order.amount} BTC @ $#{order.price}")
       close_positions.create!(order_id: order.id)
     end
 
@@ -81,7 +81,9 @@ module BitexBot
       elsif latest_close.created_at < self.class.close_time_to_live.seconds.ago
         Robot.with_cooldown do
           begin
+            Robot.logger.debug("Finalising #{order.class}##{order.id}")
             order.cancel!
+            Robot.logger.debug("Finalised #{order.class}##{order.id}")
           rescue StandardError => e
             nil # just pass, we'll keep on trying until it's not in orders anymore.
           end
