@@ -47,7 +47,7 @@ class ItbitApiWrapper
   
   def self.place_order(type, price, quantity)
     begin
-      return Itbit::Order.create!(type, :xbtusd, quantity, price, wait: true)
+      return Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
     rescue RestClient::RequestTimeout => e
       # On timeout errors, we still look for the latest active closing order
       # that may be available. We have a magic threshold of 5 minutes

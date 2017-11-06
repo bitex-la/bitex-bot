@@ -35,14 +35,14 @@ module BitexBot
 
     def create_order_and_close_position(quantity, price)
       order = BitexBot::Robot.taker.place_order(
-        order_method, price.round(2), quantity.round(4))
+        order_method, price, quantity)
       if order.nil? || order.id.nil?
         Robot.logger.error("Closing: Error on #{order_method} for "\
           "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
           "#{order.to_s}")
         return
       end
-      Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for"\
+      Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
         "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
       close_positions.create!(order_id: order.id)
     end
@@ -74,7 +74,7 @@ module BitexBot
           self.btc_profit = get_btc_profit
           self.usd_profit = get_usd_profit
           self.done = true
-          Robot.logger.info("Closing: Finished #{self.class.name} ##{id}"\
+          Robot.logger.info("Closing: Finished #{self.class.name} ##{id} "\
             "earned $#{self.usd_profit} and #{self.btc_profit} BTC. ")
           save!
         end

@@ -77,6 +77,6 @@ class BitstampApiWrapper
   end
   
   def self.place_order(type, price, quantity)
-    Bitstamp.orders.send(type, amount: quantity, price: price)
+    Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
   end
 end
