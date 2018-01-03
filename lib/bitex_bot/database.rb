@@ -26,7 +26,7 @@ module BitexBot
           t.timestamps
         end
         add_index :sell_opening_flows, :order_id
-        
+
         create_table :open_buys do |t|
           t.belongs_to :opening_flow
           t.belongs_to :closing_flow
@@ -48,7 +48,7 @@ module BitexBot
           t.timestamps
         end
         add_index :open_sells, :transaction_id
-        
+
         create_table :buy_closing_flows do |t|
           t.decimal :desired_price, precision: 30, scale: 15
           t.decimal :quantity, precision: 30, scale: 15
@@ -68,7 +68,7 @@ module BitexBot
           t.decimal :usd_profit, precision: 30, scale: 15
           t.timestamps
         end
-        
+
         create_table :close_buys do |t|
           t.belongs_to :closing_flow
           t.decimal :amount, precision: 30, scale: 15
@@ -107,7 +107,5 @@ module BitexBot
         end
       end
     end
-
   end
 end
-
