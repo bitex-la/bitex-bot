@@ -23,12 +23,12 @@ module BitexBot
         quantity: quantity,
         amount: amount,
         open_positions: open_positions)
-      
+
       flow.create_initial_order_and_close_position
-      
+
       return flow
     end
-    
+
     def create_initial_order_and_close_position
       create_order_and_close_position(quantity, desired_price)
     end
@@ -36,12 +36,20 @@ module BitexBot
     def create_order_and_close_position(quantity, price)
       order = BitexBot::Robot.taker.place_order(
         order_method, price, quantity)
+
       if order.nil? || order.id.nil?
+        if sought_order(order_method, price).present?
+          # TODO mejorar este logger
+          Robot.logger.info("Closing: no lo encontre pero lo encontre despues")
+          return
+        end
+
         Robot.logger.error("Closing: Error on #{order_method} for "\
           "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
           "#{order.to_s}")
         return
       end
+
       Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
         "#{self.class.name} ##{id} #{order.amount} BTC @ $#{order.price}")
       close_positions.create!(order_id: order.id)
@@ -66,7 +74,7 @@ module BitexBot
         latest_close.amount, latest_close.quantity =
           BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
         latest_close.save!
-        
+
         next_price, next_quantity = get_next_price_and_quantity
         if (next_quantity * next_price) > self.class.minimum_amount_for_closing
           create_order_and_close_position(next_quantity, next_price)
@@ -90,7 +98,7 @@ module BitexBot
         end
       end
     end
-    
+
     # When placing a closing order we need to be aware of the smallest order
     # amount permitted by the other exchange.
     # If the other order is less than this USD amount then we do not attempt
@@ -98,9 +106,19 @@ module BitexBot
     def self.minimum_amount_for_closing
       5
     end
-    
+
     def self.close_time_to_live
       30
+    end
+
+    private
+
+    def sought_order(order_method, price)
+      20.times do
+        sleep 0.01
+        order = BitexBot::Robot.taker.find_recent_orders(order_method, price)
+        return order if order.present?
+      end
     end
   end
 end
