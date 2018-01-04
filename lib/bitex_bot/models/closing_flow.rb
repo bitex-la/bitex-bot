@@ -38,16 +38,17 @@ module BitexBot
         order_method, price, quantity)
 
       if order.nil? || order.id.nil?
-        if sought_order(order_method, price).present?
-          # TODO mejorar este logger
-          Robot.logger.info("Closing: no lo encontre pero lo encontre despues")
+        order = sought_order(order_method, price)
+        if order.present?
+          Robot.logger.info("Closing: #{order_method} not founded for "\
+            "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
+            "#{order.to_s}")
+        else
+          Robot.notify("Closing: Error on #{order_method} for "\
+            "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
+            "#{order.to_s}")
           return
         end
-
-        Robot.logger.error("Closing: Error on #{order_method} for "\
-          "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
-          "#{order.to_s}")
-        return
       end
 
       Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
@@ -115,10 +116,11 @@ module BitexBot
 
     def sought_order(order_method, price)
       20.times do
-        sleep 0.01
+        sleep 10
         order = BitexBot::Robot.taker.find_recent_orders(order_method, price)
         return order if order.present?
       end
+      return
     end
   end
 end
