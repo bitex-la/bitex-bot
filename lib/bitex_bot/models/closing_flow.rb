@@ -38,8 +38,7 @@ module BitexBot
         order_method, price, quantity)
 
       if order.nil? || order.id.nil?
-        order = sought_order(order_method, price)
-        if order.present?
+        if order = sought_order(order_method, price)
           Robot.logger.info("Closing: #{order_method} not founded for "\
             "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
             "#{order.to_s}")
