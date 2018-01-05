@@ -26,7 +26,7 @@ module BitexBot
 
       flow.create_initial_order_and_close_position
 
-      return flow
+      flow
     end
 
     def create_initial_order_and_close_position
@@ -38,15 +38,10 @@ module BitexBot
         order_method, price, quantity)
 
       if order.nil? || order.id.nil?
-        if order = sought_order(order_method, price)
-          Robot.logger.info("Closing: #{order_method} not founded for "\
+        unless order = sought_order(order_method, price)
+          raise NotFoundOrder.new("Closing: #{order_method} not founded for "\
             "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
             "#{order.to_s}")
-        else
-          Robot.notify("Closing: Error on #{order_method} for "\
-            "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
-            "#{order.to_s}")
-          return
         end
       end
 
@@ -115,7 +110,7 @@ module BitexBot
 
     def sought_order(order_method, price)
       20.times do
-        sleep 10
+        BitexBot::Robot.sleep_for 10
         order = BitexBot::Robot.taker.find_recent_orders(order_method, price)
         return order if order.present?
       end

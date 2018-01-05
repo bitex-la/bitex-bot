@@ -26,7 +26,7 @@ class BitstampApiWrapper
   def self.order_book(retries = 20)
     begin
       book = Bitstamp.order_book
-      age = Time.now.to_i - book["timestamp"].to_i
+      age = Time.now.to_i - book['timestamp'].to_i
       if age > 300
         BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
         self.order_book(retries)
@@ -38,7 +38,7 @@ class BitstampApiWrapper
         raise
       else
         BitexBot::Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
-        sleep 1
+        BitexBot::Robot.sleep_for 1
         self.order_book(retries - 1)
       end
     end
@@ -78,9 +78,9 @@ class BitstampApiWrapper
   end
 
   def self.amount_and_quantity(order_id, transactions)
-    closes = transactions.select{|t| t.order_id.to_s == order_id}
-    amount = closes.collect{|x| x.usd.to_d }.sum.abs
-    quantity = closes.collect{|x| x.btc.to_d }.sum.abs
+    closes = transactions.select { |t| t.order_id.to_s == order_id}
+    amount = closes.collect { |x| x.usd.to_d }.sum.abs
+    quantity = closes.collect { |x| x.btc.to_d }.sum.abs
     [amount, quantity]
   end
 

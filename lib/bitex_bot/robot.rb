@@ -1,4 +1,4 @@
-trap "INT" do
+trap 'INT' do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
     BitexBot::Robot.logger.info("Ok, ok, I'm out.")
@@ -12,7 +12,6 @@ module BitexBot
   class Robot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
-    cattr_accessor :test_mode
     cattr_accessor :taker do
       case Settings.taker
       when 'itbit'
@@ -30,7 +29,7 @@ module BitexBot
       Logger.new(logdev || STDOUT, 10, 10240000).tap do |l|
         l.level = Logger.const_get(Settings.log.level.upcase)
         l.formatter = proc do |severity, datetime, progname, msg|
-          date = datetime.strftime("%m/%d %H:%M:%S.%L")
+          date = datetime.strftime('%m/%d %H:%M:%S.%L')
           "#{ '%-6s' % severity } #{date}: #{msg}\n"
         end
       end
@@ -41,17 +40,17 @@ module BitexBot
     # banned by api clients.
     def self.run!
       setup
-      logger.info("Loading trading robot, ctrl+c *once* to exit gracefully.")
+      logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
       self.cooldown_until = Time.now
       bot = new
 
-      while true
+      loop do
         start_time = Time.now
         next if start_time < cooldown_until
         self.current_cooldowns = 0
         bot.trade!
         # This global sleep is so that we don't stress bitex too much.
-        sleep 0.3 unless test_mode
+        sleep_for 0.3
         self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end
@@ -64,10 +63,9 @@ module BitexBot
 
     def self.with_cooldown(&block)
       result = block.call
-      return result if test_mode
       self.current_cooldowns += 1
-      sleep 0.1
-      return result
+      sleep_for 0.1
+      result
     end
 
     def with_cooldown(&block)
@@ -79,7 +77,7 @@ module BitexBot
       finalise_some_opening_flows
       if(!active_opening_flows? && !open_positions? &&
         !active_closing_flows? && self.class.graceful_shutdown)
-        self.class.logger.info("Shutdown completed")
+        self.class.logger.info('Shutdown completed')
         exit
       end
       start_closing_flows if open_positions?
@@ -87,24 +85,24 @@ module BitexBot
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
       self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep (60 * 3) unless self.class.test_mode
+      sleep_for (60 * 3)
     rescue Curl::Err::TimeoutError => e
       self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep 15 unless self.class.test_mode
+      sleep_for 15
     rescue StandardError => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep 120 unless self.class.test_mode
+      sleep_for 120
     end
 
     def finalise_some_opening_flows
       [BuyOpeningFlow, SellOpeningFlow].each do |kind|
         flows = self.class.graceful_shutdown ? kind.active : kind.old_active
-        flows.each{|flow| flow.finalise! }
+        flows.each { |flow| flow.finalise! }
       end
     end
 
     def start_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each{|kind| kind.close_open_positions}
+      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.close_open_positions }
     end
 
     def open_positions?
@@ -112,13 +110,11 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown{ BitexBot::Robot.taker.orders }
-      transactions = with_cooldown{ BitexBot::Robot.taker.user_transactions }
+      orders = with_cooldown { BitexBot::Robot.taker.orders }
+      transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each do |flow|
-          flow.sync_closed_positions(orders, transactions)
-        end
+        kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
       end
     end
 
@@ -128,17 +124,17 @@ module BitexBot
 
     def start_opening_flows_if_needed
       if store.reload.hold?
-        BitexBot::Robot.logger.debug("Not placing new orders because of hold")
+        BitexBot::Robot.logger.debug('Not placing new orders because of hold')
         return
       end
 
       if active_closing_flows?
-        BitexBot::Robot.logger.debug("Not placing new orders, closing flows.")
+        BitexBot::Robot.logger.debug('Not placing new orders, closing flows.')
         return
       end
 
       if self.class.graceful_shutdown
-        BitexBot::Robot.logger.debug("Not placing new orders, shutting down.")
+        BitexBot::Robot.logger.debug('Not placing new orders, shutting down.')
         return
       end
 
@@ -149,11 +145,11 @@ module BitexBot
         end
 
       if recent_buying && recent_selling
-        BitexBot::Robot.logger.debug("Not placing new orders, recent ones exist.")
+        BitexBot::Robot.logger.debug('Not placing new orders, recent ones exist.')
         return
       end
 
-      balances = with_cooldown{ BitexBot::Robot.taker.balance }
+      balances = with_cooldown { BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
 
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
@@ -179,16 +175,16 @@ module BitexBot
       end
 
       if store.usd_stop && total_usd <= store.usd_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
+        BitexBot::Robot.logger.debug('Not placing new orders, USD target not met')
         return
       end
       if store.btc_stop && total_btc <= store.btc_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
+        BitexBot::Robot.logger.debug('Not placing new orders, BTC target not met')
         return
       end
 
-      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
+      order_book = with_cooldown { BitexBot::Robot.taker.order_book }
+      transactions = with_cooldown { BitexBot::Robot.taker.transactions }
 
       unless recent_buying
         BuyOpeningFlow.create_for_market(
@@ -211,7 +207,7 @@ module BitexBot
     end
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each{|o| o.sync_open_positions }
+      [SellOpeningFlow, BuyOpeningFlow].each { |o| o.sync_open_positions }
     end
 
     def active_opening_flows?
@@ -236,6 +232,14 @@ module BitexBot
     # The trader has a Store
     def store
       @store ||= Store.first || Store.create
+    end
+
+    def self.sleep_for(seconds)
+      sleep seconds
+    end
+
+    def sleep_for(seconds)
+      self.class.sleep_for(seconds)
     end
   end
 end

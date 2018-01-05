@@ -1,5 +1,5 @@
-require "bigdecimal"
-require "bigdecimal/util"
+require 'bigdecimal'
+require 'bigdecimal/util'
 
 module Bitfinex
   module WithUserAgent
@@ -16,6 +16,8 @@ module Bitfinex
 end
 
 class BitfinexApiWrapper
+  cattr_accessor :max_retries do 1000 end
+
   def self.setup(settings)
     Bitfinex::Client.configure do |conf|
       conf.api_key = settings.bitfinex.api_key
@@ -23,14 +25,18 @@ class BitfinexApiWrapper
     end
   end
 
-  def self.with_retry(action, &block)
+  def self.with_retry(action, retries = 0, &block)
     begin
       block.call
     rescue StandardError, Bitfinex::ClientError => e
-      raise e if BitexBot::Robot.test_mode
       BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
-      sleep 5
-      retry
+      BitexBot::Robot.sleep_for 5
+      if retries < max_retries
+        with_retry(action, retries + 1, &block)
+      else
+        BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+        raise
+      end
     end
   end
 
@@ -50,25 +56,28 @@ class BitfinexApiWrapper
   def self.order_book
     with_retry 'order_book' do
       book = Bitfinex::Client.new.orderbook
-      { 'bids' => book['bids'].collect{|b| [b['price'], b['amount']] },
-        'asks' => book['asks'].collect{|a| [a['price'], a['amount']] } }
+      {
+        'bids' => book['bids'].collect { |b| [b['price'], b['amount']] },
+        'asks' => book['asks'].collect { |a| [a['price'], a['amount']] }
+      }
     end
   end
 
   def self.balance
     with_retry 'balance' do
       balances = Bitfinex::Client.new.balances(type: 'exchange')
-      sleep 1 # Sleep to avoid sending two consecutive requests to bitfinex.
+      BitexBot::Robot.sleep_for 1 # Sleep to avoid sending two consecutive requests to bitfinex.
       fee = Bitfinex::Client.new.account_info.first['taker_fees']
-      btc = balances.find{|b| b['currency'] == 'btc' } || {}
-      usd = balances.find{|b| b['currency'] == 'usd' } || {}
-      { "btc_balance" => btc['amount'].to_d,
-        "btc_reserved" => btc['amount'].to_d - btc['available'].to_d,
-        "btc_available" => btc['available'].to_d,
-        "usd_balance" => usd['amount'].to_d,
-        "usd_reserved" => usd['amount'].to_d - usd['available'].to_d,
-        "usd_available" => usd['available'].to_d,
-        "fee" => fee.to_d
+      btc = balances.find { |b| b['currency'] == 'btc' } || {}
+      usd = balances.find { |b| b['currency'] == 'usd' } || {}
+      {
+        'btc_balance' => btc['amount'].to_d,
+        'btc_reserved' => btc['amount'].to_d - btc['available'].to_d,
+        'btc_available' => btc['available'].to_d,
+        'usd_balance' => usd['amount'].to_d,
+        'usd_reserved' => usd['amount'].to_d - usd['available'].to_d,
+        'usd_available' => usd['available'].to_d,
+        'fee' => fee.to_d
       }
     end
   end
