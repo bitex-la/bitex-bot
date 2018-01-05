@@ -36,7 +36,10 @@ RSpec.configure do |config|
 
   config.before(:all) do
     BitexBot::Robot.logger = Logger.new('/dev/null')
-    BitexBot::Robot.test_mode = true
+  end
+
+  config.before(:each) do
+    BitexBot::Robot.stub(:sleep_for)
   end
 
   config.after(:each) do
@@ -44,7 +47,7 @@ RSpec.configure do |config|
     Timecop.return
   end
 
-  config.order = "random"
+  config.order = 'random'
 end
 
 I18n.enforce_available_locales = false
