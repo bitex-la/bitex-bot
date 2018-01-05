@@ -7,11 +7,11 @@ module BitexBot
 
     # The updated config store as passed from the robot
     cattr_accessor :store
-    
+
     def self.active
       where('status != "finalised"')
     end
-    
+
     def self.old_active
       where('status != "finalised" AND created_at < ?',
         Settings.time_to_live.seconds.ago)
@@ -36,7 +36,7 @@ module BitexBot
     def finalised?; status == 'finalised'; end
     # @!endgroup
 
-    validates :status, presence: true, inclusion: {in: statuses}
+    validates :status, presence: true, inclusion: { in: statuses }
     validates :order_id, presence: true
     validates_presence_of :price, :value_to_use
 
@@ -47,20 +47,20 @@ module BitexBot
 
       plus_bitex = value_to_use + (value_to_use * bitex_fee / 100.0)
       value_to_use_needed = plus_bitex / (1 - other_fee / 100.0)
-      
+
       safest_price = get_safest_price(transactions, order_book,
         value_to_use_needed)
 
       remote_value_to_use = get_remote_value_to_use(value_to_use_needed, safest_price)
-      
+
       if remote_value_to_use > remote_balance
         raise CannotCreateFlow.new(
           "Needed #{remote_value_to_use} but you only have #{remote_balance}")
       end
 
-      bitex_price = get_bitex_price(value_to_use, remote_value_to_use)      
+      bitex_price = get_bitex_price(value_to_use, remote_value_to_use)
 
-      begin 
+      begin
         order = order_class.create!(:btc, value_to_use, bitex_price, true)
       rescue StandardError => e
         raise CannotCreateFlow.new(e.message)
@@ -75,7 +75,7 @@ module BitexBot
       Robot.logger.info("Opening: Placed #{order_class.name} ##{order.id} " \
         "#{value_to_use} @ $#{bitex_price} (#{remote_value_to_use})")
 
-      begin 
+      begin
         self.create!(price: bitex_price, value_to_use: value_to_use,
           suggested_closing_price: safest_price, status: 'executing', order_id: order.id)
       rescue StandardError => e
@@ -104,7 +104,7 @@ module BitexBot
           opening_flow: flow)
       end.compact
     end
-    
+
     def finalise!
       order = self.class.order_class.find(order_id)
       if order.status == :cancelled || order.status == :completed
@@ -120,7 +120,7 @@ module BitexBot
         end
       end
     end
-  end   
+  end
 
   # @visibility private
   class CannotCreateFlow < StandardError; end
