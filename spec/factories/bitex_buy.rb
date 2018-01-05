@@ -1,4 +1,4 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :bitex_buy, class: Bitex::Buy do
     id 12345678
     created_at{ Time.now }
