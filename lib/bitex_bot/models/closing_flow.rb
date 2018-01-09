@@ -24,9 +24,8 @@ module BitexBot
         amount: amount,
         open_positions: open_positions)
 
-      flow.create_initial_order_and_close_position
-
-      flow
+      flow.create_initial_order_and_close_position  # May raise OrderNotFound
+      return
     end
 
     def create_initial_order_and_close_position
@@ -34,12 +33,17 @@ module BitexBot
     end
 
     def create_order_and_close_position(quantity, price)
-      order = BitexBot::Robot.taker.place_order(
-        order_method, price, quantity)
+      order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
 
       if order.nil? || order.id.nil?
-        unless order = sought_order(order_method, price)
-          raise NotFoundOrder.new("Closing: #{order_method} not founded for "\
+        20.times do
+          BitexBot::Robot.sleep_for 10
+          order = BitexBot::Robot.taker.find_lost(order_method, price)
+          break if order.present?
+        end
+
+        unless order.present?
+          raise OrderNotFound.new("Closing: #{order_method} not founded for "\
             "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
             "#{order.to_s}")
         end
@@ -50,6 +54,8 @@ module BitexBot
       close_positions.create!(order_id: order.id)
     end
 
+    # TODO should receive a order_ids and user_transaccions array,
+    # then each Wrapper should know how to search for them internally.
     def sync_closed_positions(orders, transactions)
       latest_close = close_positions.last
 
@@ -61,9 +67,9 @@ module BitexBot
       end
 
       order_id = latest_close.order_id.to_s
-      order = orders.find{|x| x.id.to_s == order_id }
+      order = orders.find{ |o| o.id.to_s == order_id }
 
-      # When ask is nil it means the other exchange is done executing it
+      # When order is nil it means the other exchange is done executing it
       # so we can now have a look of all the sales that were spawned from it.
       if order.nil?
         latest_close.amount, latest_close.quantity =
@@ -98,23 +104,10 @@ module BitexBot
     # amount permitted by the other exchange.
     # If the other order is less than this USD amount then we do not attempt
     # to close the positions yet.
-    def self.minimum_amount_for_closing
-      5
-    end
+    def self.minimum_amount_for_closing; 5; end
 
-    def self.close_time_to_live
-      30
-    end
-
-    private
-
-    def sought_order(order_method, price)
-      20.times do
-        BitexBot::Robot.sleep_for 10
-        order = BitexBot::Robot.taker.find_recent_orders(order_method, price)
-        return order if order.present?
-      end
-      return
-    end
+    def self.close_time_to_live; 30; end
   end
+
+  class OrderNotFound < StandardError; end
 end

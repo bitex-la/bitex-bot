@@ -89,6 +89,8 @@ module BitexBot
     rescue Curl::Err::TimeoutError => e
       self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for 15
+    rescue OrderNotFound => e
+      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for 120
@@ -97,12 +99,12 @@ module BitexBot
     def finalise_some_opening_flows
       [BuyOpeningFlow, SellOpeningFlow].each do |kind|
         flows = self.class.graceful_shutdown ? kind.active : kind.old_active
-        flows.each { |flow| flow.finalise! }
+        flows.each{ |flow| flow.finalise! }
       end
     end
 
     def start_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.close_open_positions }
+      [BuyClosingFlow, SellClosingFlow].each{ |kind| kind.close_open_positions }
     end
 
     def open_positions?
@@ -110,11 +112,11 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown { BitexBot::Robot.taker.orders }
-      transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
+      orders = with_cooldown{ BitexBot::Robot.taker.orders }
+      transactions = with_cooldown{ BitexBot::Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
+        kind.active.each{ |flow| flow.sync_closed_positions(orders, transactions) }
       end
     end
 
@@ -138,18 +140,17 @@ module BitexBot
         return
       end
 
-      recent_buying, recent_selling =
-        [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
-          threshold = (Settings.time_to_live / 2).seconds.ago
-          kind.active.where('created_at > ?', threshold).first
-        end
+      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
+        threshold = (Settings.time_to_live / 2).seconds.ago
+        kind.active.where('created_at > ?', threshold).first
+      end
 
       if recent_buying && recent_selling
         BitexBot::Robot.logger.debug('Not placing new orders, recent ones exist.')
         return
       end
 
-      balances = with_cooldown { BitexBot::Robot.taker.balance }
+      balances = with_cooldown{ BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
 
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
@@ -178,13 +179,14 @@ module BitexBot
         BitexBot::Robot.logger.debug('Not placing new orders, USD target not met')
         return
       end
+
       if store.btc_stop && total_btc <= store.btc_stop
         BitexBot::Robot.logger.debug('Not placing new orders, BTC target not met')
         return
       end
 
-      order_book = with_cooldown { BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown { BitexBot::Robot.taker.transactions }
+      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
+      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
 
       unless recent_buying
         BuyOpeningFlow.create_for_market(
@@ -195,6 +197,7 @@ module BitexBot
           balances['fee'].to_d,
           store)
       end
+
       unless recent_selling
         SellOpeningFlow.create_for_market(
           balances['usd_available'].to_d,
@@ -207,7 +210,7 @@ module BitexBot
     end
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each { |o| o.sync_open_positions }
+      [SellOpeningFlow, BuyOpeningFlow].each{ |o| o.sync_open_positions }
     end
 
     def active_opening_flows?
@@ -223,6 +226,7 @@ module BitexBot
           subject subj
           body message
         end
+
         mail.delivery_method(Settings.mailer.delivery_method.to_sym,
           Settings.mailer.options.to_hash)
         mail.deliver!
