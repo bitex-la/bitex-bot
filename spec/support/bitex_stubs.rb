@@ -24,7 +24,7 @@ module BitexStubs
       bid.price = price
       bid.amount = to_spend
       bid.remaining_amount = to_spend
-      bid.status = :executing 
+      bid.status = :executing
       bid.specie = specie
       bid.stub(:cancel!) do
         bid.status = :cancelled
@@ -43,7 +43,7 @@ module BitexStubs
       ask.price = price
       ask.quantity = to_sell
       ask.remaining_quantity = to_sell
-      ask.status = :executing 
+      ask.status = :executing
       ask.specie = specie
       ask.stub(:cancel!) do
         ask.status = :cancelled
@@ -55,11 +55,12 @@ module BitexStubs
       ask
     end
   end
-  
+
   def stub_bitex_transactions(*extra_transactions)
     Bitex::Trade.stub(all: extra_transactions + [
       build(:bitex_buy), build(:bitex_sell)
     ])
   end
 end
+
 RSpec.configuration.include BitexStubs

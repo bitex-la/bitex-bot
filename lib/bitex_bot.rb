@@ -1,18 +1,18 @@
-require "bitex_bot/version"
+require 'bitex_bot/version'
 require 'hashie'
-require "active_record"
-require "mail"
-require "logger"
-require "bitex"
-require "bitstamp"
-require "itbit"
+require 'active_record'
+require 'mail'
+require 'logger'
+require 'bitex'
+require 'bitstamp'
+require 'itbit'
 require 'bitfinex'
-require "bitex_bot/settings"
-require "bitex_bot/database"
-require "bitex_bot/models/opening_flow.rb"
-require "bitex_bot/models/closing_flow.rb"
-Dir[File.dirname(__FILE__) + '/bitex_bot/models/*.rb'].each {|file| require file }
-require "bitex_bot/robot"
+require 'bitex_bot/settings'
+require 'bitex_bot/database'
+require 'bitex_bot/models/opening_flow.rb'
+require 'bitex_bot/models/closing_flow.rb'
+Dir[File.dirname(__FILE__) + '/bitex_bot/models/*.rb'].each { |file| require file }
+require 'bitex_bot/robot'
 
 module BitexBot
   def self.user_agent
@@ -40,7 +40,7 @@ end
 module RestClient
   module WithUserAgent
     def default_headers
-      super.merge(:user_agent => BitexBot.user_agent)
+      super.merge(user_agent: BitexBot.user_agent)
     end
   end
 

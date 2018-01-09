@@ -16,17 +16,17 @@ class ItbitApiWrapper
   end
 
   def self.balance
-    balances = Itbit::Wallet.all
-      .find{ |i| i[:id] == Itbit.default_wallet_id }[:balances]
-    usd = balances.find{ |x| x[:currency] == :usd }
-    btc = balances.find{ |x| x[:currency] == :xbt }
-    { "btc_balance" => btc[:total_balance],
-      "btc_reserved" => btc[:total_balance] - btc[:available_balance],
-      "btc_available" => btc[:available_balance],
-      "usd_balance" => usd[:total_balance],
-      "usd_reserved" => usd[:total_balance] - usd[:available_balance],
-      "usd_available" => usd[:available_balance],
-      "fee" => 0.5
+    balances = Itbit::Wallet.all.find{ |w| w[:id] == Itbit.default_wallet_id }[:balances]
+    usd = balances.find{ |b| b[:currency] == :usd }
+    btc = balances.find{ |b| b[:currency] == :xbt }
+    {
+      'btc_balance' => btc[:total_balance],
+      'btc_reserved' => btc[:total_balance] - btc[:available_balance],
+      'btc_available' => btc[:available_balance],
+      'usd_balance' => usd[:total_balance],
+      'usd_reserved' => usd[:total_balance] - usd[:available_balance],
+      'usd_available' => usd[:available_balance],
+      'fee' => 0.5
     }
   end
 
@@ -34,7 +34,7 @@ class ItbitApiWrapper
     Itbit::Order.all(status: :open)
   end
 
-  def self.find_recent_orders(order_method, price)
+  def self.find_lost(order_method, price)
     orders.find do |o|
       o.order_method == order_method &&
       o.price == price &&
@@ -54,23 +54,22 @@ class ItbitApiWrapper
   end
 
   def self.place_order(type, price, quantity)
-    begin
-      return Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
-    rescue RestClient::RequestTimeout => e
-      # On timeout errors, we still look for the latest active closing order
-      # that may be available. We have a magic threshold of 5 minutes
-      # and also use the price to recognize an order as the current one.
-      # TODO: Maybe we can identify the order using metadata instead of price.
-      BitexBot::Robot.logger.error("Captured Timeout on itbit")
-      latest = Itbit::Order.all.select do |x|
-        x.price == price && (x.created_time - Time.now.to_i).abs < 500
-      end.first
-      if latest
-        return latest
-      else
-        BitexBot::Robot.logger.error("Could not find my order")
-        raise e
-      end
+    Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
+  rescue RestClient::RequestTimeout => e
+    # On timeout errors, we still look for the latest active closing order
+    # that may be available. We have a magic threshold of 5 minutes
+    # and also use the price to recognize an order as the current one.
+    # TODO: Maybe we can identify the order using metadata instead of price.
+    BitexBot::Robot.logger.error('Captured Timeout on itbit')
+    latest = Itbit::Order.all.select do |o|
+      o.price == price && (o.created_time - Time.now.to_i).abs < 500
+    end.first
+
+    if latest.present?
+      latest
+    else
+      BitexBot::Robot.logger.error('Could not find my order')
+      raise e
     end
   end
 end

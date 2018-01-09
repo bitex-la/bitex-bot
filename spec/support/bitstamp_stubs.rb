@@ -66,11 +66,9 @@ module BitstampStubs
   end
 
   def ensure_bitstamp_orders_stub
-    begin
-      Bitstamp.orders
-    rescue Exception => e
-      Bitstamp.stub(orders: double)
-    end
+    Bitstamp.orders
+  rescue Exception => e
+    Bitstamp.stub(orders: double)
   end
 
   def stub_bitstamp_sell(remote_id = nil, orders = [])

@@ -26,17 +26,15 @@ class BitfinexApiWrapper
   end
 
   def self.with_retry(action, retries = 0, &block)
-    begin
-      block.call
-    rescue StandardError, Bitfinex::ClientError => e
-      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
-      BitexBot::Robot.sleep_for 5
-      if retries < max_retries
-        with_retry(action, retries + 1, &block)
-      else
-        BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
-        raise
-      end
+    block.call
+  rescue StandardError, Bitfinex::ClientError => e
+    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
+    BitexBot::Robot.sleep_for 5
+    if retries < max_retries
+      with_retry(action, retries + 1, &block)
+    else
+      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+      raise
     end
   end
 
@@ -57,8 +55,8 @@ class BitfinexApiWrapper
     with_retry 'order_book' do
       book = Bitfinex::Client.new.orderbook
       {
-        'bids' => book['bids'].collect { |b| [b['price'], b['amount']] },
-        'asks' => book['asks'].collect { |a| [a['price'], a['amount']] }
+        'bids' => book['bids'].collect{ |b| [b['price'], b['amount']] },
+        'asks' => book['asks'].collect{ |a| [a['price'], a['amount']] }
       }
     end
   end
@@ -68,8 +66,8 @@ class BitfinexApiWrapper
       balances = Bitfinex::Client.new.balances(type: 'exchange')
       BitexBot::Robot.sleep_for 1 # Sleep to avoid sending two consecutive requests to bitfinex.
       fee = Bitfinex::Client.new.account_info.first['taker_fees']
-      btc = balances.find { |b| b['currency'] == 'btc' } || {}
-      usd = balances.find { |b| b['currency'] == 'usd' } || {}
+      btc = balances.find{ |b| b['currency'] == 'btc' } || {}
+      usd = balances.find{ |b| b['currency'] == 'usd' } || {}
       {
         'btc_balance' => btc['amount'].to_d,
         'btc_reserved' => btc['amount'].to_d - btc['available'].to_d,
@@ -88,7 +86,7 @@ class BitfinexApiWrapper
     end
   end
 
-  def self.find_recent_orders(order_method, price)
+  def self.find_lost(order_method, price)
     raise 'Not Implemented Method'
   end
 

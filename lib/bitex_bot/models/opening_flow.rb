@@ -8,22 +8,17 @@ module BitexBot
     # The updated config store as passed from the robot
     cattr_accessor :store
 
-    def self.active
-      where('status != "finalised"')
-    end
+    def self.active; where('status != "finalised"'); end
 
     def self.old_active
-      where('status != "finalised" AND created_at < ?',
-        Settings.time_to_live.seconds.ago)
+      where('status != "finalised" AND created_at < ?', Settings.time_to_live.seconds.ago)
     end
 
     # @!group Statuses
 
     # All possible flow statuses
     # @return [Array<String>]
-    def self.statuses
-      %w(executing settling finalised)
-    end
+    def self.statuses; %w(executing settling finalised); end
 
     # The Bitex order has been placed, its id stored as order_id.
     def executing?; status == 'executing'; end
@@ -40,16 +35,15 @@ module BitexBot
     validates :order_id, presence: true
     validates_presence_of :price, :value_to_use
 
-    def self.create_for_market(remote_balance, order_book, transactions,
-      bitex_fee, other_fee, store)
+    def self.create_for_market(remote_balance, order_book, transactions, bitex_fee,
+      other_fee, store)
 
       self.store = store
 
       plus_bitex = value_to_use + (value_to_use * bitex_fee / 100.0)
       value_to_use_needed = plus_bitex / (1 - other_fee / 100.0)
 
-      safest_price = get_safest_price(transactions, order_book,
-        value_to_use_needed)
+      safest_price = get_safest_price(transactions, order_book, value_to_use_needed)
 
       remote_value_to_use = get_remote_value_to_use(value_to_use_needed, safest_price)
 
@@ -68,8 +62,7 @@ module BitexBot
 
       if order.reason == :not_enough_funds
         raise CannotCreateFlow.new(
-          "You need to have #{value_to_use} on bitex to place this
-          #{order_class.name}.")
+          "You need to have #{value_to_use} on bitex to place this #{order_class.name}.")
       end
 
       Robot.logger.info("Opening: Placed #{order_class.name} ##{order.id} " \

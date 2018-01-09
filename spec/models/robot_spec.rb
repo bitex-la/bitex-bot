@@ -4,12 +4,8 @@ describe BitexBot::Robot do
   before(:each) do
     BitexBot::Settings.stub(
       time_to_live: 10,
-      buying: double(
-        amount_to_spend_per_order: 50,
-        profit: 0),
-      selling: double(
-        quantity_to_sell_per_order: 1,
-        profit: 0),
+      buying: double(amount_to_spend_per_order: 50, profit: 0),
+      selling: double(quantity_to_sell_per_order: 1, profit: 0),
       mailer: double(
         from: 'test@test.com',
         to: 'test@test.com',
@@ -38,6 +34,7 @@ describe BitexBot::Robot do
     stub_bitstamp_transactions
     stub_bitstamp_user_transactions
   end
+
   let(:bot){ BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
