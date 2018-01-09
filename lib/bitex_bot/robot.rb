@@ -125,34 +125,39 @@ module BitexBot
     def active_closing_flows?
       BuyClosingFlow.active.exists? || SellClosingFlow.active.exists?
     end
-    
-    def start_opening_flows_if_needed
+
+    def cant_open_flow?(recent_buying, recent_selling) 
       if store.reload.hold?
         BitexBot::Robot.logger.debug("Not placing new orders because of hold")
-        return
+        return true
       end
-      
+
       if active_closing_flows?
         BitexBot::Robot.logger.debug("Not placing new orders, closing flows.")
-        return
+        return true
       end
-      
+
       if self.class.graceful_shutdown
         BitexBot::Robot.logger.debug("Not placing new orders, shutting down.")
-        return
+        return true
       end
-      
-      recent_buying, recent_selling =
-        [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
-          threshold = (Settings.time_to_live / 2).seconds.ago
-          kind.active.where('created_at > ?', threshold).first
-        end
 
       if recent_buying && recent_selling
         BitexBot::Robot.logger.debug("Not placing new orders, recent ones exist.")
-        return
+        return true
       end
-      
+
+      return false
+    end  
+
+    def start_opening_flows_if_needed
+      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
+        threshold = (Settings.time_to_live / 2).seconds.ago
+        kind.active.where('created_at > ?', threshold).first
+      end
+
+      return if cant_open_flow?(recent_buying, recent_selling) 
+
       balances = with_cooldown{ BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
       
