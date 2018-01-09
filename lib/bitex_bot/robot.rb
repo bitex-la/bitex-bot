@@ -150,22 +150,11 @@ module BitexBot
       return false
     end  
 
-    def start_opening_flows_if_needed
-      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
-        threshold = (Settings.time_to_live / 2).seconds.ago
-        kind.active.where('created_at > ?', threshold).first
-      end
-
-      return if cant_open_flow?(recent_buying, recent_selling) 
-
-      balances = with_cooldown{ BitexBot::Robot.taker.balance }
-      profile = Bitex::Profile.get
-      
+    def update_store(balances, profile)
+      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
       total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
       
-      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
-  
       store.update_attributes(taker_usd: balances['usd_balance'],
         taker_btc: balances['btc_balance'], log: last_log)
       
@@ -182,6 +171,20 @@ module BitexBot
           store.update_attributes(last_warning: Time.now)
         end
       end
+    end  
+
+    def start_opening_flows_if_needed
+      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
+        threshold = (Settings.time_to_live / 2).seconds.ago
+        kind.active.where('created_at > ?', threshold).first
+      end
+
+      return if cant_open_flow?(recent_buying, recent_selling) 
+
+      balances = with_cooldown{ BitexBot::Robot.taker.balance }
+      profile = Bitex::Profile.get
+      
+      update_store(balances, profile)
 
       if store.usd_stop && total_usd <= store.usd_stop
         BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
@@ -191,10 +194,10 @@ module BitexBot
         BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
         return
       end
-
+      
       order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
       transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
-      
+
       unless recent_buying
         BuyOpeningFlow.create_for_market(
           balances['btc_available'].to_d,
