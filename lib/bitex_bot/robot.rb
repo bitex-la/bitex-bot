@@ -173,6 +173,44 @@ module BitexBot
       end
     end  
 
+    def is_target_achieved?(currency)
+      if currency == 'usd'
+        if store.usd_stop && total_usd <= store.usd_stop
+          BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
+          return false 
+        else
+          return true
+        end
+      elsif currency == 'btc'
+        if store.btc_stop && total_btc <= store.btc_stop
+          BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
+          return false
+        else
+          return true  
+        end
+      end  
+    end  
+
+    def create_market_flow(operation, balances, order_book, transactions, profile)
+      if operation == 'buy'
+        BuyOpeningFlow.create_for_market(
+          balances['btc_available'].to_d,
+          order_book['bids'],
+          transactions,
+          profile[:fee],
+          balances['fee'].to_d,
+          store)
+      elsif operation == 'sell' 
+        SellOpeningFlow.create_for_market(
+          balances['usd_available'].to_d,
+          order_book['asks'],
+          transactions,
+          profile[:fee],
+          balances['fee'].to_d,
+          store)
+      end  
+    end  
+
     def start_opening_flows_if_needed
       recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
         threshold = (Settings.time_to_live / 2).seconds.ago
@@ -186,35 +224,16 @@ module BitexBot
       
       update_store(balances, profile)
 
-      if store.usd_stop && total_usd <= store.usd_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
-        return
-      end
-      if store.btc_stop && total_btc <= store.btc_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
-        return
-      end
+      return if !is_target_achieved?('usd') || !is_target_achieved?('btc')
       
       order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
       transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
 
       unless recent_buying
-        BuyOpeningFlow.create_for_market(
-          balances['btc_available'].to_d,
-          order_book['bids'],
-          transactions,
-          profile[:fee],
-          balances['fee'].to_d,
-          store)
+        create_market_flow('buy', balances, order_book, transactions, profile)
       end
       unless recent_selling
-        SellOpeningFlow.create_for_market(
-          balances['usd_available'].to_d,
-          order_book['asks'],
-          transactions,
-          profile[:fee],
-          balances['fee'].to_d,
-          store)
+        create_market_flow('sell', balances, order_book, transactions, profile)
       end
     end
     
