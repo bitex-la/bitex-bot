@@ -125,42 +125,36 @@ module BitexBot
     def active_closing_flows?
       BuyClosingFlow.active.exists? || SellClosingFlow.active.exists?
     end
-    
-    def start_opening_flows_if_needed
+
+    def cant_open_flow?(recent_buying, recent_selling) 
       if store.reload.hold?
         BitexBot::Robot.logger.debug("Not placing new orders because of hold")
-        return
+        return true
       end
-      
+
       if active_closing_flows?
         BitexBot::Robot.logger.debug("Not placing new orders, closing flows.")
-        return
+        return true
       end
-      
+
       if self.class.graceful_shutdown
         BitexBot::Robot.logger.debug("Not placing new orders, shutting down.")
-        return
+        return true
       end
-      
-      recent_buying, recent_selling =
-        [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
-          threshold = (Settings.time_to_live / 2).seconds.ago
-          kind.active.where('created_at > ?', threshold).first
-        end
 
       if recent_buying && recent_selling
         BitexBot::Robot.logger.debug("Not placing new orders, recent ones exist.")
-        return
+        return true
       end
-      
-      balances = with_cooldown{ BitexBot::Robot.taker.balance }
-      profile = Bitex::Profile.get
-      
+
+      return false
+    end  
+
+    def update_store(balances, profile)
+      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
       total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
       total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
       
-      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
-  
       store.update_attributes(taker_usd: balances['usd_balance'],
         taker_btc: balances['btc_balance'], log: last_log)
       
@@ -177,20 +171,28 @@ module BitexBot
           store.update_attributes(last_warning: Time.now)
         end
       end
+    end  
 
-      if store.usd_stop && total_usd <= store.usd_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
-        return
-      end
-      if store.btc_stop && total_btc <= store.btc_stop
-        BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
-        return
-      end
+    def is_target_achieved?(currency)
+      if currency == 'usd'
+        if store.usd_stop && total_usd <= store.usd_stop
+          BitexBot::Robot.logger.debug("Not placing new orders, USD target not met")
+          return false 
+        else
+          return true
+        end
+      elsif currency == 'btc'
+        if store.btc_stop && total_btc <= store.btc_stop
+          BitexBot::Robot.logger.debug("Not placing new orders, BTC target not met")
+          return false
+        else
+          return true  
+        end
+      end  
+    end  
 
-      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
-      
-      unless recent_buying
+    def create_market_flow(operation, balances, order_book, transactions, profile)
+      if operation == 'buy'
         BuyOpeningFlow.create_for_market(
           balances['btc_available'].to_d,
           order_book['bids'],
@@ -198,8 +200,7 @@ module BitexBot
           profile[:fee],
           balances['fee'].to_d,
           store)
-      end
-      unless recent_selling
+      elsif operation == 'sell' 
         SellOpeningFlow.create_for_market(
           balances['usd_available'].to_d,
           order_book['asks'],
@@ -207,6 +208,32 @@ module BitexBot
           profile[:fee],
           balances['fee'].to_d,
           store)
+      end  
+    end  
+
+    def start_opening_flows_if_needed
+      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
+        threshold = (Settings.time_to_live / 2).seconds.ago
+        kind.active.where('created_at > ?', threshold).first
+      end
+
+      return if cant_open_flow?(recent_buying, recent_selling) 
+
+      balances = with_cooldown{ BitexBot::Robot.taker.balance }
+      profile = Bitex::Profile.get
+      
+      update_store(balances, profile)
+
+      return if !is_target_achieved?('usd') || !is_target_achieved?('btc')
+      
+      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
+      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
+
+      unless recent_buying
+        create_market_flow('buy', balances, order_book, transactions, profile)
+      end
+      unless recent_selling
+        create_market_flow('sell', balances, order_book, transactions, profile)
       end
     end
     
