@@ -9,6 +9,7 @@ require 'itbit'
 require 'bitfinex'
 require 'bitex_bot/settings'
 require 'bitex_bot/database'
+require 'bitex_bot/models/api_wrapper.rb'
 require 'bitex_bot/models/opening_flow.rb'
 require 'bitex_bot/models/closing_flow.rb'
 Dir[File.dirname(__FILE__) + '/bitex_bot/models/*.rb'].each { |file| require file }

@@ -15,7 +15,24 @@ module Bitfinex
   end
 end
 
-class BitfinexApiWrapper
+class BitfinexOrder
+  attr_accessor :id, :amount, :price, :type, :datetime
+  # TODO datetime -> timestamp [Integer] (Epoch)
+
+  def initialize(order_data)
+    self.id = order_data['id'].to_i
+    self.amount = order_data['original_amount'].to_d
+    self.price = order_data['price'].to_d
+    self.type = order_data['side'].to_sym
+    self.datetime = order_data['timestamp'].to_i
+  end
+
+  def cancel!
+    Bitfinex::Client.new.cancel_orders(id)
+  end
+end
+
+class BitfinexApiWrapper < ApiWrapper
   cattr_accessor :max_retries do 1000 end
 
   def self.setup(settings)
@@ -25,28 +42,10 @@ class BitfinexApiWrapper
     end
   end
 
-  def self.with_retry(action, retries = 0, &block)
-    block.call
-  rescue StandardError, Bitfinex::ClientError => e
-    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
-    BitexBot::Robot.sleep_for 5
-    if retries < max_retries
-      with_retry(action, retries + 1, &block)
-    else
-      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
-      raise
-    end
-  end
-
   def self.transactions
     with_retry 'transactions' do
       Bitfinex::Client.new.trades.collect do |t|
-        Hashie::Mash.new({
-          tid: t['tid'].to_i,
-          price: t['price'],
-          amount: t['amount'],
-          date: t['timestamp']
-        })
+        Hashie::Mash.new(tid: t['tid'].to_i, price: t['price'], amount: t['amount'], date: t['timestamp'])
       end
     end
   end
@@ -86,14 +85,15 @@ class BitfinexApiWrapper
     end
   end
 
-  def self.find_lost(order_method, price)
-    raise 'Not Implemented Method'
-  end
+  # We don't need to fetch the list of transactions for bitfinex
+  def self.user_transactions; []; end
 
-  # We don't need to fetch the list of transactions
-  # for bitfinex
-  def self.user_transactions
-    []
+  def self.place_order(type, price, quantity)
+    with_retry "place order #{type} #{price} #{quantity}" do
+      order_data = Bitfinex::Client.new
+        .new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
+      BitfinexOrder.new(order_data)
+    end
   end
 
   def self.amount_and_quantity(order_id, transactions)
@@ -103,26 +103,18 @@ class BitfinexApiWrapper
     end
   end
 
-  def self.place_order(type, price, quantity)
-    with_retry "place order #{type} #{price} #{quantity}" do
-      order_data = Bitfinex::Client.new
-        .new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
-      BitfinexOrder.new(order_data)
+  private
+
+  def self.with_retry(action, retries = 0, &block)
+    block.call
+  rescue StandardError, Bitfinex::ClientError => e
+    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
+    BitexBot::Robot.sleep_for 5
+    if retries < max_retries
+      with_retry(action, retries + 1, &block)
+    else
+      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+      raise
     end
-  end
-end
-
-class BitfinexOrder
-  attr_accessor :id, :amount, :price, :type, :datetime
-  def initialize(order_data)
-    self.id = order_data['id'].to_i
-    self.amount = order_data['original_amount'].to_d
-    self.price = order_data['price'].to_d
-    self.type = order_data['side'].to_sym
-    self.datetime = order_data['timestamp'].to_i
-  end
-
-  def cancel!
-    Bitfinex::Client.new.cancel_orders(id)
   end
 end

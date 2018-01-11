@@ -1,19 +1,17 @@
-class ItbitApiWrapper
+class ItbitApiWrapper < ApiWrapper
   def self.setup(settings)
-    Itbit.client_key = settings.itbit.client_key
-    Itbit.secret = settings.itbit.secret
-    Itbit.user_id = settings.itbit.user_id
-    Itbit.default_wallet_id = settings.itbit.default_wallet_id
-    Itbit.sandbox = settings.sandbox
+    Itbit.tap do |conf|
+      conf.client_key = settings.itbit.client_key
+      conf.secret = settings.itbit.secret
+      conf.user_id = settings.itbit.user_id
+      conf.default_wallet_id = settings.itbit.default_wallet_id
+      conf.sandbox = settings.sandbox
+    end
   end
 
-  def self.transactions
-    Itbit::XBTUSDMarketData.trades.collect{ |t| Hashie::Mash.new(t) }
-  end
+  def self.transactions; Itbit::XBTUSDMarketData.trades.collect{ |t| Hashie::Mash.new(t) }; end
 
-  def self.order_book
-    Itbit::XBTUSDMarketData.orders.stringify_keys
-  end
+  def self.order_book; Itbit::XBTUSDMarketData.orders.stringify_keys; end
 
   def self.balance
     balances = Itbit::Wallet.all.find{ |w| w[:id] == Itbit.default_wallet_id }[:balances]
@@ -30,9 +28,7 @@ class ItbitApiWrapper
     }
   end
 
-  def self.orders
-    Itbit::Order.all(status: :open)
-  end
+  def self.orders; Itbit::Order.all(status: :open); end
 
   def self.find_lost(order_method, price)
     orders.find do |o|
@@ -42,34 +38,28 @@ class ItbitApiWrapper
     end
   end
 
-  # We don't need to fetch the list of transactions
-  # for itbit since we wont actually use them later.
-  def self.user_transactions
-    []
-  end
-
-  def self.amount_and_quantity(order_id, transactions)
-    order = Itbit::Order.find(order_id)
-    [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
-  end
+  # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
+  def self.user_transactions; []; end
 
   def self.place_order(type, price, quantity)
     Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
   rescue RestClient::RequestTimeout => e
-    # On timeout errors, we still look for the latest active closing order
-    # that may be available. We have a magic threshold of 5 minutes
-    # and also use the price to recognize an order as the current one.
+    # On timeout errors, we still look for the latest active closing order that may be available.
+    # We have a magic threshold of 5 minutes and also use the price to recognize an order as the
+    # current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
     BitexBot::Robot.logger.error('Captured Timeout on itbit')
     latest = Itbit::Order.all.select do |o|
       o.price == price && (o.created_time - Time.now.to_i).abs < 500
     end.first
 
-    if latest.present?
-      latest
-    else
-      BitexBot::Robot.logger.error('Could not find my order')
-      raise e
-    end
+    return latest if latest.present?
+    BitexBot::Robot.logger.error('Could not find my order')
+    raise e
+  end
+
+  def self.amount_and_quantity(order_id, transactions)
+    order = Itbit::Order.find(order_id)
+    [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
   end
 end

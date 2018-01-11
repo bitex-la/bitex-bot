@@ -1,43 +1,20 @@
 require 'kraken_client'
 
-class KrakenApiWrapper
+class KrakenApiWrapper < ApiWrapper
   def self.setup(settings)
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
     @settings = settings.kraken
   end
 
-  def self.client
-    @client ||= KrakenClient.load(@settings)
-  end
-
-  # {
-  #   tid:i,
-  #   date: (i+1).seconds.ago.to_i.to_s,
-  #   price: price.to_s,
-  #   amount: amount.to_s
-  # }
   def self.transactions
     client.public.trades('XBTUSD')[:XXBTZUSD].reverse.collect do |t|
-      Hashie::Mash.new({
-        tid: t[2].to_s,
-        price: t[0],
-        amount: t[1],
-        date: t[2]
-      })
+      Hashie::Mash.new(tid: t[2].to_s, price: t[0], amount: t[1], date: t[2])
     end
   rescue NoMethodError => e
     retry
   end
 
-  # {
-  #   'timestamp' => DateTime.now.to_i.to_s,
-  #   'bids' =>
-  #     [['30', '3'], ['25', '2'], ['20', '1.5'], ['15', '4'], ['10', '5']],
-  #   'asks' =>
-  #     [['10', '2'], ['15', '3'], ['20', '1.5'], ['25', '3'], ['30', '3']]
-  #  }
   def self.order_book(retries = 20)
-    book = client.public.order_book('XBTUSD')[:XXBTZUSD]
     {
       'bids' => book[:bids].collect{ |b| [ b[0], b[1] ] },
       'asks' => book[:asks].collect{ |a| [ a[0], a[1] ] }
@@ -46,14 +23,8 @@ class KrakenApiWrapper
     retry
   end
 
-  # {
-  #   'btc_balance'=> '10.0', 'btc_reserved'=> '0', 'btc_available'=> '10.0',
-  #   'usd_balance'=> '100.0', 'usd_reserved'=>'0', 'usd_available'=> '100.0',
-  #   'fee'=> '0.5000'
-  # }
   def self.balance
     balances = client.private.balance
-    open_orders = KrakenOrder.open
     sell_orders = open_orders.select{ |o| o.type == :sell }
     btc_reserved = sell_orders.collect{ |o| o.amount - o.executed_amount }.sum
     buy_orders = open_orders - sell_orders
@@ -71,12 +42,7 @@ class KrakenApiWrapper
     retry
   end
 
-  # ask = double(amount: args[:amount], price: args[:price],
-  #   type: 1, id: remote_id, datetime: DateTime.now.to_s)
-  # ask.stub(:cancel!) do
-  def self.orders
-    KrakenOrder.open
-  end
+  def self.orders; KrakenOrder.open; end
 
   def self.find_lost(order_method, price)
     orders.find do |o|
@@ -86,19 +52,22 @@ class KrakenApiWrapper
     end
   end
 
-  # We don't need to fetch the list of transactions
-  # for Kraken
-  def self.user_transactions
-    []
-  end
+  # We don't need to fetch the list of transactions for Kraken
+  def self.user_transactions; []; end
+
+  def self.place_order(type, price, quantity); KrakenOrder.create(type, price, quantity); end
 
   def self.amount_and_quantity(order_id, transactions)
     KrakenOrder.amount_and_quantity(order_id, transactions)
   end
 
-  def self.place_order(type, price, quantity)
-    KrakenOrder.create(type, price, quantity)
-  end
+  private
+
+  def self.client; @client ||= KrakenClient.load(@settings); end
+
+  def self.book; @book ||= client.public.order_book('XBTUSD')[:XXBTZUSD]; end
+
+  def self.open_orders; @open_orders ||= KrakenOrder.open; end
 end
 
 class KrakenOrder
