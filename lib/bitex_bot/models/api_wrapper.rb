@@ -1,5 +1,20 @@
 class ApiWrapper
   Transaction = Struct.new(
+    #:id, # Integer
+    #:price, # Decimal
+    #:amount, # Decimal
+    #:timestamp) # Integer
+    :id, # Integer
+    :order_id, # Integer
+    :price, # Decimal
+    :usd, # Decimal
+    :btc, # Decimal
+    :btc_usd, # Decimal
+    :fee, # Decimal
+    :type, # Integer
+    :timestamp) # Integer 
+
+  Order = Struct.new(
     :id, # Integer
     :price, # Decimal
     :amount, # Decimal

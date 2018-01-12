@@ -25,7 +25,9 @@ class BitstampApiWrapper < ApiWrapper
 
   def self.balance; Bitstamp.balance; end
 
-  def self.orders; Bitstamp.orders.all; end
+  def self.orders
+    Bitstamp.orders.all.map { |o| order_parser(o) }
+  end
 
   def self.find_lost(order_method, price)
     orders.find do |o|
@@ -51,4 +53,11 @@ class BitstampApiWrapper < ApiWrapper
   private
 
   def self.order_is_done?(order); order.nil?; end
+
+  # order = {
+  #   'id': 7, 'price': '1.12', 'amount': '1', 'type': 0, 'datetime': '2013-09-26 23:26:56.84'
+  # }
+  def self.order_parser(order)
+    Order.new(order[:id], order[:price].to_d, order[:amount].to_d, Time.new(order[:datetime].to_i))
+  end
 end
