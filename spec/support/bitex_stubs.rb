@@ -57,9 +57,7 @@ module BitexStubs
   end
 
   def stub_bitex_transactions(*extra_transactions)
-    Bitex::Trade.stub(all: extra_transactions + [
-      build(:bitex_buy), build(:bitex_sell)
-    ])
+    Bitex::Trade.stub(all: extra_transactions + [build(:bitex_buy), build(:bitex_sell)])
   end
 end
 

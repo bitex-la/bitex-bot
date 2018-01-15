@@ -1,7 +1,7 @@
 require 'bundler/setup'
 Bundler.setup
 
-require "bitex_bot/settings"
+require 'bitex_bot/settings'
 BitexBot::Settings.load_test
 require 'bitex_bot'
 require 'factory_bot'

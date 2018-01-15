@@ -2,7 +2,6 @@ require 'spec_helper'
 
 describe BitfinexApiWrapper do
   before(:each) do
-    BitexBot::Robot.stub(taker: 'bitfinex')
     BitexBot::Robot.stub(taker: BitfinexApiWrapper)
     BitfinexApiWrapper.max_retries = 0
     BitexBot::Robot.setup

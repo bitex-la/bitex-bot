@@ -32,7 +32,7 @@ describe BitexBot::Robot do
     stub_bitstamp_balance
     stub_bitstamp_order_book
     stub_bitstamp_transactions
-    stub_bitstamp_user_transactions
+    stub_bitstamp_user_transactions_empty
   end
 
   let(:bot){ BitexBot::Robot.new }

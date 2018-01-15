@@ -62,7 +62,7 @@ describe BitexBot::BuyClosingFlow do
   describe 'when syncinc executed orders' do
     before(:each) do
       stub_bitstamp_sell
-      stub_bitstamp_user_transactions
+      stub_bitstamp_user_transactions_empty
       create :tiny_open_buy
       create :open_buy
     end

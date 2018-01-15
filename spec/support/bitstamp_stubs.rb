@@ -1,18 +1,17 @@
 module BitstampStubs
   def stub_bitstamp_balance(usd = nil, coin = nil, fee = nil)
-    Bitstamp.stub(balance: bitstamp_balance_stub(usd, coin, fee))
-  end
-
-  def bitstamp_balance_stub(usd = nil, coin = nil, fee = nil)
-    {
-      'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
-      'usd_balance' => usd || '100.0', 'usd_reserved' => '0', 'usd_available' => usd || '100.0',
-      'fee' => fee || '0.5000'
-    }
+    Bitstamp.stub(balance: bitstamp_balance(usd, coin, fee))
   end
 
   def stub_bitstamp_order_book
     Bitstamp.stub(order_book: bitstamp_order_book_stub)
+  end
+
+  # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
+  def stub_bitstamp_orders
+    Bitstamp.orders.stub(:all) do
+      [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
+    end
   end
 
   def bitstamp_order_book_stub
@@ -29,18 +28,25 @@ module BitstampStubs
     Bitstamp.stub(transactions: bitstamp_transactions_stub(volume))
   end
 
+  # [<Bitstamp::Transactions @date="1380648951", @tid=14, @price="1.9", @amount="1.1">]
   def bitstamp_transactions_stub(price = 30, amount = 1)
     transactions = 5.times.collect do |i|
-      double(
-        tid:i,
-        date: (i+1).seconds.ago.to_i.to_s,
-        price: price.to_s,
-        amount: amount.to_s
-      )
+      double(tid:i, date: (i+1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s)
     end
   end
 
+  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @usd="0.00", @btc="-3.078", @btc_usd="0.00",
+  #   @fee="0.00", @type=1, @datetime="2013-09-26 13:46:59">]
   def stub_bitstamp_user_transactions
+    Bitstamp.user_transactions.stub(:all) do
+      [
+        double(usd: '0.00', btc: '-3.00781124', btc_usd: '0.00', order_id: 14, fee: '0.00',
+         type: 1, id: 14, datetime: '2013-09-26 13:46:59')
+      ]
+    end
+  end
+
+  def stub_bitstamp_user_transactions_empty
     Bitstamp.stub(user_transactions: double(all: []))
   end
 
@@ -59,10 +65,9 @@ module BitstampStubs
     end
     Bitstamp.stub(user_transactions: double(all: transactions))
 
-    if ratio == 1
-      stub_bitstamp_sell
-      stub_bitstamp_buy
-    end
+    return unless ratio == 1
+    stub_bitstamp_sell
+    stub_bitstamp_buy
   end
 
   def ensure_bitstamp_orders_stub
@@ -105,6 +110,16 @@ module BitstampStubs
       stub_bitstamp_buy(remote_id + 1, Bitstamp.orders.all + [bid])
       bid
     end
+  end
+
+  private
+
+  def bitstamp_balance(usd = nil, coin = nil, fee = nil)
+    {
+      'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
+      'usd_balance' => usd || '100.0', 'usd_reserved' => '0', 'usd_available' => usd || '100.0',
+      'fee' => fee || '0.5'
+    }
   end
 end
 

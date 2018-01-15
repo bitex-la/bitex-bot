@@ -7,13 +7,15 @@ class BitstampApiWrapper < ApiWrapper
     end
   end
 
-  def self.transactions; Bitstamp.transactions; end
+  def self.transactions
+    Bitstamp.transactions.map { |t| transaction_parser(t) }
+  end
 
   def self.order_book(retries = 20)
     book = Bitstamp.order_book
     age = Time.now.to_i - book['timestamp'].to_i
 
-    return book unless age > 300
+    return order_book_parser(book) if age <= 300
     BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
     self.order_book(retries)
   rescue StandardError => e
@@ -23,7 +25,9 @@ class BitstampApiWrapper < ApiWrapper
     self.order_book(retries - 1)
   end
 
-  def self.balance; Bitstamp.balance; end
+  def self.balance
+    balance_summary_parser(Bitstamp.balance)
+  end
 
   def self.orders
     Bitstamp.orders.all.map { |o| order_parser(o) }
@@ -37,7 +41,9 @@ class BitstampApiWrapper < ApiWrapper
     end
   end
 
-  def self.user_transactions; Bitstamp.user_transactions.all; end
+  def self.user_transactions
+    Bitstamp.user_transactions.all.map{ |ut| user_transaction_parser(ut) }
+  end
 
   def self.place_order(type, price, quantity)
     Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
@@ -52,12 +58,41 @@ class BitstampApiWrapper < ApiWrapper
 
   private
 
-  def self.order_is_done?(order); order.nil?; end
+  def self.order_is_done?(o); o.nil?; end
 
-  # order = {
-  #   'id': 7, 'price': '1.12', 'amount': '1', 'type': 0, 'datetime': '2013-09-26 23:26:56.84'
-  # }
-  def self.order_parser(order)
-    Order.new(order[:id], order[:price].to_d, order[:amount].to_d, Time.new(order[:datetime].to_i))
+  def self.order_parser(o)
+    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.datetime).to_time.to_i)
+  end
+
+  def self.transaction_parser(t)
+    Transaction.new(t.tid, t.price.to_d, t.amount.to_d, t.date.to_i)
+  end
+
+  def self.order_book_parser(ob)
+    OrderBook.new(
+      ob['timestamp'].to_i,
+      ob['bids'].map{ |b| OrderSummary.new(b[0].to_d, b[1].to_d) },
+      ob['asks'].map{ |a| OrderSummary.new(a[0].to_d, a[1].to_d) }
+    )
+  end
+
+  def self.balance_summary_parser(b)
+    BalanceSummary.new(
+      Balance.new(b['btc_balance'].to_d, b['btc_reserved'].to_d, b['btc_available'].to_d),
+      Balance.new(b['usd_balance'].to_d, b['usd_reserved'].to_d, b['usd_available'].to_d),
+      b['fee'].to_d
+    )
+  end
+
+  def self.user_transaction_parser(ut)
+    UserTransaction.new(
+      ut.usd.to_d,
+      ut.btc.to_d,
+      ut.btc_usd.to_d,
+      ut.order_id,
+      ut.fee.to_d,
+      ut.type,
+      Time.new(ut.datetime.to_i).to_i
+    )
   end
 end
