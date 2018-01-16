@@ -6,7 +6,7 @@
 # the last price seen, which is the 'safest' price at which we can expect this
 # order to get executed quickly.
 class BitexBot::OrderBookSimulator
-  
+
   # @param volatility [Integer] How many seconds of recent volume we need to
   #   skip from the start of the order book to be more certain that our order
   #   will get executed.
@@ -28,11 +28,11 @@ class BitexBot::OrderBookSimulator
     BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
     seen = 0
     safest_price = 0
-    
+
     order_book.each do |price, quantity|
       price = price.to_d
       quantity = quantity.to_d
-      
+
       # An order may be partially or completely skipped due to volatility.
       if to_skip > 0
         dropped = [quantity, to_skip].min
@@ -41,11 +41,10 @@ class BitexBot::OrderBookSimulator
         BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
         next if quantity == 0
       end
-      
+
       if quantity_target
         if quantity >= (quantity_target - seen)
-          BitexBot::Robot.logger.debug("Best price to get "\
-            "#{quantity_target} BTC is $#{price}")
+          BitexBot::Robot.logger.debug("Best price to get #{quantity_target} BTC is $#{price}")
           return price
         else
           seen += quantity
@@ -53,25 +52,24 @@ class BitexBot::OrderBookSimulator
       elsif amount_target
         amount = price * quantity
         if amount >= (amount_target - seen)
-          BitexBot::Robot.logger.debug("Best price to get "\
-            "$#{amount_target} is $#{price}")
+          BitexBot::Robot.logger.debug("Best price to get $#{amount_target} is $#{price}")
           return price
         else
           seen += amount
         end
       end
     end
-    
-    return order_book.last.first.to_d
+
+    order_book.last.first.to_d
   end
 
-private
+  private
 
   def self.estimate_quantity_to_skip(volatility, transactions)
     threshold = transactions.first.date.to_i - volatility
     transactions
-      .select{|t| t.date.to_i > threshold}
-      .collect{|t| t.amount.to_d }
+      .select{ |t| t.date.to_i > threshold }
+      .collect{ |t| t.amount.to_d }
       .sum
   end
 end

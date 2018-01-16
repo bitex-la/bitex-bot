@@ -2,66 +2,66 @@ require 'spec_helper'
 
 describe BitexBot::SellOpeningFlow do
   before(:each) do
-    Bitex.api_key = "valid_key"
+    Bitex.api_key = 'valid_key'
   end
+
   let(:store){ BitexBot::Store.create }
 
   it { should validate_presence_of :status }
   it { should validate_presence_of :price }
   it { should validate_presence_of :value_to_use }
   it { should validate_presence_of :order_id }
-  it { should(validate_inclusion_of(:status)
-    .in_array(BitexBot::SellOpeningFlow.statuses)) }
+  it { should(validate_inclusion_of(:status).in_array(BitexBot::SellOpeningFlow.statuses)) }
 
-  describe "when creating a selling flow" do
-    it "sells 2 bitcoin" do
+  describe 'when creating a selling flow' do
+    it 'sells 2 bitcoin' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 2, profit: 0))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
-      
+
       flow.value_to_use.should == 2
       flow.price.should >= flow.suggested_closing_price
-      flow.price.should == "20.15037593984962".to_d
+      flow.price.should == '20.15037593984962'.to_d
       flow.suggested_closing_price.should == 20
       flow.order_id.should == 12345
     end
 
-    it "sells 4 bitcoin" do
+    it 'sells 4 bitcoin' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 0))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
-      
+
       flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
-      flow.price.round(14).should == "25.18796992481203".to_d
+      flow.price.round(14).should == '25.18796992481203'.to_d
       flow.suggested_closing_price.should == 25
       flow.order_id.should == 12345
     end
-    
-    it "raises the price to charge on bitex to take a profit" do
+
+    it 'raises the price to charge on bitex to take a profit' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
-      
+
       flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
-      flow.price.round(14).should == "37.78195488721804".to_d
+      flow.price.round(14).should == '37.78195488721804'.to_d
       flow.suggested_closing_price.should == 25
       flow.order_id.should == 12345
     end
-    
-    it "fails when there is a problem placing the ask on bitex" do
-      Bitex::Ask.stub(:create!) do 
-        raise StandardError.new("Cannot Create")
+
+    it 'fails when there is a problem placing the ask on bitex' do
+      Bitex::Ask.stub(:create!) do
+        raise StandardError.new('Cannot Create')
       end
 
       BitexBot::Settings.stub(time_to_live: 3,
@@ -74,8 +74,8 @@ describe BitexBot::SellOpeningFlow do
         BitexBot::SellOpeningFlow.count.should == 0
       end.to raise_exception(BitexBot::CannotCreateFlow)
     end
-    
-    it "fails when there are not enough USD to re-buy in the other exchange" do
+
+    it 'fails when there are not enough USD to re-buy in the other exchange' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
@@ -88,7 +88,7 @@ describe BitexBot::SellOpeningFlow do
       end.to raise_exception(BitexBot::CannotCreateFlow)
     end
 
-    it "Prioritizes profit from store" do
+    it 'Prioritizes profit from store' do
       store = BitexBot::Store.new(selling_profit: 0.5)
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
@@ -96,12 +96,12 @@ describe BitexBot::SellOpeningFlow do
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
-      
-      flow.price.round(14).should == "20.25112781954887".to_d
+
+      flow.price.round(14).should == '20.25112781954887'.to_d
     end
   end
-  
-  describe "when fetching open positions" do
+
+  describe 'when fetching open positions' do
     let(:flow){ create(:sell_opening_flow) }
 
     it 'only gets sells' do
@@ -119,7 +119,7 @@ describe BitexBot::SellOpeningFlow do
         end
       end.to change{ BitexBot::OpenSell.count }.by(1)
     end
-    
+
     it 'does not register the same buy twice' do
       flow.order_id.should == 12345
       stub_bitex_transactions
@@ -132,7 +132,7 @@ describe BitexBot::SellOpeningFlow do
         news.first.transaction_id.should == 23456
       end.to change{ BitexBot::OpenSell.count }.by(1)
     end
-    
+
     it 'does not register litecoin buys' do
       flow.order_id.should == 12345
       Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
@@ -141,7 +141,7 @@ describe BitexBot::SellOpeningFlow do
       end.not_to change{ BitexBot::OpenSell.count }
       BitexBot::OpenSell.count.should == 0
     end
-    
+
     it 'does not register buys from unknown bids' do
       stub_bitex_transactions
       expect do
@@ -149,7 +149,7 @@ describe BitexBot::SellOpeningFlow do
       end.not_to change{ BitexBot::OpenSell.count }
     end
   end
-  
+
   it 'cancels the associated bitex bid' do
     stub_bitex_orders
     BitexBot::Settings.stub(time_to_live: 3,
@@ -157,7 +157,7 @@ describe BitexBot::SellOpeningFlow do
 
     flow = BitexBot::SellOpeningFlow.create_for_market(1000,
       bitstamp_order_book_stub['asks'], bitstamp_transactions_stub, 0.5, 0.25, store)
-    
+
     flow.finalise!
     flow.should be_settling
     flow.finalise!

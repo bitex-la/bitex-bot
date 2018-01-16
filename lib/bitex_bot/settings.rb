@@ -22,7 +22,7 @@ module BitexBot
       end
       load_settings(path)
     end
-    
+
     def load_test
       load_settings File.expand_path('../../../settings.rb.sample', __FILE__)
     end

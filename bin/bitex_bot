@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require "bitex_bot/settings"
+require 'bitex_bot/settings'
 BitexBot::Settings.load_default
 
 require 'bitex_bot'

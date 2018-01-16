@@ -1,4 +1,4 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :buy_opening_flow, class: BitexBot::BuyOpeningFlow do
     price 300.0
     value_to_use 600.0

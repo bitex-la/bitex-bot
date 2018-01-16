@@ -1,7 +1,7 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :bitex_sell, class: Bitex::Sell do
     id 12345678
-    created_at{ Time.now }
+    created_at { Time.now }
     specie :btc
     quantity 2.0
     amount 600.0

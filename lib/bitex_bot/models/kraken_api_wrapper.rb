@@ -10,12 +10,12 @@ class KrakenApiWrapper
     @client ||= KrakenClient.load(@settings)
   end
 
-  #{
-  #  tid:i,
-  #  date: (i+1).seconds.ago.to_i.to_s,
-  #  price: price.to_s,
-  #  amount: amount.to_s
-  #}
+  # {
+  #   tid:i,
+  #   date: (i+1).seconds.ago.to_i.to_s,
+  #   price: price.to_s,
+  #   amount: amount.to_s
+  # }
   def self.transactions
     client.public.trades('XBTUSD')[:XXBTZUSD].reverse.collect do |t|
       Hashie::Mash.new({
@@ -29,31 +29,37 @@ class KrakenApiWrapper
     retry
   end
 
-  #  { 'timestamp' => DateTime.now.to_i.to_s,
-  #    'bids' =>
-  #      [['30', '3'], ['25', '2'], ['20', '1.5'], ['15', '4'], ['10', '5']],
-  #    'asks' =>
-  #      [['10', '2'], ['15', '3'], ['20', '1.5'], ['25', '3'], ['30', '3']]
+  # {
+  #   'timestamp' => DateTime.now.to_i.to_s,
+  #   'bids' =>
+  #     [['30', '3'], ['25', '2'], ['20', '1.5'], ['15', '4'], ['10', '5']],
+  #   'asks' =>
+  #     [['10', '2'], ['15', '3'], ['20', '1.5'], ['25', '3'], ['30', '3']]
   #  }
   def self.order_book(retries = 20)
     book = client.public.order_book('XBTUSD')[:XXBTZUSD]
-    { 'bids' => book[:bids].collect { |b| [ b[0], b[1] ] },
-      'asks' => book[:asks].collect { |a| [ a[0], a[1] ] } }
+    {
+      'bids' => book[:bids].collect{ |b| [ b[0], b[1] ] },
+      'asks' => book[:asks].collect{ |a| [ a[0], a[1] ] }
+    }
   rescue NoMethodError => e
     retry
   end
 
-  # {"btc_balance"=> "10.0", "btc_reserved"=> "0", "btc_available"=> "10.0",
-  # "usd_balance"=> "100.0", "usd_reserved"=>"0", "usd_available"=> "100.0",
-  # "fee"=> "0.5000"}
+  # {
+  #   'btc_balance'=> '10.0', 'btc_reserved'=> '0', 'btc_available'=> '10.0',
+  #   'usd_balance'=> '100.0', 'usd_reserved'=>'0', 'usd_available'=> '100.0',
+  #   'fee'=> '0.5000'
+  # }
   def self.balance
     balances = client.private.balance
     open_orders = KrakenOrder.open
-    sell_orders = open_orders.select { |o| o.type == :sell }
-    btc_reserved = sell_orders.collect { |o| o.amount - o.executed_amount }.sum
+    sell_orders = open_orders.select{ |o| o.type == :sell }
+    btc_reserved = sell_orders.collect{ |o| o.amount - o.executed_amount }.sum
     buy_orders = open_orders - sell_orders
-    usd_reserved = buy_orders.collect { |o| (o.amount - o.executed_amount) * o.price }.sum
-    { 'btc_balance' => balances['XXBT'].to_d,
+    usd_reserved = buy_orders.collect{ |o| (o.amount - o.executed_amount) * o.price }.sum
+    {
+      'btc_balance' => balances['XXBT'].to_d,
       'btc_reserved' => btc_reserved,
       'btc_available' => balances['XXBT'].to_d - btc_reserved,
       'usd_balance' => balances['ZUSD'].to_d,
@@ -72,10 +78,18 @@ class KrakenApiWrapper
     KrakenOrder.open
   end
 
+  def self.find_lost(order_method, price)
+    orders.find do |o|
+      o.order_method == order_method &&
+      o.price == price &&
+      o.datetime.to_datetime >= 5.minutes.ago.to_datetime
+    end
+  end
+
   # We don't need to fetch the list of transactions
   # for Kraken
   def self.user_transactions
-    [ ]
+    []
   end
 
   def self.amount_and_quantity(order_id, transactions)
@@ -110,7 +124,7 @@ class KrakenOrder
     if order.is_a?(self.class)
       id == order.id
     elsif order.is_a?(Array)
-      [ type, price, amount ] == order
+      [type, price, amount] == order
     end
   end
 
@@ -126,17 +140,17 @@ class KrakenOrder
 
   def self.amount_and_quantity(order_id, transactions)
     order = find(order_id)
-    [ order.avg_price * order.executed_amount, order.executed_amount ]
+    [order.avg_price * order.executed_amount, order.executed_amount]
   end
 
   def self.open
-    client.private.open_orders['open'].collect { |o| new(*o) }
+    client.private.open_orders['open'].collect{ |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
 
   def self.closed(start: 1.hour.ago.to_i)
-    client.private.closed_orders(start: start)[:closed].collect { |o| new(*o) }
+    client.private.closed_orders(start: start)[:closed].collect{ |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
@@ -145,13 +159,13 @@ class KrakenOrder
     order_descr = [ type, price, quantity ]
 
     BitexBot::Robot.logger.debug("Looking for #{type} order in open orders...")
-    if order = self.open.detect { |o| o == order_descr }
+    if order = self.open.detect{ |o| o == order_descr }
       BitexBot::Robot.logger.debug("Found open order with ID #{order.id}")
       return order
     end
 
     BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
-    order = closed(start: last_closed_order).detect { |o| o == order_descr }
+    order = closed(start: last_closed_order).detect{ |o| o == order_descr }
     if order && order.id != last_closed_order
       BitexBot::Robot.logger.debug("Found closed order with ID #{order.id}")
       return order
@@ -179,9 +193,9 @@ class KrakenOrder
     # Order may have gone through and be stuck somewhere in Kraken's
     # pipeline. We just sleep for a bit and then look for the order.
     8.times do
-      sleep 15
+      BitexBot::Robot.sleep_for 15
       order = find_lost(type, price, quantity, last_closed_order)
-      return order if order
+      return order if order.present?
     end
     raise
   end

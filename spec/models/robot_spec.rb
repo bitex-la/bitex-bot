@@ -4,12 +4,8 @@ describe BitexBot::Robot do
   before(:each) do
     BitexBot::Settings.stub(
       time_to_live: 10,
-      buying: double(
-        amount_to_spend_per_order: 50,
-        profit: 0),
-      selling: double(
-        quantity_to_sell_per_order: 1,
-        profit: 0),
+      buying: double(amount_to_spend_per_order: 50, profit: 0),
+      selling: double(quantity_to_sell_per_order: 1, profit: 0),
       mailer: double(
         from: 'test@test.com',
         to: 'test@test.com',
@@ -17,7 +13,7 @@ describe BitexBot::Robot do
         options: {}
       )
     )
-    Bitex.api_key = "valid_key"
+    Bitex.api_key = 'valid_key'
     Bitex::Profile.stub(get: {
       fee: 0.5,
       usd_balance:       10000.00,   # Total USD balance
@@ -38,6 +34,7 @@ describe BitexBot::Robot do
     stub_bitstamp_transactions
     stub_bitstamp_user_transactions
   end
+
   let(:bot){ BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
@@ -49,7 +46,7 @@ describe BitexBot::Robot do
 
     Timecop.travel 10.minutes.from_now
     bot.trade!
- 
+
     buying.reload.should be_settling
     selling.reload.should be_settling
 
@@ -57,7 +54,7 @@ describe BitexBot::Robot do
     buying.reload.should be_finalised
     selling.reload.should be_finalised
   end
-  
+
   it 'creates alternating opening flows' do
     Bitex::Trade.stub(all: [])
     bot.trade!
@@ -68,7 +65,7 @@ describe BitexBot::Robot do
     Timecop.travel 5.seconds.from_now
     bot.trade!
     BitexBot::BuyOpeningFlow.active.count.should == 2
-    
+
     # When transactions appear, all opening flows
     # should get old and die.
     # We stub our finder to make it so all orders
@@ -103,7 +100,7 @@ describe BitexBot::Robot do
       bot.should_not be_active_closing_flows
     end.to change{ BitexBot::BuyOpeningFlow.count }.by(1)
   end
-  
+
   it 'does not place new opening flows when ordered to hold' do
     other_bot = BitexBot::Robot.new
     other_bot.store.hold = true
@@ -170,13 +167,13 @@ describe BitexBot::Robot do
       bot.trade!
     end.to change{ Mail::TestMailer.deliveries.count }.by(1)
   end
-  
+
   it 'updates taker_usd and taker_btc' do
     bot.trade!
     bot.store.taker_usd.should_not be_nil
     bot.store.taker_btc.should_not be_nil
   end
- 
+
   it 'notifies exceptions and sleeps' do
     Bitstamp.stub(:balance) do
       raise StandardError.new('oh moova')
@@ -184,10 +181,5 @@ describe BitexBot::Robot do
     expect do
       bot.trade!
     end.to change{ Mail::TestMailer.deliveries.count }.by(1)
-  end
-
-  it 'knows how to setup sandbox mode for both gems' do
-    pending
-    fail
   end
 end

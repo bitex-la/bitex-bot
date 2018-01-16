@@ -1,4 +1,4 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :open_buy, class: BitexBot::OpenBuy do
     price 300.0
     amount 600.0
@@ -6,7 +6,7 @@ FactoryGirl.define do
     transaction_id 12345678
     association :opening_flow, factory: :buy_opening_flow 
   end
-  
+
   factory :tiny_open_buy, class: BitexBot::OpenBuy do
     price 400.0
     amount 4.0

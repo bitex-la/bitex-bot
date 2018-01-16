@@ -10,18 +10,18 @@ module BitexBot
   #
   # A SellOpeningFlow can be cancelled at any point, which will cancel the Bitex
   # order and any orders on the remote exchange created from its OpenSell's
-  # 
+  #
   # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on Bitex,
-  #   this is its unique id. 
+  #   this is its unique id.
   class SellOpeningFlow < OpeningFlow
-    
+
     # Start a workflow for selling bitcoin on bitex and buying on the other
     # exchange. The quantity to be sold on bitex is retrieved from Settings, if
     # there is not enough BTC on bitex or USD on the other exchange then no
     # order will be placed and an exception will be raised instead.
     # The amount a SellOpeningFlow will try to sell and the price it will try to
     # charge are derived from these parameters:
-    # 
+    #
     # @param usd_balance [BigDecimal] amount of usd available in the other
     #   exchange that can be spent to balance this sale.
     # @param order_book [[price, quantity]] a list of lists representing an ask
@@ -42,41 +42,31 @@ module BitexBot
       bitex_fee, other_fee, store)
       super
     end
-    
-    def self.open_position_class
-      OpenSell
-    end
-    
-    def self.transaction_class
-      Bitex::Sell
-    end
-    
-    def self.transaction_order_id(transaction)
-      transaction.ask_id
-    end
 
-    def self.order_class
-      Bitex::Ask
-    end
+    def self.open_position_class; OpenSell; end
+
+    def self.transaction_class; Bitex::Sell; end
+
+    def self.transaction_order_id(transaction); transaction.ask_id; end
+
+    def self.order_class; Bitex::Ask; end
 
     def self.value_to_use
       store.selling_quantity_to_sell_per_order || Settings.selling.quantity_to_sell_per_order
     end
-    
+
     def self.get_safest_price(transactions, order_book, bitcoins_to_use)
       OrderBookSimulator.run(Settings.time_to_live, transactions,
         order_book, nil, bitcoins_to_use)
     end
-      
+
     def self.get_remote_value_to_use(value_to_use_needed, safest_price)
       value_to_use_needed * safest_price
     end
 
-    def self.profit
-      store.selling_profit || Settings.selling.profit
-    end
-    
-    def self.get_bitex_price(btc_to_sell, usd_to_spend_re_buying) 
+    def self.profit; store.selling_profit || Settings.selling.profit; end
+
+    def self.get_bitex_price(btc_to_sell, usd_to_spend_re_buying)
      (usd_to_spend_re_buying / btc_to_sell) * (1 + profit / 100.0)
     end
   end
