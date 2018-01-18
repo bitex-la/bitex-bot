@@ -9,9 +9,13 @@ class ItbitApiWrapper < ApiWrapper
     end
   end
 
-  def self.transactions; Itbit::XBTUSDMarketData.trades.collect{ |t| Hashie::Mash.new(t) }; end
+  def self.transactions
+    Itbit::XBTUSDMarketData.trades.collect{ |t| Hashie::Mash.new(t) }
+  end
 
-  def self.order_book; Itbit::XBTUSDMarketData.orders.stringify_keys; end
+  def self.order_book
+    Itbit::XBTUSDMarketData.orders.stringify_keys
+  end
 
   def self.balance
     balances = Itbit::Wallet.all.find{ |w| w[:id] == Itbit.default_wallet_id }[:balances]

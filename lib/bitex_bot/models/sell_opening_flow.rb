@@ -38,33 +38,41 @@ module BitexBot
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for
     #   example when you run out of BTC on bitex or out of USD on the other
     #   exchange.
-    def self.create_for_market(usd_balance, order_book, transactions,
-      bitex_fee, other_fee, store)
+    def self.create_for_market(usd_balance, order_book, transactions, bitex_fee, other_fee, store)
       super
     end
 
-    def self.open_position_class; OpenSell; end
+    def self.open_position_class
+      OpenSell
+    end
 
-    def self.transaction_class; Bitex::Sell; end
+    def self.transaction_class
+      Bitex::Sell
+    end
 
-    def self.transaction_order_id(transaction); transaction.ask_id; end
+    def self.transaction_order_id(transaction)
+      transaction.ask_id
+    end
 
-    def self.order_class; Bitex::Ask; end
+    def self.order_class
+      Bitex::Ask
+    end
 
     def self.value_to_use
       store.selling_quantity_to_sell_per_order || Settings.selling.quantity_to_sell_per_order
     end
 
     def self.get_safest_price(transactions, order_book, bitcoins_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions,
-        order_book, nil, bitcoins_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, nil, bitcoins_to_use)
     end
 
     def self.get_remote_value_to_use(value_to_use_needed, safest_price)
       value_to_use_needed * safest_price
     end
 
-    def self.profit; store.selling_profit || Settings.selling.profit; end
+    def self.profit
+      store.selling_profit || Settings.selling.profit
+    end
 
     def self.get_bitex_price(btc_to_sell, usd_to_spend_re_buying)
      (usd_to_spend_re_buying / btc_to_sell) * (1 + profit / 100.0)

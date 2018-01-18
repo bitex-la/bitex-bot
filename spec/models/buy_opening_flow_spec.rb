@@ -1,11 +1,9 @@
 require 'spec_helper'
 
 describe BitexBot::BuyOpeningFlow do
-  before(:each) do
-    Bitex.api_key = 'valid_key'
-  end
+  before(:each) { Bitex.api_key = 'valid_key' }
 
-  let(:store){ BitexBot::Store.create }
+  let(:store) { BitexBot::Store.create }
 
   it { should validate_presence_of :status }
   it { should validate_presence_of :price }
@@ -20,13 +18,14 @@ describe BitexBot::BuyOpeningFlow do
         buying: double(amount_to_spend_per_order: 50, profit: 0))
 
       flow = BitexBot::BuyOpeningFlow.create_for_market(100,
-        bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+        bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+        store)
 
+      flow.order_id.should == 12345
       flow.value_to_use.should == 50
       flow.price.should <= flow.suggested_closing_price
       flow.price.round(14).should == '19.85074626865672'.to_d
       flow.suggested_closing_price.should == 20
-      flow.order_id.should == 12345
     end
 
     it 'spends 100 usd' do
@@ -35,12 +34,14 @@ describe BitexBot::BuyOpeningFlow do
         buying: double(amount_to_spend_per_order: 100, profit: 0))
 
       flow = BitexBot::BuyOpeningFlow.create_for_market(100000,
-        bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+        bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+        store)
+
+      flow.order_id.should == 12345
       flow.value_to_use.should == 100
       flow.price.should <= flow.suggested_closing_price
       flow.price.should == '14.88805970149254'.to_d
       flow.suggested_closing_price.should == 15
-      flow.order_id.should == 12345
     end
 
     it 'lowers the price to pay on bitex to take a profit' do
@@ -49,25 +50,27 @@ describe BitexBot::BuyOpeningFlow do
         buying: double(amount_to_spend_per_order: 100, profit: 50))
 
       flow = BitexBot::BuyOpeningFlow.create_for_market(100000,
-        bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+        bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+        store)
+
+      flow.order_id.should == 12345
       flow.value_to_use.should == 100
       flow.price.should <= flow.suggested_closing_price
       flow.price.round(15).should == '7.44402985074627'.to_d
       flow.suggested_closing_price.should == 15
-      flow.order_id.should == 12345
     end
 
     it 'fails when there is a problem placing the bid on bitex' do
-      Bitex::Bid.stub(:create!) do
-        raise StandardError.new('Cannot Create')
-      end
+      Bitex::Bid.stub(:create!) { raise StandardError.new('Cannot Create') }
 
       BitexBot::Settings.stub(time_to_live: 3,
         buying: double(amount_to_spend_per_order: 100, profit: 0))
 
       expect do
         flow = BitexBot::BuyOpeningFlow.create_for_market(100000,
-          bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+          bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+          store)
+
         flow.should be_nil
         BitexBot::BuyOpeningFlow.count.should == 0
       end.to raise_exception(BitexBot::CannotCreateFlow)
@@ -80,7 +83,9 @@ describe BitexBot::BuyOpeningFlow do
 
       expect do
         flow = BitexBot::BuyOpeningFlow.create_for_market(1,
-          bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+          bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+          store)
+
         flow.should be_nil
         BitexBot::BuyOpeningFlow.count.should == 0
       end.to raise_exception(BitexBot::CannotCreateFlow)
@@ -93,20 +98,23 @@ describe BitexBot::BuyOpeningFlow do
         buying: double(amount_to_spend_per_order: 50, profit: 0))
 
       flow = BitexBot::BuyOpeningFlow.create_for_market(100,
-        bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+        bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+        store)
 
       flow.price.round(13).should == '19.7514925373134'.to_d
     end
   end
 
   describe 'when fetching open positions' do
-    let(:flow){ create(:buy_opening_flow) }
+    let(:flow) { create(:buy_opening_flow) }
 
     it 'only gets buys' do
       flow.order_id.should == 12345
       stub_bitex_transactions
+
       expect do
         all = BitexBot::BuyOpeningFlow.sync_open_positions
+
         all.size.should == 1
         all.first.tap do |o|
           o.price == 300.0
@@ -115,7 +123,7 @@ describe BitexBot::BuyOpeningFlow do
           o.transaction_id.should == 12345678
           o.opening_flow.should == flow
         end
-      end.to change{ BitexBot::OpenBuy.count }.by(1)
+      end.to change { BitexBot::OpenBuy.count }.by(1)
     end
 
     it 'does not register the same buy twice' do
@@ -125,26 +133,29 @@ describe BitexBot::BuyOpeningFlow do
       BitexBot::OpenBuy.count.should == 1
       Timecop.travel 1.second.from_now
       stub_bitex_transactions(build(:bitex_buy, id: 23456))
+
       expect do
         news = BitexBot::BuyOpeningFlow.sync_open_positions
         news.first.transaction_id.should == 23456
-      end.to change{ BitexBot::OpenBuy.count }.by(1)
+      end.to change { BitexBot::OpenBuy.count }.by(1)
     end
 
     it 'does not register litecoin buys' do
       flow.order_id.should == 12345
       Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, specie: :ltc)])
+
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty
-      end.not_to change{ BitexBot::OpenBuy.count }
+      end.not_to change { BitexBot::OpenBuy.count }
       BitexBot::OpenBuy.count.should == 0
     end
 
     it 'does not register buys from unknown bids' do
       stub_bitex_transactions
+
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty
-      end.not_to change{ BitexBot::OpenBuy.count }
+      end.not_to change { BitexBot::OpenBuy.count }
     end
   end
 
@@ -154,7 +165,8 @@ describe BitexBot::BuyOpeningFlow do
       buying: double(amount_to_spend_per_order: 50, profit: 0))
 
     flow = BitexBot::BuyOpeningFlow.create_for_market(100,
-      bitstamp_order_book_stub['bids'], bitstamp_transactions_stub, 0.5, 0.25, store)
+      bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+      store)
 
     flow.finalise!
     flow.should be_settling

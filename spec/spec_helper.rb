@@ -12,7 +12,7 @@ require 'webmock/rspec'
 require 'byebug'
 FactoryBot.find_definitions
 
-Dir[File.dirname(__FILE__) + '/support/*.rb'].each {|file| require file }
+Dir[File.dirname(__FILE__) + '/support/**/*.rb'].each { |file| require file }
 
 # Automatically do rake db:test:prepare
 ActiveRecord::Migration.maintain_test_schema!
@@ -43,7 +43,7 @@ RSpec.configure do |config|
   end
 
   config.after(:each) do
-    DatabaseCleaner.clean       # Truncate the database
+    DatabaseCleaner.clean  # Truncate the database
     Timecop.return
   end
 

@@ -50,19 +50,19 @@ describe BitexBot::BuyClosingFlow do
     open = create :tiny_open_buy
     expect do
       BitexBot::BuyClosingFlow.close_open_positions.should be_nil
-    end.not_to change{ BitexBot::BuyClosingFlow.count }
+    end.not_to change { BitexBot::BuyClosingFlow.count }
   end
 
   it 'does not try to close if there are no open positions' do
     expect do
       BitexBot::BuyClosingFlow.close_open_positions.should be_nil
-    end.not_to change{ BitexBot::BuyClosingFlow.count }
+    end.not_to change { BitexBot::BuyClosingFlow.count }
   end
 
   describe 'when syncinc executed orders' do
     before(:each) do
       stub_bitstamp_sell
-      stub_bitstamp_user_transactions_empty
+      stub_bitstamp_empty_user_transactions
       create :tiny_open_buy
       create :open_buy
     end
@@ -89,7 +89,7 @@ describe BitexBot::BuyClosingFlow do
 
       expect do
         flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
-      end.not_to change{ BitexBot::CloseBuy.count }
+      end.not_to change { BitexBot::CloseBuy.count }
       flow.should_not be_done
 
       # Immediately calling sync again does not try to cancel the ask.
@@ -103,7 +103,7 @@ describe BitexBot::BuyClosingFlow do
       Bitstamp.orders.all.size.should == 1
       expect do
         flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
-      end.not_to change{ BitexBot::CloseBuy.count }
+      end.not_to change { BitexBot::CloseBuy.count }
       Bitstamp.orders.all.size.should == 0
       flow.should_not be_done
 
@@ -112,7 +112,7 @@ describe BitexBot::BuyClosingFlow do
       # it syncs it's total amounts and tries to place a new one.
       expect do
         flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
-      end.to change{ BitexBot::CloseBuy.count }.by(1)
+      end.to change { BitexBot::CloseBuy.count }.by(1)
       flow.close_positions.first.tap do |close|
         close.amount.should == '312.0525'.to_d
         close.quantity.should == 1.005
@@ -139,7 +139,7 @@ describe BitexBot::BuyClosingFlow do
 
       expect do
         flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
-      end.not_to change{ BitexBot::CloseBuy.count }
+      end.not_to change { BitexBot::CloseBuy.count }
 
       flow.should be_done
       flow.btc_profit.should == 0.00201

@@ -67,7 +67,7 @@ module BitexBot
       end
 
       order_id = latest_close.order_id.to_s
-      order = orders.find{ |o| o.id.to_s == order_id }
+      order = orders.find { |o| o.id.to_s == order_id }
 
       # When order is nil it means the other exchange is done executing it
       # so we can now have a look of all the sales that were spawned from it.
@@ -104,9 +104,13 @@ module BitexBot
     # amount permitted by the other exchange.
     # If the other order is less than this USD amount then we do not attempt
     # to close the positions yet.
-    def self.minimum_amount_for_closing; 5; end
+    def self.minimum_amount_for_closing
+      5
+    end
 
-    def self.close_time_to_live; 30; end
+    def self.close_time_to_live
+      30
+    end
   end
 
   class OrderNotFound < StandardError; end
