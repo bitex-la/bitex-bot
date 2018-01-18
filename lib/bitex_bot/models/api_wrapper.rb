@@ -61,6 +61,11 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 
+  # @return [nil]
+  def self.cancel
+    raise 'self subclass responsibility'
+  end
+
   # @return [Array<Order>]
   def self.orders
     raise 'self subclass responsibility'
@@ -91,3 +96,5 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 end
+
+class ApiWrapperError < StandardError; end

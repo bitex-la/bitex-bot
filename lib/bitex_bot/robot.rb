@@ -91,6 +91,8 @@ module BitexBot
       sleep_for 15
     rescue OrderNotFound => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+    rescue ApiWrapperError => e
+      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for 120
@@ -99,12 +101,12 @@ module BitexBot
     def finalise_some_opening_flows
       [BuyOpeningFlow, SellOpeningFlow].each do |kind|
         flows = self.class.graceful_shutdown ? kind.active : kind.old_active
-        flows.each{ |flow| flow.finalise! }
+        flows.each { |flow| flow.finalise! }
       end
     end
 
     def start_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each{ |kind| kind.close_open_positions }
+      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.close_open_positions }
     end
 
     def open_positions?
@@ -112,11 +114,11 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown{ BitexBot::Robot.taker.orders }
-      transactions = with_cooldown{ BitexBot::Robot.taker.user_transactions }
+      orders = with_cooldown { BitexBot::Robot.taker.orders }
+      transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each{ |flow| flow.sync_closed_positions(orders, transactions) }
+        kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
       end
     end
 
@@ -150,16 +152,16 @@ module BitexBot
         return
       end
 
-      balances = with_cooldown{ BitexBot::Robot.taker.balance }
+      balance = with_cooldown { BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
 
-      total_usd = balances['usd_balance'].to_d + profile[:usd_balance]
-      total_btc = balances['btc_balance'].to_d + profile[:btc_balance]
+      total_usd = balance.usd.total + profile[:usd_balance]
+      total_btc = balance.btc.total + profile[:btc_balance]
 
       last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
 
-      store.update_attributes(taker_usd: balances['usd_balance'],
-        taker_btc: balances['btc_balance'], log: last_log)
+      store.update_attributes(taker_usd: balance.usd.total, taker_btc: balance.btc.total,
+        log: last_log)
 
       if store.last_warning.nil? || store.last_warning < 30.minutes.ago
         if store.usd_warning && total_usd <= store.usd_warning
@@ -185,32 +187,32 @@ module BitexBot
         return
       end
 
-      order_book = with_cooldown{ BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown{ BitexBot::Robot.taker.transactions }
+      order_book = with_cooldown { BitexBot::Robot.taker.order_book }
+      transactions = with_cooldown { BitexBot::Robot.taker.transactions }
 
       unless recent_buying
         BuyOpeningFlow.create_for_market(
-          balances['btc_available'].to_d,
-          order_book['bids'],
+          balance.btc.available,
+          order_book.bids,
           transactions,
           profile[:fee],
-          balances['fee'].to_d,
+          balance.fee,
           store)
       end
 
       unless recent_selling
         SellOpeningFlow.create_for_market(
-          balances['usd_available'].to_d,
-          order_book['asks'],
+          balance.usd.available,
+          order_book.asks,
           transactions,
           profile[:fee],
-          balances['fee'].to_d,
+          balance.fee,
           store)
       end
     end
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each{ |o| o.sync_open_positions }
+      [SellOpeningFlow, BuyOpeningFlow].each { |o| o.sync_open_positions }
     end
 
     def active_opening_flows?

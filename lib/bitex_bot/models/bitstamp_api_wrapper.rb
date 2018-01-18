@@ -9,6 +9,8 @@ class BitstampApiWrapper < ApiWrapper
 
   def self.transactions
     Bitstamp.transactions.map { |t| transaction_parser(t) }
+  rescue StandardError => e
+    raise ApiWrapperError.new("Bitstamp transactions failed: #{e.message}")
   end
 
   def self.order_book(retries = 20)
@@ -27,10 +29,20 @@ class BitstampApiWrapper < ApiWrapper
 
   def self.balance
     balance_summary_parser(Bitstamp.balance)
+  rescue StandardError => e
+    raise ApiWrapperError.new("Bitstamp balance failed: #{e.message}")
+  end
+
+  def self.cancel(order)
+    Bitstamp::Order.new(id: order.id).cancel!
+  rescue StandardError => e
+    raise ApiWrapperError.new("Bitstamp cancel! failed: #{e.message}")
   end
 
   def self.orders
     Bitstamp.orders.all.map { |o| order_parser(o) }
+  rescue StandardError => e
+    raise ApiWrapperError.new("Bitstamp orders failed: #{e.message}")
   end
 
   def self.find_lost(order_method, price)
@@ -42,7 +54,9 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.user_transactions
-    Bitstamp.user_transactions.all.map{ |ut| user_transaction_parser(ut) }
+    Bitstamp.user_transactions.all.map { |ut| user_transaction_parser(ut) }
+  rescue StandardError => e
+    raise ApiWrapperError.new("Bitstamp user_transactions failed: #{e.message}")
   end
 
   def self.place_order(type, price, quantity)
@@ -50,9 +64,9 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.amount_and_quantity(order_id, transactions)
-    closes = transactions.select{ |t| t.order_id.to_s == order_id }
-    amount = closes.collect{ |c| c.usd.to_d }.sum.abs
-    quantity = closes.collect{ |c| c.btc.to_d }.sum.abs
+    closes = transactions.select { |t| t.order_id.to_s == order_id }
+    amount = closes.collect { |c| c.usd.to_d }.sum.abs
+    quantity = closes.collect { |c| c.btc.to_d }.sum.abs
     [amount, quantity]
   end
 
@@ -71,8 +85,8 @@ class BitstampApiWrapper < ApiWrapper
   def self.order_book_parser(ob)
     OrderBook.new(
       ob['timestamp'].to_i,
-      ob['bids'].map{ |b| OrderSummary.new(b[0].to_d, b[1].to_d) },
-      ob['asks'].map{ |a| OrderSummary.new(a[0].to_d, a[1].to_d) }
+      ob['bids'].map { |b| OrderSummary.new(b[0].to_d, b[1].to_d) },
+      ob['asks'].map { |a| OrderSummary.new(a[0].to_d, a[1].to_d) }
     )
   end
 

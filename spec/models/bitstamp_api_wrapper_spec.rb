@@ -1,6 +1,34 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
+  def stub_bitstamp_balance(usd = nil, coin = nil, fee = nil)
+    Bitstamp.stub(:balance) do
+      {
+        'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
+        'usd_balance' => usd || '100.0', 'usd_reserved' => '0', 'usd_available' => usd || '100.0',
+        'fee' => fee || '0.5'
+      }
+    end
+  end
+
+  # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
+  def stub_bitstamp_orders
+    Bitstamp.orders.stub(:all) do
+      [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
+    end
+  end
+
+  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @usd="0.00", @btc="-3.078", @btc_usd="0.00",
+  #   @fee="0.00", @type=1, @datetime="2013-09-26 13:46:59">]
+  def stub_bitstamp_user_transactions
+    Bitstamp.user_transactions.stub(:all) do
+      [
+        double(usd: '0.00', btc: '-3.00781124', btc_usd: '0.00', order_id: 14, fee: '0.00',
+         type: 1, id: 14, datetime: '2013-09-26 13:46:59')
+      ]
+    end
+  end
+
   before(:each) do
     BitexBot::Robot.stub(taker: BitstampApiWrapper)
     BitexBot::Robot.setup
@@ -61,6 +89,19 @@ describe BitstampApiWrapper do
     usd.available.should be_a(BigDecimal)
 
     balance.fee.should be_a(BigDecimal)
+  end
+
+  it '#cancel' do
+    stub_bitstamp_orders
+    Bitstamp::Order.any_instance.stub(:cancel!) do
+      Bitstamp.orders.stub(all: [])
+    end
+
+    order = BitstampApiWrapper.orders.sample
+
+    BitstampApiWrapper.orders.should include(order)
+    BitstampApiWrapper.cancel(order)
+    BitstampApiWrapper.orders.should_not include(order)
   end
 
   it '#orders' do
