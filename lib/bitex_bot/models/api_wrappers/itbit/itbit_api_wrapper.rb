@@ -10,7 +10,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Itbit::XBTUSDMarketData.trades.collect{ |t| Hashie::Mash.new(t) }
+    Itbit::XBTUSDMarketData.trades.collect { |t| Hashie::Mash.new(t) }
   end
 
   def self.order_book
@@ -18,9 +18,9 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.balance
-    balances = Itbit::Wallet.all.find{ |w| w[:id] == Itbit.default_wallet_id }[:balances]
-    usd = balances.find{ |b| b[:currency] == :usd }
-    btc = balances.find{ |b| b[:currency] == :xbt }
+    balances = Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }[:balances]
+    usd = balances.find { |b| b[:currency] == :usd }
+    btc = balances.find { |b| b[:currency] == :xbt }
     {
       'btc_balance' => btc[:total_balance],
       'btc_reserved' => btc[:total_balance] - btc[:available_balance],
@@ -32,18 +32,22 @@ class ItbitApiWrapper < ApiWrapper
     }
   end
 
-  def self.orders; Itbit::Order.all(status: :open); end
+  def self.orders
+    Itbit::Order.all(status: :open)
+  end
 
   def self.find_lost(order_method, price)
     orders.find do |o|
       o.order_method == order_method &&
-      o.price == price &&
-      Time.at(o.created_time).to_datetime >= 5.minutes.ago.to_datetime
+        o.price == price &&
+        Time.at(o.created_time).to_datetime >= 5.minutes.ago.to_datetime
     end
   end
 
   # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
-  def self.user_transactions; []; end
+  def self.user_transactions
+    []
+  end
 
   def self.place_order(type, price, quantity)
     Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)

@@ -32,7 +32,6 @@ class ApiWrapper
     :available) # Decimal
 
   UserTransaction = Struct.new(
-    # TODO que pasa con el id que me trae la gema?
     :usd, # Decimal
     :btc, # Decimal,
     :btc_usd, # Decimal

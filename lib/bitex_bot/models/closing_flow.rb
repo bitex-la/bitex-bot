@@ -33,6 +33,7 @@ module BitexBot
     end
 
     def create_order_and_close_position(quantity, price)
+      # TODO ver de que manera generar un ID para insertar en los campos metas donde sea posible. 
       order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
 
       if order.nil? || order.id.nil?

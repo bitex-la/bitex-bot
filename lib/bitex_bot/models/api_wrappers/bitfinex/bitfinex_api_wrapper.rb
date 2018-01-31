@@ -1,37 +1,3 @@
-require 'bigdecimal'
-require 'bigdecimal/util'
-
-module Bitfinex
-  module WithUserAgent
-    def new_rest_connection
-      super.tap do |conn|
-        conn.headers['User-Agent'] = BitexBot.user_agent
-      end
-    end
-  end
-
-  class Client
-    prepend WithUserAgent
-  end
-end
-
-class BitfinexOrder
-  attr_accessor :id, :amount, :price, :type, :datetime
-  # TODO datetime -> timestamp [Integer] (Epoch)
-
-  def initialize(order_data)
-    self.id = order_data['id'].to_i
-    self.amount = order_data['original_amount'].to_d
-    self.price = order_data['price'].to_d
-    self.type = order_data['side'].to_sym
-    self.datetime = order_data['timestamp'].to_i
-  end
-
-  def cancel!
-    Bitfinex::Client.new.cancel_orders(id)
-  end
-end
-
 class BitfinexApiWrapper < ApiWrapper
   cattr_accessor :max_retries do 1000 end
 
@@ -54,8 +20,8 @@ class BitfinexApiWrapper < ApiWrapper
     with_retry 'order_book' do
       book = Bitfinex::Client.new.orderbook
       {
-        'bids' => book['bids'].collect{ |b| [b['price'], b['amount']] },
-        'asks' => book['asks'].collect{ |a| [a['price'], a['amount']] }
+        'bids' => book['bids'].collect { |b| [b['price'], b['amount']] },
+        'asks' => book['asks'].collect { |a| [a['price'], a['amount']] }
       }
     end
   end
@@ -65,8 +31,8 @@ class BitfinexApiWrapper < ApiWrapper
       balances = Bitfinex::Client.new.balances(type: 'exchange')
       BitexBot::Robot.sleep_for 1 # Sleep to avoid sending two consecutive requests to bitfinex.
       fee = Bitfinex::Client.new.account_info.first['taker_fees']
-      btc = balances.find{ |b| b['currency'] == 'btc' } || {}
-      usd = balances.find{ |b| b['currency'] == 'usd' } || {}
+      btc = balances.find { |b| b['currency'] == 'btc' } || {}
+      usd = balances.find { |b| b['currency'] == 'usd' } || {}
       {
         'btc_balance' => btc['amount'].to_d,
         'btc_reserved' => btc['amount'].to_d - btc['available'].to_d,
@@ -81,12 +47,14 @@ class BitfinexApiWrapper < ApiWrapper
 
   def self.orders
     with_retry 'orders' do
-      Bitfinex::Client.new.orders.collect{ |o| BitfinexOrder.new(o) }
+      Bitfinex::Client.new.orders.collect { |o| BitfinexOrder.new(o) }
     end
   end
 
   # We don't need to fetch the list of transactions for bitfinex
-  def self.user_transactions; []; end
+  def self.user_transactions
+    []
+  end
 
   def self.place_order(type, price, quantity)
     with_retry "place order #{type} #{price} #{quantity}" do
