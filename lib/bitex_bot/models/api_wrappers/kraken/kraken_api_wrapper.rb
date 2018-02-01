@@ -44,21 +44,17 @@ class KrakenApiWrapper < ApiWrapper
     KrakenOrder.open
   end
 
-  def self.find_lost(order_method, price)
-    orders.find do |o|
-      o.order_method == order_method &&
-      o.price == price &&
-      o.datetime.to_datetime >= 5.minutes.ago.to_datetime
-    end
-  end
-
   # We don't need to fetch the list of transactions for Kraken
   def self.user_transactions
     []
   end
 
-  def self.place_order(type, price, quantity)
-    KrakenOrder.create(type, price, quantity)
+  def self.send_order(type, price, quantity)
+    KrakenOrder.create!(type, price, quantity)
+  end
+
+  def self.find_lost(type, price, quantity)
+    KrakenOrder.find_lost(type, price, quantity)
   end
 
   def self.amount_and_quantity(order_id, transactions)

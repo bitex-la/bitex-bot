@@ -70,12 +70,6 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 
-  # @param order_method [String] buy|sell
-  # @param price [Decimal]
-  def self.find_lost(order_method, price)
-    raise 'self subclass responsibility'
-  end
-
   # @return [UserTransaction]
   def self.user_transacitions
     raise 'self subclass responsibility'
@@ -85,6 +79,32 @@ class ApiWrapper
   # @param price
   # @param quantity
   def self.place_order(type, price, quantity)
+    order = send_order(type, price, quantity)
+    if order.nil? || order.id.nil?
+      BitexBot::Robot.logger.debug("Captured error when placing order on #{self.class.name}")
+      # Order may have gone through and be stuck somewhere in Wrapper's piipeline
+      # We just sleep for a bit and then look for the order.
+      order_descr = [type, price, quantity]
+      20.times do
+        BitexBot::Robot.sleep_for 10
+        order = find_lost(type, price, quantity)
+        return order if order.present?
+      end
+      raise OrderNotFound.new("Closing: #{type} not founded for #{quantity} BTC @ $#{price}. #{order.to_s}")
+    end
+    order
+  end
+
+  # Hook Method - thearguments could not be used in their entirety by the subclasses
+  def send_order(type, price, quantity)
+    raise 'self subclass responsibility'
+  end
+
+  # @param order_method [String] buy|sell
+  # @param price [Decimal]
+  #
+  # Hook Method - the arguments could not be used in their entirety by the subclasses
+  def self.find_lost(type, price, quantity)
     raise 'self subclass responsibility'
   end
 
@@ -96,4 +116,5 @@ class ApiWrapper
   end
 end
 
+class OrderNotFound < StandardError; end
 class ApiWrapperError < StandardError; end

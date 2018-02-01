@@ -33,25 +33,10 @@ module BitexBot
     end
 
     def create_order_and_close_position(quantity, price)
-      # TODO ver de que manera generar un ID para insertar en los campos metas donde sea posible. 
+      # TODO ver de que manera generar un ID para insertar en los campos metas donde sea posible.
+      Robot.logger.info("Closing: Going to place #{order_method} order for #{self.class.name}"\
+        " ##{id} #{quantity} BTC @ $#{price}")
       order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
-
-      if order.nil? || order.id.nil?
-        20.times do
-          BitexBot::Robot.sleep_for 10
-          order = BitexBot::Robot.taker.find_lost(order_method, price)
-          break if order.present?
-        end
-
-        unless order.present?
-          raise OrderNotFound.new("Closing: #{order_method} not founded for "\
-            "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
-            "#{order.to_s}")
-        end
-      end
-
-      Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
-        "#{self.class.name} ##{id} #{order.amount} BTC @ $#{order.price}")
       close_positions.create!(order_id: order.id)
     end
 
@@ -78,6 +63,9 @@ module BitexBot
         latest_close.save!
 
         next_price, next_quantity = get_next_price_and_quantity
+        # TODO el robot deberia llamar a este metodo como barrera para ver si la orden cumple con el minimo para ser cerrada
+        # pero este metodo es a implementacion de cada wrapper en particular, podemos renombrarlo
+        #  -> if BitexBot::Robot.taker.minimum_amount_for_closing(next_quantity, next_price)?
         if (next_quantity * next_price) > self.class.minimum_amount_for_closing
           create_order_and_close_position(next_quantity, next_price)
         else
@@ -113,6 +101,4 @@ module BitexBot
       30
     end
   end
-
-  class OrderNotFound < StandardError; end
 end

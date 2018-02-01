@@ -134,12 +134,12 @@ describe BitstampApiWrapper do
   context '#place_order' do
     it 'raises OrderNotFound error on bitstamp errors' do
       Bitstamp.orders.stub(:buy) do
-        raise BitexBot::OrderNotFound
+        raise OrderNotFound
       end
 
       expect do
         BitstampApiWrapper.place_order(:buy, 10, 100)
-      end.to raise_exception(BitexBot::OrderNotFound)
+      end.to raise_exception(OrderNotFound)
     end
   end
 end

@@ -51,13 +51,13 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError.new("Bitstamp user_transactions failed: #{e.message}")
   end
 
-  def self.place_order(type, price, quantity)
+  def self.send_order(type, price, quantity)
     Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
   end
 
-  def self.find_lost(order_method, price)
+  def self.find_lost(type, price, quantity)
     orders.find do |o|
-      o.order_method == order_method &&
+      o.order_method == type &&
       o.price == price &&
       o.datetime.to_datetime >= 5.minutes.ago.to_datetime
     end
@@ -72,7 +72,9 @@ class BitstampApiWrapper < ApiWrapper
 
   private
 
-  def self.order_is_done?(o); o.nil?; end
+  def self.order_is_done?(o)
+    o.nil?
+  end
 
   def self.order_parser(o)
     Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.datetime).to_time.to_i)

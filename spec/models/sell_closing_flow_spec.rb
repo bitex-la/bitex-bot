@@ -48,13 +48,13 @@ describe BitexBot::SellClosingFlow do
 
   describe 'when there are errors placing the closing order' do
     it 'keeps trying to place a closed position on bitstamp errors' do
-      BitstampApiWrapper.stub(place_order: nil)
+      BitstampApiWrapper.stub(send_order: nil)
       BitstampApiWrapper.stub(find_lost: nil)
 
       open = create :open_sell
       expect do
         flow = BitexBot::SellClosingFlow.close_open_positions
-      end.to raise_exception(BitexBot::OrderNotFound)
+      end.to raise_exception(OrderNotFound)
       flow = BitexBot::SellClosingFlow.last
 
       open.reload.closing_flow.should == flow
@@ -68,7 +68,7 @@ describe BitexBot::SellClosingFlow do
     end
 
     it 'retries until it finds the lost order in the bitstamp' do
-      BitstampApiWrapper.stub(place_order: nil)
+      BitstampApiWrapper.stub(send_order: nil)
       counter = 0
 
       BitstampApiWrapper.stub(:find_lost) do

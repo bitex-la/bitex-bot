@@ -1,6 +1,3 @@
-require 'bigdecimal'
-require 'bigdecimal/util'
-
 class BitfinexOrder
   attr_accessor :id, :amount, :price, :type, :datetime
 

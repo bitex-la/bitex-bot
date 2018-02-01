@@ -93,6 +93,8 @@ module BitexBot
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue ApiWrapperError => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+    rescue OrderArgumentError => e
+      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for 120

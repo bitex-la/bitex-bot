@@ -1,7 +1,9 @@
 require 'kraken_client'
 
 class KrakenOrder
+  cattr_accessor :last_closed_order
   attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime
+
   def initialize(id, order_data)
     self.id = id
     self.amount = order_data['vol'].to_d
@@ -43,40 +45,23 @@ class KrakenOrder
   end
 
   def self.open
-    client.private.open_orders['open'].collect{ |o| new(*o) }
+    client.private.open_orders['open'].collect { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
 
   def self.closed(start: 1.hour.ago.to_i)
-    client.private.closed_orders(start: start)[:closed].collect{ |o| new(*o) }
+    client.private.closed_orders(start: start)[:closed].collect { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
 
-  def self.find_lost(type, price, quantity, last_closed_order)
-    order_descr = [ type, price, quantity ]
-
-    BitexBot::Robot.logger.debug("Looking for #{type} order in open orders...")
-    if order = self.open.detect{ |o| o == order_descr }
-      BitexBot::Robot.logger.debug("Found open order with ID #{order.id}")
-      return order
-    end
-
-    BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
-    order = closed(start: last_closed_order).detect{ |o| o == order_descr }
-    if order && order.id != last_closed_order
-      BitexBot::Robot.logger.debug("Found closed order with ID #{order.id}")
-      return order
-    end
-  end
-
-  def self.create(type, price, quantity)
-    last_closed_order = closed.first.try(:id) || Time.now.to_i
+  def self.create!(type, price, quantity)
+    self.last_closed_order = closed.first.try(:id) || Time.now.to_i
     price = price.truncate(1)
     quantity = quantity.truncate(8)
     order_info = client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit',
-                                          price: price, volume: quantity)
+      price: price, volume: quantity)
     find(order_info['txid'].first)
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed
@@ -85,17 +70,26 @@ class KrakenOrder
       retry
     elsif e.message.start_with?('EGeneral:Invalid')
       BitexBot::Robot.logger.debug("Captured #{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
-      return
+      raise OrderArgumentError.new(e.message)
+      raise if e.message != 'error'
     end
-    raise unless e.message == 'error'
-    BitexBot::Robot.logger.debug('Captured error when placing order on Kraken')
-    # Order may have gone through and be stuck somewhere in Kraken's
-    # pipeline. We just sleep for a bit and then look for the order.
-    8.times do
-      BitexBot::Robot.sleep_for 15
-      order = find_lost(type, price, quantity, last_closed_order)
-      return order if order.present?
+  end
+
+  def self.find_lost(type, price, quantity)
+    BitexBot::Robot.logger.debug("Looking for #{type} order in open orders...")
+    order_descr = [type, price, quantity]
+    if order = open.detect { |o| o == order_descr }
+      BitexBot::Robot.logger.debug("Found open order with ID #{order.id}")
+      return order
     end
-    raise
+
+    BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
+    order = closed(start: last_closed_order).detect { |o| o == order_descr }
+    if order && order.id != last_closed_order
+      BitexBot::Robot.logger.debug("Found closed order with ID #{order.id}")
+      return order
+    end
   end
 end
+
+class OrderArgumentError < StandardError; end
