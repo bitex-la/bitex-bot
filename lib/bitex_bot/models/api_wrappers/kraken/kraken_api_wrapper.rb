@@ -1,4 +1,6 @@
 class KrakenApiWrapper < ApiWrapper
+  MIN_AMOUNT = 0.002
+
   def self.setup(settings)
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
     @settings = settings.kraken
@@ -38,6 +40,10 @@ class KrakenApiWrapper < ApiWrapper
     }
   rescue KrakenClient::ErrorResponse, Net::ReadTimeout => e
     retry
+  end
+
+  def self.enough_order_size?(quantity, price)
+    (quantity * price) > MIN_AMOUNT
   end
 
   def self.orders
