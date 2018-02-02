@@ -16,7 +16,7 @@ module BitexBot
       price = suggested_amount / quantity
 
       # Don't even bother trying to close a position that's too small.
-      return if quantity * price < minimum_amount_for_closing
+      return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
 
       flow = create!(
         desired_price: price,
@@ -63,10 +63,8 @@ module BitexBot
         latest_close.save!
 
         next_price, next_quantity = get_next_price_and_quantity
-        # TODO el robot deberia llamar a este metodo como barrera para ver si la orden cumple con el minimo para ser cerrada
-        # pero este metodo es a implementacion de cada wrapper en particular, podemos renombrarlo
-        #  -> if BitexBot::Robot.taker.minimum_amount_for_closing(next_quantity, next_price)?
-        if (next_quantity * next_price) > self.class.minimum_amount_for_closing
+
+        if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
           create_order_and_close_position(next_quantity, next_price)
         else
           self.btc_profit = get_btc_profit
@@ -87,14 +85,6 @@ module BitexBot
           end
         end
       end
-    end
-
-    # When placing a closing order we need to be aware of the smallest order
-    # amount permitted by the other exchange.
-    # If the other order is less than this USD amount then we do not attempt
-    # to close the positions yet.
-    def self.minimum_amount_for_closing
-      5
     end
 
     def self.close_time_to_live

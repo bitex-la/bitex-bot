@@ -1,4 +1,6 @@
 class ApiWrapper
+  MIN_AMOUNT = 5
+
   Transaction = Struct.new(
     :id, # Integer
     :price, # Decimal
@@ -113,6 +115,10 @@ class ApiWrapper
   # @return [Array<Decimal, Decimal>]
   def self.amount_and_quantity(order_id, transactions)
     raise 'self subclass responsibility'
+  end
+
+  def self.enough_order_size?(quantity, price)
+    (quantity * price) > MIN_AMOUNT
   end
 end
 
