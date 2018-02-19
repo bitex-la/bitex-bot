@@ -21,17 +21,14 @@ class BitexBot::OrderBookSimulator
   #   reached, leave as nil if looking for an amount_target.
   # @return [Decimal] Returns the price that we're more likely to get when
   #   executing an order for the given amount or quantity.
-  def self.run(volatility, transactions, order_book,
-    amount_target, quantity_target)
-
+  def self.run(volatility, transactions, order_book, amount_target, quantity_target)
     to_skip = estimate_quantity_to_skip(volatility, transactions)
     BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
     seen = 0
     safest_price = 0
 
-    order_book.each do |price, quantity|
-      price = price.to_d
-      quantity = quantity.to_d
+    order_book.each do |order_summary|
+      price, quantity = order_summary.price, order_summary.quantity
 
       # An order may be partially or completely skipped due to volatility.
       if to_skip > 0
@@ -60,16 +57,16 @@ class BitexBot::OrderBookSimulator
       end
     end
 
-    order_book.last.first.to_d
+    order_book.last.price
   end
 
   private
 
   def self.estimate_quantity_to_skip(volatility, transactions)
-    threshold = transactions.first.date.to_i - volatility
+    threshold = transactions.first.timestamp - volatility
     transactions
-      .select{ |t| t.date.to_i > threshold }
-      .collect{ |t| t.amount.to_d }
+      .select { |t| t.timestamp > threshold }
+      .collect { |t| t.amount.to_d }
       .sum
   end
 end

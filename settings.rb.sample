@@ -93,9 +93,9 @@ mailer from: 'robot@example.com',
   to: 'you@example.com',
   delivery_method: :smtp,
   options: {
-    address: "your_smtp_server_address.com",
+    address: 'your_smtp_server_address.com',
     port: 587,
-    authentication: "plain",
+    authentication: 'plain',
     enable_starttls_auto: true,
     user_name: 'your_user_name',
     password: 'your_smtp_password'

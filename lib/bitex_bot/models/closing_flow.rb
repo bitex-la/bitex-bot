@@ -16,7 +16,7 @@ module BitexBot
       price = suggested_amount / quantity
 
       # Don't even bother trying to close a position that's too small.
-      return if quantity * price < minimum_amount_for_closing
+      return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
 
       flow = create!(
         desired_price: price,
@@ -33,24 +33,10 @@ module BitexBot
     end
 
     def create_order_and_close_position(quantity, price)
+      # TODO ver de que manera generar un ID para insertar en los campos metas donde sea posible.
+      Robot.logger.info("Closing: Going to place #{order_method} order for #{self.class.name}"\
+        " ##{id} #{quantity} BTC @ $#{price}")
       order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
-
-      if order.nil? || order.id.nil?
-        20.times do
-          BitexBot::Robot.sleep_for 10
-          order = BitexBot::Robot.taker.find_lost(order_method, price)
-          break if order.present?
-        end
-
-        unless order.present?
-          raise OrderNotFound.new("Closing: #{order_method} not founded for "\
-            "#{self.class.name} ##{id} #{quantity} BTC @ $#{price}."\
-            "#{order.to_s}")
-        end
-      end
-
-      Robot.logger.info("Closing: Going to #{order_method} ##{order.id} for "\
-        "#{self.class.name} ##{id} #{order.amount} BTC @ $#{order.price}")
       close_positions.create!(order_id: order.id)
     end
 
@@ -67,7 +53,7 @@ module BitexBot
       end
 
       order_id = latest_close.order_id.to_s
-      order = orders.find{ |o| o.id.to_s == order_id }
+      order = orders.find { |o| o.id.to_s == order_id }
 
       # When order is nil it means the other exchange is done executing it
       # so we can now have a look of all the sales that were spawned from it.
@@ -77,7 +63,8 @@ module BitexBot
         latest_close.save!
 
         next_price, next_quantity = get_next_price_and_quantity
-        if (next_quantity * next_price) > self.class.minimum_amount_for_closing
+
+        if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
           create_order_and_close_position(next_quantity, next_price)
         else
           self.btc_profit = get_btc_profit
@@ -100,14 +87,8 @@ module BitexBot
       end
     end
 
-    # When placing a closing order we need to be aware of the smallest order
-    # amount permitted by the other exchange.
-    # If the other order is less than this USD amount then we do not attempt
-    # to close the positions yet.
-    def self.minimum_amount_for_closing; 5; end
-
-    def self.close_time_to_live; 30; end
+    def self.close_time_to_live
+      30
+    end
   end
-
-  class OrderNotFound < StandardError; end
 end

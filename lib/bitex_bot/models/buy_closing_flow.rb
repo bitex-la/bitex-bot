@@ -2,11 +2,15 @@ module BitexBot
   class BuyClosingFlow < ClosingFlow
     has_many :open_positions, class_name: 'OpenBuy', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseBuy', foreign_key: :closing_flow_id
-    scope :active, ->{ where(done: false) }
+    scope :active, -> { where(done: false) }
 
-    def self.open_position_class; OpenBuy; end
+    def self.open_position_class
+      OpenBuy
+    end
 
-    def order_method; :sell; end
+    def order_method
+      :sell
+    end
 
     # The amount received when selling initially, minus
     # the amount spent re-buying the sold coins.

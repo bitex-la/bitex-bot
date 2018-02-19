@@ -1,8 +1,8 @@
 module BitexStubs
-  mattr_accessor(:bids){ {} }
-  mattr_accessor(:asks){ {} }
-  mattr_accessor(:active_bids){ {} }
-  mattr_accessor(:active_asks){ {} }
+  mattr_accessor(:bids) { {} }
+  mattr_accessor(:asks) { {} }
+  mattr_accessor(:active_bids) { {} }
+  mattr_accessor(:active_asks) { {} }
 
   def stub_bitex_orders
     Bitex::Order.stub(:all) do
@@ -57,9 +57,7 @@ module BitexStubs
   end
 
   def stub_bitex_transactions(*extra_transactions)
-    Bitex::Trade.stub(all: extra_transactions + [
-      build(:bitex_buy), build(:bitex_sell)
-    ])
+    Bitex::Trade.stub(all: extra_transactions + [build(:bitex_buy), build(:bitex_sell)])
   end
 end
 
