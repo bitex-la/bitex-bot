@@ -87,8 +87,8 @@ class BitstampApiWrapper < ApiWrapper
   def self.order_book_parser(ob)
     OrderBook.new(
       ob['timestamp'].to_i,
-      ob['bids'].map { |b| OrderSummary.new(b[0].to_d, b[1].to_d) },
-      ob['asks'].map { |a| OrderSummary.new(a[0].to_d, a[1].to_d) }
+      ob['bids'].map { |bid| OrderSummary.new(bid[0].to_d, bid[1].to_d) },
+      ob['asks'].map { |ask| OrderSummary.new(ask[0].to_d, ask[1].to_d) }
     )
   end
 
