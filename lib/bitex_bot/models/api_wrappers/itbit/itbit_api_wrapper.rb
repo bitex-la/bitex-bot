@@ -64,6 +64,10 @@ class ItbitApiWrapper < ApiWrapper
 
   private
 
+  def self.order_parser(o)
+    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.created_time).to_time.to_i)
+  end
+
   def self.transaction_parser(t)
     Transaction.new(t[:tid].to_d, t[:price].to_d, t[:amount].to_d, t[:date].to_d)
   end
@@ -78,29 +82,25 @@ class ItbitApiWrapper < ApiWrapper
 
   def self.balance_summary_parser(b)
     BalanceSummary.new.tap do |summary|
-      balances.find { |b| b[:currency] == :xbt }.tap do |btc|
-        summary[:btc] =
-          Balance.new(
-            btc[:total_balance].to_d,
-            (btc[:total_balance] - btc[:available_balance]).to_d,
-            btc[:available_balance].to_d
-          )
-      end
+      btc = b.find { |balance| balance[:currency] == :xbt }
+      summary[:btc] =
+        Balance.new(
+          btc[:total_balance].to_d,
+          (btc[:total_balance] - btc[:available_balance]).to_d,
+          btc[:available_balance].to_d
+        )
 
-      balances.find { |b| b[:currency] == :usd }.tap do |usd|
-        summary[:usd] =
-          Balance.new(
-            usd[:total_balance].to_d,
-            (usd[:total_balance] - usd[:available_balance]).to_d,
-            usd[:available_balance].to_d
-          )
+      usd = b.find { |balance| balance[:currency] == :usd }
+      summary[:usd] =
+        Balance.new(
+          usd[:total_balance].to_d,
+          (usd[:total_balance] - usd[:available_balance]).to_d,
+          usd[:available_balance].to_d
+        )
       end
 
       summary[:fee] = 0.5.to_d
     end
   end
 
-  def self.order_parser(o)
-    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.created_time).to_time.to_i)
-  end
 end
