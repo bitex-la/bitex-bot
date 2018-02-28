@@ -15,7 +15,7 @@ class KrakenOrder
   end
 
   def cancel!
-    self.class.client.private.cancel_order(txid: id)
+    KrakenApiWrapper.client.private.cancel_order(txid: id)
   rescue KrakenClient::ErrorResponse => e
     retry if e.message == 'EService:Unavailable'
     raise
@@ -29,12 +29,8 @@ class KrakenOrder
     end
   end
 
-  def self.client
-    KrakenApiWrapper.client
-  end
-
   def self.find(id)
-    new(*client.private.query_orders(txid: id).first)
+    new(*KrakenApiWrapper.client.private.query_orders(txid: id).first)
   rescue KrakenClient::ErrorResponse => e
     retry
   end
@@ -45,13 +41,13 @@ class KrakenOrder
   end
 
   def self.open
-    client.private.open_orders['open'].collect { |o| new(*o) }
+    KrakenApiWrapper.client.private.open_orders['open'].map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
 
   def self.closed(start: 1.hour.ago.to_i)
-    client.private.closed_orders(start: start)[:closed].collect { |o| new(*o) }
+    KrakenApiWrapper.client.private.closed_orders(start: start)[:closed].collect { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
@@ -60,8 +56,9 @@ class KrakenOrder
     self.last_closed_order = closed.first.try(:id) || Time.now.to_i
     price = price.truncate(1)
     quantity = quantity.truncate(8)
-    order_info = client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit',
-      price: price, volume: quantity)
+    order_info =
+      KrakenApiWrapper.client.private
+      .add_order(pair: 'XBTUSD', type: type, ordertype: 'limit', price: price, volume: quantity)
     find(order_info['txid'].first)
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed
