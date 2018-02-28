@@ -86,7 +86,6 @@ class ApiWrapper
       BitexBot::Robot.logger.debug("Captured error when placing order on #{self.class.name}")
       # Order may have gone through and be stuck somewhere in Wrapper's piipeline
       # We just sleep for a bit and then look for the order.
-      order_descr = [type, price, quantity]
       20.times do
         BitexBot::Robot.sleep_for 10
         order = find_lost(type, price, quantity)
