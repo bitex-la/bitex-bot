@@ -77,7 +77,7 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.order_parser(o)
-    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.datetime).to_time.to_i)
+    Order.new(o.id.to_i, o.type.to_sym, o.price.to_d, o.amount.to_d, DateTime.parse(o.datetime).to_time.to_i)
   end
 
   def self.transaction_parser(t)

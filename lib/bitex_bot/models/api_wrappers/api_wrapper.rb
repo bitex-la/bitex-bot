@@ -9,7 +9,7 @@ class ApiWrapper
 
   Order = Struct.new(
     :id, # Integer
-    :type, # Integer
+    :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
     :timestamp) # Integer
