@@ -48,9 +48,10 @@ class ItbitApiWrapper < ApiWrapper
     # current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
     BitexBot::Robot.logger.error('Captured Timeout on itbit')
-    latest = Itbit::Order.all.select do |o|
-      o.price == price && (o.created_time - Time.now.to_i).abs < 500
-    end.first
+    latest =
+      Itbit::Order.all.select do |o|
+        o.price == price && (o.created_time - Time.now.to_i).abs < 500
+      end.first
 
     return latest if latest.present?
     BitexBot::Robot.logger.error('Could not find my order')
@@ -88,7 +89,7 @@ class ItbitApiWrapper < ApiWrapper
           btc[:total_balance].to_d,
           (btc[:total_balance] - btc[:available_balance]).to_d,
           btc[:available_balance].to_d
-        )
+      )
 
       usd = b.find { |balance| balance[:currency] == :usd }
       summary[:usd] =
@@ -96,11 +97,11 @@ class ItbitApiWrapper < ApiWrapper
           usd[:total_balance].to_d,
           (usd[:total_balance] - usd[:available_balance]).to_d,
           usd[:available_balance].to_d
-        )
-      end
+      )
 
       summary[:fee] = 0.5.to_d
     end
-  end
 
+  end
 end
+
