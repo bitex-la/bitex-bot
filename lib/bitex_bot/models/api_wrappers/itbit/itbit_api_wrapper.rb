@@ -14,7 +14,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.order_book
-    Itbit::XBTUSDMarketData.orders.map { |o| order_book_parser(o) }
+    order_book_parser(Itbit::XBTUSDMarketData.orders)
   end
 
   def self.balance
@@ -44,8 +44,7 @@ class ItbitApiWrapper < ApiWrapper
     Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
   rescue RestClient::RequestTimeout => e
     # On timeout errors, we still look for the latest active closing order that may be available.
-    # We have a magic threshold of 5 minutes and also use the price to recognize an order as the
-    # current one.
+    # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
     BitexBot::Robot.logger.error('Captured Timeout on itbit')
     latest =
@@ -66,11 +65,11 @@ class ItbitApiWrapper < ApiWrapper
   private
 
   def self.order_parser(o)
-    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.created_time).to_time.to_i)
+    Order.new(o.id, o.type, o.price, o.amount, o.created_time)
   end
 
   def self.transaction_parser(t)
-    Transaction.new(t[:tid].to_i, t[:price].to_d, t[:amount].to_d, t[:date].to_i)
+    Transaction.new(t[:tid], t[:price].to_d, t[:amount].to_d, t[:date])
   end
 
   def self.order_book_parser(ob)
@@ -86,22 +85,20 @@ class ItbitApiWrapper < ApiWrapper
       btc = b.find { |balance| balance[:currency] == :xbt }
       summary[:btc] =
         Balance.new(
-          btc[:total_balance].to_d,
-          (btc[:total_balance] - btc[:available_balance]).to_d,
-          btc[:available_balance].to_d
-      )
+          btc[:total_balance],
+          btc[:total_balance] - btc[:available_balance],
+          btc[:available_balance]
+        )
 
       usd = b.find { |balance| balance[:currency] == :usd }
       summary[:usd] =
         Balance.new(
-          usd[:total_balance].to_d,
-          (usd[:total_balance] - usd[:available_balance]).to_d,
-          usd[:available_balance].to_d
-      )
+          usd[:total_balance],
+          usd[:total_balance] - usd[:available_balance],
+          usd[:available_balance]
+        )
 
       summary[:fee] = 0.5.to_d
     end
-
   end
 end
-
