@@ -10,7 +10,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t) }
+    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
   def self.order_book
@@ -18,9 +18,8 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.balance
-    Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }[:balances].map do |balances|
-      balance_summary_parser(balances)
-    end
+    wallet = Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }
+    balance_summary_parser(wallet[:balances])
   end
 
   def self.orders
@@ -64,22 +63,39 @@ class ItbitApiWrapper < ApiWrapper
 
   private
 
+  # <Itbit::Order:
+  #   @id="8fd820d3-baff-4d6f-9439-ff03d816c7ce", @wallet_id="b440efce-a83c-4873-8833-802a1022b476", @side=:buy,
+  #   @instrument=:xbtusd, @type=:limit, @amount=0.1005e1, @display_amount=0.1005e1, @price=0.1e3,
+  #   @volume_weighted_average_price=0.0, @amount_filled=0.0, @created_time=1415290187, @status=:open,
+  #   @metadata={"foo"=>"bar"}, @client_order_identifier="o"
+  # >
   def self.order_parser(o)
-    Order.new(o.id, o.type, o.price, o.amount, o.created_time)
+    Order.new(o.id, o.side, o.price, o.amount, o.created_time)
   end
 
+  # { price: 0.41814e3, amount: 0.19e-1, tid: 601855, date: 1460161126 }
   def self.transaction_parser(t)
-    Transaction.new(t[:tid], t[:price].to_d, t[:amount].to_d, t[:date])
+    Transaction.new(t[:tid].to_s, t[:price], t[:amount], t[:date])
   end
 
+  # {
+  #   bids: [[0.63921e3, 0.195e1], [0.637e3, 0.47e0], [0.63e3, 0.158e1]],
+  #   asks: [[0.6424e3, 0.4e0], [0.6433e3, 0.95e0], [0.6443e3, 0.25e0]]
+  # }
   def self.order_book_parser(ob)
     OrderBook.new(
       Time.now.to_i,
-      ob[:bids].map { |bid| OrderSummary.new(bid[0].to_d, bid[1].to_d) },
-      ob[:asks].map { |ask| OrderSummary.new(ask[0].to_d, ask[1].to_d) }
+      ob[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
+      ob[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
     )
   end
 
+  # [
+  #   { total_balance: 0.2e2, currency: :usd, available_balance: 0.1e2 },
+  #   { total_balance: 0.0, currency: :xbt, available_balance: 0.0 },
+  #   { total_balance: 0.0, currency: :eur, available_balance: 0.0 },
+  #   { total_balance: 0.0, currency: :sgd, available_balance: 0.0 }
+  # ]
   def self.balance_summary_parser(b)
     BalanceSummary.new.tap do |summary|
       btc = b.find { |balance| balance[:currency] == :xbt }
