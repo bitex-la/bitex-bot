@@ -14,11 +14,7 @@ class KrakenApiWrapper < ApiWrapper
 
   def self.order_book(retries = 20)
     book = client.public.order_book('XBTUSD')[:XXBTZUSD]
-    OrderBook.new(
-      Time.now.to_i,
-      book[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
-      book[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
-    )
+    order_book_parser(book)
   rescue NoMethodError => e
     retry
   end
@@ -29,11 +25,11 @@ class KrakenApiWrapper < ApiWrapper
       balances = client.private.balance
 
       sell_orders = open_orders.select { |o| o.type == :sell }
-      btc_reserved = sell_orders.collect { |o| o.amount - o.executed_amount }.sum
+      btc_reserved = sell_orders.map { |o| (o.amount - o.executed_amount).to_d }.sum
       summary[:btc] = Balance.new(balances['XXBT'].to_d, btc_reserved, balances['XXBT'].to_d - btc_reserved)
 
       buy_orders = open_orders - sell_orders
-      usd_reserved = buy_orders.collect { |o| (o.amount - o.executed_amount) * o.price }.sum
+      usd_reserved = buy_orders.map { |o| ((o.amount - o.executed_amount) * o.price).to_d }.sum
       summary[:usd] = Balance.new(balances['ZUSD'].to_d, usd_reserved, balances['ZUSD'].to_d - usd_reserved)
 
       summary[:fee] = client.private.trade_volume(pair: 'XBTUSD')[:fees][:XXBTZUSD][:fee].to_d
@@ -73,23 +69,23 @@ class KrakenApiWrapper < ApiWrapper
 
   private
 
-  def self.order_parser(o)
-    Order.new(o.id, o.type, o.price.to_d, o.amount.to_d, DateTime.parse(o.datetime).to_time.to_i)
-  end
-
+  # [
+  #   ['202.51626', '0.01440000', 1440277319.1922, 'b', 'l', ''],
+  #   ['202.54000', '0.10000000', 1440277322.8993, 'b', 'l', '']
+  # ]
   def self.transaction_parser(t)
     Transaction.new(t[2].to_s, t[0].to_d, t[1].to_d, t[2].to_i)
   end
 
-  def self.balance_summary_parser(b)
-    BalanceSummary.new(
-      Balance.new(b['btc_balance'].to_d, b['btc_reserved'].to_d, b['btc_available'].to_d),
-      Balance.new(b['usd_balance'].to_d, b['usd_reserved'].to_d, b['usd_available'].to_d),
-      b['fee'].to_d
-    )
-  end
-
   def self.order_parser(o)
     Order.new(o.id, o.type, o.price, o.amount, o.datetime)
+  end
+
+  def self.order_book_parser(b)
+    OrderBook.new(
+      Time.now.to_i,
+      b[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
+      b[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
+    )
   end
 end

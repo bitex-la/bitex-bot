@@ -10,44 +10,27 @@ class BitfinexApiWrapper < ApiWrapper
 
   def self.transactions
     with_retry 'transactions' do
-      Bitfinex::Client.new.trades.collect do |t|
-        Hashie::Mash.new(tid: t['tid'].to_i, price: t['price'], amount: t['amount'], date: t['timestamp'])
-      end
+      client.trades.map(&:symbolize_keys) { |t| transaction_parser(t) }
     end
   end
 
   def self.order_book
     with_retry 'order_book' do
-      book = Bitfinex::Client.new.orderbook
-      {
-        'bids' => book['bids'].collect { |b| [b['price'], b['amount']] },
-        'asks' => book['asks'].collect { |a| [a['price'], a['amount']] }
-      }
+      book = client.orderbook.deep_symbolize_keys
+      order_book_parser(book)
     end
   end
 
   def self.balance
     with_retry 'balance' do
-      balances = Bitfinex::Client.new.balances(type: 'exchange')
-      BitexBot::Robot.sleep_for 1 # Sleep to avoid sending two consecutive requests to bitfinex.
-      fee = Bitfinex::Client.new.account_info.first['taker_fees']
-      btc = balances.find { |b| b['currency'] == 'btc' } || {}
-      usd = balances.find { |b| b['currency'] == 'usd' } || {}
-      {
-        'btc_balance' => btc['amount'].to_d,
-        'btc_reserved' => btc['amount'].to_d - btc['available'].to_d,
-        'btc_available' => btc['available'].to_d,
-        'usd_balance' => usd['amount'].to_d,
-        'usd_reserved' => usd['amount'].to_d - usd['available'].to_d,
-        'usd_available' => usd['available'].to_d,
-        'fee' => fee.to_d
-      }
+      balances = client.balances(type: 'exchange').map(&:symbolize_keys)
+      balance_summary_parser(balances)
     end
   end
 
   def self.orders
     with_retry 'orders' do
-      Bitfinex::Client.new.orders.collect { |o| BitfinexOrder.new(o) }
+      client.orders.map(&:simbolize_keys).map { |o| order_parser(o) }
     end
   end
 
@@ -58,7 +41,8 @@ class BitfinexApiWrapper < ApiWrapper
 
   def self.place_order(type, price, quantity)
     with_retry "place order #{type} #{price} #{quantity}" do
-      order_data = Bitfinex::Client.new
+      order_data =
+        Bitfinex::Client.new
         .new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
       BitfinexOrder.new(order_data)
     end
@@ -73,6 +57,10 @@ class BitfinexApiWrapper < ApiWrapper
 
   private
 
+  def self.client
+    @client ||= Bitfinex::Client.new
+  end
+
   def self.with_retry(action, retries = 0, &block)
     block.call
   rescue StandardError, Bitfinex::ClientError => e
@@ -84,5 +72,48 @@ class BitfinexApiWrapper < ApiWrapper
       BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
       raise
     end
+  end
+
+  # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
+  def self.transaction_parser(t)
+    Transaction.new(t[:tid], t[:price].to_d, t[:amount].to_d, t[:timestamp])
+  end
+
+  # {
+  #   id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
+  #   type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
+  #   was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
+  # }
+  def self.order_parser(o)
+    Order.new(o[:id].to_s, o[:side].to_sym, o[:price].to_d, o[:original_amount].to_d, o[:timestamp].to_i)
+  end
+
+  # [
+  #   { type: 'deposit', currency: 'btc', amount: '0.0', available: '0.0' },
+  #   { type: 'deposit', currency: 'usd', amount: '1.0', available: '1.0' },
+  #   { type: 'exchange', currency: 'btc', amount: '1', available: '1' }
+  # ]
+  def self.balance_summary_parser(b)
+    BalanceSummary.new.tap do |summary|
+      btc = b.find { |balance| balance[:currency] == 'btc' } || {}
+      summary[:btc] = Balance.new(btc[:amount].to_d, btc[:amount].to_d - btc[:available].to_d, btc[:available].to_d)
+
+      usd = b.find { |balance| balance[:currency] == 'usd' } || {}
+      summary[:usd] = Balance.new(usd[:amount].to_d, usd[:amount].to_d - usd[:available].to_d, usd[:available].to_d)
+
+      summary[:fee] = client.account_info.first[:taker_fees].to_d
+    end
+  end
+
+  # {
+  #   bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
+  #   asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
+  # }
+  def self.order_book_parser(b)
+    OrderBook.new(
+      Time.now.to_i,
+      b[:bids].map { |bid| OrderSummary.new(bid[:price].to_d, bid[:amount].to_d) },
+      b[:asks].map { |ask| OrderSummary.new(ask[:price].to_d, ask[:amount].to_d) }
+    )
   end
 end
