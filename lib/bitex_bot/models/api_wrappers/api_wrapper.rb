@@ -8,7 +8,7 @@ class ApiWrapper
     :timestamp) # Integer
 
   Order = Struct.new(
-    :id, # Integer
+    :id, # String
     :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
