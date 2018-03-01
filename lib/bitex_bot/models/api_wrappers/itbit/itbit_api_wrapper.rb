@@ -10,7 +10,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Itbit::XBTUSDMarketData.map { |t| transaction_parser(t) }
+    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t) }
   end
 
   def self.order_book
