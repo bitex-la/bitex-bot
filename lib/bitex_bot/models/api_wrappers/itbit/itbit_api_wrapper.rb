@@ -69,7 +69,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transaction_parser(t)
-    Transaction.new(t[:tid].to_d, t[:price].to_d, t[:amount].to_d, t[:date].to_d)
+    Transaction.new(t[:tid].to_i, t[:price].to_d, t[:amount].to_d, t[:date].to_i)
   end
 
   def self.order_book_parser(ob)
