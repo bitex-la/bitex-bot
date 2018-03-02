@@ -34,10 +34,10 @@ class ApiWrapper
     :available) # Decimal
 
   UserTransaction = Struct.new(
+    :order_id, # Integer
     :usd, # Decimal
     :btc, # Decimal,
     :btc_usd, # Decimal
-    :order_id, # Integer
     :fee, # Decimal,
     :type, # Integer
     :timestamp) # Integer
