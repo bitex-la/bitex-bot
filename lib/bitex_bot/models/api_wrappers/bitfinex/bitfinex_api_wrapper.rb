@@ -10,7 +10,13 @@ class BitfinexApiWrapper < ApiWrapper
 
   def self.transactions
     with_retry 'transactions' do
-      client.trades.map(&:symbolize_keys) { |t| transaction_parser(t) }
+      client.trades.map { |t| transaction_parser(t.symbolize_keys) }
+    end
+  end
+
+  def self.orders
+    with_retry 'orders' do
+      client.orders.map { |o| order_parser(o.simbolize_keys)) }
     end
   end
 
@@ -25,12 +31,6 @@ class BitfinexApiWrapper < ApiWrapper
     with_retry 'balance' do
       balances = client.balances(type: 'exchange').map(&:symbolize_keys)
       balance_summary_parser(balances)
-    end
-  end
-
-  def self.orders
-    with_retry 'orders' do
-      client.orders.map(&:simbolize_keys).map { |o| order_parser(o) }
     end
   end
 
@@ -55,11 +55,11 @@ class BitfinexApiWrapper < ApiWrapper
     end
   end
 
-  private
-
   def self.client
     @client ||= Bitfinex::Client.new
   end
+
+  private
 
   def self.with_retry(action, retries = 0, &block)
     block.call

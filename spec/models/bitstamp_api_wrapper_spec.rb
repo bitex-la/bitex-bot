@@ -110,8 +110,8 @@ describe BitstampApiWrapper do
     BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
     order = BitstampApiWrapper.orders.sample
-    order.id.should be_a(Integer)
-    order.type.should be_a(Integer)
+    order.id.should be_a(String)
+    order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)

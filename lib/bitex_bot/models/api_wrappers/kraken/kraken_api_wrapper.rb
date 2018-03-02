@@ -12,6 +12,10 @@ class KrakenApiWrapper < ApiWrapper
     retry
   end
 
+  def self.orders
+    KrakenOrder.open.map { |ko| order_parser(ko) }
+  end
+
   def self.order_book(retries = 20)
     book = client.public.order_book('XBTUSD')[:XXBTZUSD]
     order_book_parser(book)
@@ -20,26 +24,10 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def self.balance
-    BalanceSummary.new.tap do |summary|
-      open_orders = orders
-      balances = client.private.balance
-
-      sell_orders = open_orders.select { |o| o.type == :sell }
-      btc_reserved = sell_orders.map { |o| (o.amount - o.executed_amount).to_d }.sum
-      summary[:btc] = Balance.new(balances['XXBT'].to_d, btc_reserved, balances['XXBT'].to_d - btc_reserved)
-
-      buy_orders = open_orders - sell_orders
-      usd_reserved = buy_orders.map { |o| ((o.amount - o.executed_amount) * o.price).to_d }.sum
-      summary[:usd] = Balance.new(balances['ZUSD'].to_d, usd_reserved, balances['ZUSD'].to_d - usd_reserved)
-
-      summary[:fee] = client.private.trade_volume(pair: 'XBTUSD')[:fees][:XXBTZUSD][:fee].to_d
-    end
+    balance_summary = client.private.balance.symbolize_keys
+    balance_summary_parser(balance_summary)
   rescue KrakenClient::ErrorResponse, Net::ReadTimeout => e
     retry
-  end
-
-  def self.orders
-    KrakenOrder.open.map { |ko| order_parser(ko) }
   end
 
   # We don't need to fetch the list of transactions for Kraken
@@ -70,22 +58,45 @@ class KrakenApiWrapper < ApiWrapper
   private
 
   # [
+  #   ['price', 'amount', 'timestamp', 'buy/sell', 'market/limit', 'miscellaneous']
   #   ['202.51626', '0.01440000', 1440277319.1922, 'b', 'l', ''],
   #   ['202.54000', '0.10000000', 1440277322.8993, 'b', 'l', '']
   # ]
   def self.transaction_parser(t)
-    Transaction.new(t[2].to_s, t[0].to_d, t[1].to_d, t[2].to_i)
+    Transaction.new(t[2].to_i, t[0].to_d, t[1].to_d, t[2].to_i)
   end
 
+  # <KrakenOrder: @id='O5TDV2-WDYB2-6OGJRD', @type=:buy, @price='1.01', @amount='1.00000000', @datetime='2013-09-26 23:15:04'>
   def self.order_parser(o)
-    Order.new(o.id, o.type, o.price, o.amount, o.datetime)
+    Order.new(o.id.to_s, o.type, o.price, o.amount, o.datetime)
   end
 
+  # {
+  #   'asks': [['204.52893', '0.010', 1440291148], ['204.78790', '0.312', 1440291132]],
+  #   'bids': [['204.24000', '0.100', 1440291016], ['204.23010', '0.312', 1440290699]]
+  # }
   def self.order_book_parser(b)
     OrderBook.new(
       Time.now.to_i,
       b[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
       b[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
     )
+  end
+
+  # { ZEUR: '1433.0939', XXBT: '0.0000000000', 'XETH': '99.7497224800' }
+  def self.balance_summary_parser(b)
+    open_orders = orders
+
+    BalanceSummary.new.tap do |summary|
+      sell_orders = open_orders.select { |o| o.type == :sell }
+      btc_reserved = sell_orders.map { |o| (o.amount - o.executed_amount).to_d }.sum
+      summary[:btc] = Balance.new(b[:XXBT].to_d, btc_reserved, b[:XXBT].to_d - btc_reserved)
+
+      buy_orders = open_orders.select { |o| o.type == :buy }
+      usd_reserved = buy_orders.map { |o| (o.amount - o.executed_amount) * o.price }.sum
+      summary[:usd] = Balance.new(b[:ZUSD].to_d, usd_reserved, b[:ZUSD].to_d - usd_reserved)
+
+      summary[:fee] = client.private.trade_volume(pair: 'XBTUSD')[:fees][:XXBTZUSD][:fee].to_d
+    end
   end
 end

@@ -13,6 +13,10 @@ class ItbitApiWrapper < ApiWrapper
     Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
+  def self.orders
+    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
+  end
+
   def self.order_book
     order_book_parser(Itbit::XBTUSDMarketData.orders)
   end
@@ -20,10 +24,6 @@ class ItbitApiWrapper < ApiWrapper
   def self.balance
     wallet = Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }
     balance_summary_parser(wallet[:balances])
-  end
-
-  def self.orders
-    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
   end
 
   def self.find_lost(order_method, price)
@@ -63,19 +63,19 @@ class ItbitApiWrapper < ApiWrapper
 
   private
 
+  # { tid: 601855, price: 0.41814e3, amount: 0.19e-1, date: 1460161126 }
+  def self.transaction_parser(t)
+    Transaction.new(t[:tid], t[:price], t[:amount], t[:date])
+  end
+
   # <Itbit::Order:
-  #   @id="8fd820d3-baff-4d6f-9439-ff03d816c7ce", @wallet_id="b440efce-a83c-4873-8833-802a1022b476", @side=:buy,
+  #   @id='8fd820d3-baff-4d6f-9439-ff03d816c7ce', @wallet_id='b440efce-a83c-4873-8833-802a1022b476', @side=:buy,
   #   @instrument=:xbtusd, @type=:limit, @amount=0.1005e1, @display_amount=0.1005e1, @price=0.1e3,
   #   @volume_weighted_average_price=0.0, @amount_filled=0.0, @created_time=1415290187, @status=:open,
-  #   @metadata={"foo"=>"bar"}, @client_order_identifier="o"
+  #   @metadata={foo: 'bar'}, @client_order_identifier='o'
   # >
   def self.order_parser(o)
     Order.new(o.id, o.side, o.price, o.amount, o.created_time)
-  end
-
-  # { price: 0.41814e3, amount: 0.19e-1, tid: 601855, date: 1460161126 }
-  def self.transaction_parser(t)
-    Transaction.new(t[:tid].to_s, t[:price], t[:amount], t[:date])
   end
 
   # {
@@ -100,19 +100,11 @@ class ItbitApiWrapper < ApiWrapper
     BalanceSummary.new.tap do |summary|
       btc = b.find { |balance| balance[:currency] == :xbt }
       summary[:btc] =
-        Balance.new(
-          btc[:total_balance],
-          btc[:total_balance] - btc[:available_balance],
-          btc[:available_balance]
-        )
+        Balance.new(btc[:total_balance], btc[:total_balance] - btc[:available_balance], btc[:available_balance])
 
       usd = b.find { |balance| balance[:currency] == :usd }
       summary[:usd] =
-        Balance.new(
-          usd[:total_balance],
-          usd[:total_balance] - usd[:available_balance],
-          usd[:available_balance]
-        )
+        Balance.new(usd[:total_balance], usd[:total_balance] - usd[:available_balance], usd[:available_balance])
 
       summary[:fee] = 0.5.to_d
     end
