@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
+  let(:api_wrapper) { ItbitApiWrapper }
+
   before(:each) do
     BitexBot::Robot.stub(taker: api_wrapper)
     BitexBot::Robot.setup
@@ -43,11 +45,8 @@ describe ItbitApiWrapper do
     end
   end
 
-  def stub_itbit_default_wallet_id
-    Itbit.stub(:default_wallet_id) { 'fae1ce9a-848d-479b-b059-e93cb026cdf9' }
-  end
-
   def stub_itbit_balance
+    Itbit.stub(:default_wallet_id) { 'fae1ce9a-848d-479b-b059-e93cb026cdf9' }
     Itbit::Wallet.stub(:all) do
       [{
         id: 'fae1ce9a-848d-479b-b059-e93cb026cdf9',
@@ -62,8 +61,6 @@ describe ItbitApiWrapper do
       }]
     end
   end
-
-  let(:api_wrapper) { ItbitApiWrapper }
 
   it '#transactions' do
     stub_itbit_transactions
@@ -109,7 +106,6 @@ describe ItbitApiWrapper do
   end
 
   it '#balance' do
-    stub_itbit_default_wallet_id
     stub_itbit_balance
 
     balance = api_wrapper.balance
