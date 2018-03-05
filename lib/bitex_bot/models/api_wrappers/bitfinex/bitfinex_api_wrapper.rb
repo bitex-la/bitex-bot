@@ -16,7 +16,7 @@ class BitfinexApiWrapper < ApiWrapper
 
   def self.orders
     with_retry 'orders' do
-      client.orders.map { |o| order_parser(o.simbolize_keys)) }
+      client.orders.map { |o| order_parser(o.simbolize_keys) }
     end
   end
 
