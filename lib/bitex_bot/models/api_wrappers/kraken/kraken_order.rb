@@ -17,12 +17,12 @@ class KrakenOrder
   # }
   def initialize(id, order_data)
     self.id = id
-    self.amount = order_data['vol'].to_d
-    self.executed_amount = order_data['vol_exec'].to_d
-    self.price = order_data['descr']['price'].to_d
-    self.avg_price = order_data['price'].to_d
-    self.type = order_data['descr']['type'].to_sym
-    self.datetime = order_data['opentm'].to_i
+    self.amount = order_data[:vol].to_d
+    self.executed_amount = order_data[:vol_exec].to_d
+    self.price = order_data[:descr][:price].to_d
+    self.avg_price = order_data[:price].to_d
+    self.type = order_data[:descr][:type].to_sym
+    self.datetime = order_data[:opentm].to_i
   end
 
   def cancel!

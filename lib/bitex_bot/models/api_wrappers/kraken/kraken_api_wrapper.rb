@@ -24,8 +24,7 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def self.balance
-    balance_summary = client.private.balance.symbolize_keys
-    balance_summary_parser(balance_summary)
+    balance_summary_parser(client.private.balance)
   rescue KrakenClient::ErrorResponse, Net::ReadTimeout => e
     retry
   end
@@ -78,14 +77,14 @@ class KrakenApiWrapper < ApiWrapper
   def self.order_book_parser(b)
     OrderBook.new(
       Time.now.to_i,
-      b[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
-      b[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
+      b[:bids].map { |bid| OrderSummary.new(bid[0].to_d, bid[1].to_d) },
+      b[:asks].map { |ask| OrderSummary.new(ask[0].to_d, ask[1].to_d) }
     )
   end
 
   # { ZEUR: '1433.0939', XXBT: '0.0000000000', 'XETH': '99.7497224800' }
   def self.balance_summary_parser(b)
-    open_orders = orders
+    open_orders = KrakenOrder.open
 
     BalanceSummary.new.tap do |summary|
       sell_orders = open_orders.select { |o| o.type == :sell }
