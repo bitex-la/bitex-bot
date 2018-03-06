@@ -8,7 +8,7 @@ describe ItbitApiWrapper do
     BitexBot::Robot.setup
   end
 
-  def stub_itbit_transactions
+  def stub_transactions
     Itbit::XBTUSDMarketData.stub(:trades) do
       [
         { tid: 601855, price: 0.4.to_d, amount: 0.19.to_d, date: 1460161126 },
@@ -17,7 +17,7 @@ describe ItbitApiWrapper do
     end
   end
 
-  def stub_itbit_orders
+  def stub_orders
     Itbit::Order.stub(:all).with(status: :open) do
       [
         double(
@@ -36,7 +36,7 @@ describe ItbitApiWrapper do
     end
   end
 
-  def stub_itbit_order_book
+  def stub_order_book
     Itbit::XBTUSDMarketData.stub(:orders) do
       {
         bids: [[0.63.to_d, 0.1.to_d], [0.63.to_d, 0.4.to_d], [0.63.to_d, 0.15.to_d]],
@@ -45,7 +45,7 @@ describe ItbitApiWrapper do
     end
   end
 
-  def stub_itbit_balance
+  def stub_balance
     Itbit.stub(:default_wallet_id) { 'fae1ce9a-848d-479b-b059-e93cb026cdf9' }
     Itbit::Wallet.stub(:all) do
       [{
@@ -63,7 +63,7 @@ describe ItbitApiWrapper do
   end
 
   it '#transactions' do
-    stub_itbit_transactions
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -75,7 +75,7 @@ describe ItbitApiWrapper do
   end
 
   it '#orders' do
-    stub_itbit_orders
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -88,7 +88,7 @@ describe ItbitApiWrapper do
   end
 
   it '#order_book' do
-    stub_itbit_order_book
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -106,7 +106,7 @@ describe ItbitApiWrapper do
   end
 
   it '#balance' do
-    stub_itbit_balance
+    stub_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)

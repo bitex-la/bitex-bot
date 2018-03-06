@@ -17,7 +17,7 @@ describe KrakenApiWrapper do
     api_client.stub(private: double)
   end
 
-  def stub_kraken_transactions
+  def stub_transactions
     api_client.public.stub(:trades).with('XBTUSD') do
       {
         XXBTZUSD: [
@@ -28,7 +28,7 @@ describe KrakenApiWrapper do
     end
   end
 
-  def stub_kraken_orders
+  def stub_orders
     api_client.private.stub(:open_orders) do
       {
         'open' => {
@@ -55,7 +55,7 @@ describe KrakenApiWrapper do
     end
   end
 
-  def stub_kraken_order_book
+  def stub_order_book
     api_client.public.stub(:order_book) do
       {
         'XXBTZUSD' => {
@@ -66,14 +66,14 @@ describe KrakenApiWrapper do
     end
   end
 
-  def stub_kraken_balance
+  def stub_balance
     api_client.private.stub(account_info: [{ taker_fees: '89.2' }])
     api_client.private.stub(:balance) do
       { 'XXBT': '1433.0939', 'ZUSD': '1230.0233', 'XETH': '99.7497224800' }.with_indifferent_access
     end
   end
 
-  def stub_kraken_trade_volume
+  def stub_trade_volume
     api_client.private.stub(:trade_volume).with(pair: 'XBTUSD') do
       {
         'currency' => 'ZUSD', 'volume' => '3878.8703',
@@ -95,7 +95,7 @@ describe KrakenApiWrapper do
 
   it '#transactions' do
     stub_public_client
-    stub_kraken_transactions
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -108,7 +108,7 @@ describe KrakenApiWrapper do
 
   it '#orders' do
     stub_private_client
-    stub_kraken_orders
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -122,7 +122,7 @@ describe KrakenApiWrapper do
 
   it '#order_book' do
     stub_public_client
-    stub_kraken_order_book
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -141,9 +141,9 @@ describe KrakenApiWrapper do
 
   it '#balance' do
     stub_private_client
-    stub_kraken_orders
-    stub_kraken_balance
-    stub_kraken_trade_volume
+    stub_orders
+    stub_balance
+    stub_trade_volume
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)

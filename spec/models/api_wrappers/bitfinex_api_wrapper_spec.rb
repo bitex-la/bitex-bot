@@ -18,7 +18,7 @@ describe BitfinexApiWrapper do
     BitfinexApiWrapper.balance rescue nil # we don't care about the response
   end
 
-  def stub_bitfinex_transactions
+  def stub_transactions
     api_client.any_instance.stub(:trades) do
       [
         { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 },
@@ -27,7 +27,7 @@ describe BitfinexApiWrapper do
     end
   end
 
-  def stub_bitfinex_orders
+  def stub_orders
     api_client.any_instance.stub(:orders) do
       [
         {
@@ -39,7 +39,7 @@ describe BitfinexApiWrapper do
     end
   end
 
-  def stub_bitfinex_order_book
+  def stub_order_book
     api_client.any_instance.stub(:orderbook) do
       {
         bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
@@ -48,7 +48,7 @@ describe BitfinexApiWrapper do
     end
   end
 
-  def stub_bitfinex_balance
+  def stub_balance
     api_client.any_instance.stub(:account_info) { [{ taker_fees: '89.2' }] }
     api_client.any_instance.stub(:balances) do
       [
@@ -60,7 +60,7 @@ describe BitfinexApiWrapper do
   end
 
   it '#transactions' do
-    stub_bitfinex_transactions
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -72,7 +72,7 @@ describe BitfinexApiWrapper do
   end
 
   it '#orders' do
-    stub_bitfinex_orders
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -85,7 +85,7 @@ describe BitfinexApiWrapper do
   end
 
   it '#order_book' do
-    stub_bitfinex_order_book
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -103,7 +103,7 @@ describe BitfinexApiWrapper do
   end
 
   it '#balance' do
-    stub_bitfinex_balance
+    stub_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)

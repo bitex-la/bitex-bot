@@ -1,6 +1,12 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
+
+  before(:each) do
+    BitexBot::Robot.stub(taker: BitstampApiWrapper)
+    BitexBot::Robot.setup
+  end
+
   def stub_balance(usd = nil, coin = nil, fee = nil)
     Bitstamp.stub(:balance) do
       {
@@ -20,18 +26,13 @@ describe BitstampApiWrapper do
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @usd="0.00", @btc="-3.078", @btc_usd="0.00",
   #   @fee="0.00", @type=1, @datetime="2013-09-26 13:46:59">]
-  def stub_bitstamp_user_transactions
+  def stub_user_transactions
     Bitstamp.user_transactions.stub(:all) do
       [
         double(usd: '0.00', btc: '-3.00781124', btc_usd: '0.00', order_id: 14, fee: '0.00',
          type: 1, id: 14, datetime: '2013-09-26 13:46:59')
       ]
     end
-  end
-
-  before(:each) do
-    BitexBot::Robot.stub(taker: BitstampApiWrapper)
-    BitexBot::Robot.setup
   end
 
   it 'Sends User-Agent header' do
@@ -118,7 +119,7 @@ describe BitstampApiWrapper do
   end
 
   it '#user_transaction' do
-    stub_bitstamp_user_transactions
+    stub_user_transactions
     BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
     user_transaction = BitstampApiWrapper.user_transactions.sample
