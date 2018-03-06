@@ -121,6 +121,6 @@ class BitstampApiWrapper < ApiWrapper
   # >
   def self.user_transaction_parser(ut)
     timestamp = Time.new(ut.datetime).to_i
-    UserTransaction.new(ut.usd.to_d, ut.btc.to_d, ut.btc_usd.to_d, ut.order_id, ut.fee.to_d, ut.type, timestamp)
+    UserTransaction.new(ut.order_id, ut.usd.to_d, ut.btc.to_d, ut.btc_usd.to_d, ut.fee.to_d, ut.type, timestamp)
   end
 end

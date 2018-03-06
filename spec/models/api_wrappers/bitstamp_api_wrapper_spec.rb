@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
-  def stub_bitstamp_balance(usd = nil, coin = nil, fee = nil)
+  def stub_balance(usd = nil, coin = nil, fee = nil)
     Bitstamp.stub(:balance) do
       {
         'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
@@ -12,7 +12,7 @@ describe BitstampApiWrapper do
   end
 
   # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
-  def stub_bitstamp_orders
+  def stub_orders
     Bitstamp.orders.stub(:all) do
       [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
     end
@@ -71,7 +71,7 @@ describe BitstampApiWrapper do
   end
 
   it '#balance' do
-    stub_bitstamp_balance
+    stub_balance
 
     balance = BitstampApiWrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -92,7 +92,7 @@ describe BitstampApiWrapper do
   end
 
   it '#cancel' do
-    stub_bitstamp_orders
+    stub_orders
     Bitstamp::Order.any_instance.stub(:cancel!) do
       Bitstamp.orders.stub(all: [])
     end
@@ -105,7 +105,7 @@ describe BitstampApiWrapper do
   end
 
   it '#orders' do
-    stub_bitstamp_orders
+    stub_orders
 
     BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
