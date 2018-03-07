@@ -4,18 +4,29 @@ class KrakenOrder
   cattr_accessor :last_closed_order
   attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime
 
+  # id: 'O5TDV2-WDYB2-6OGJRD'
+  # order_data: {
+  #     'refid': nil, 'userref': nil, 'status': 'open', 'opentm': 1440292821.4839, 'starttm': 0, 'expiretm': 0,
+  #     'descr': {
+  #       'pair': 'ETHEUR', 'type': 'buy', 'ordertype': 'limit', 'price': '1.19000', 'price2': '0', 'leverage': 'none',
+  #       'order': 'buy 1204.00000000 ETHEUR @ limit 1.19000'
+  #     },
+  #     'vol': '1204.00000000', 'vol_exec': '0.00000000', 'cost': '0.00000', 'fee': '0.00000', 'price': '0.00000',
+  #     'misc': '', 'oflags': 'fciq'
+  #   }
+  # }
   def initialize(id, order_data)
     self.id = id
-    self.amount = order_data['vol'].to_d
-    self.executed_amount = order_data['vol_exec'].to_d
-    self.price = order_data['descr']['price'].to_d
-    self.avg_price = order_data['price'].to_d
-    self.type = order_data['descr']['type'].to_sym
-    self.datetime = order_data['opentm'].to_i
+    self.amount = order_data[:vol].to_d
+    self.executed_amount = order_data[:vol_exec].to_d
+    self.price = order_data[:descr][:price].to_d
+    self.avg_price = order_data[:price].to_d
+    self.type = order_data[:descr][:type].to_sym
+    self.datetime = order_data[:opentm].to_i
   end
 
   def cancel!
-    self.class.client.private.cancel_order(txid: id)
+    KrakenApiWrapper.client.private.cancel_order(txid: id)
   rescue KrakenClient::ErrorResponse => e
     retry if e.message == 'EService:Unavailable'
     raise
@@ -29,12 +40,8 @@ class KrakenOrder
     end
   end
 
-  def self.client
-    KrakenApiWrapper.client
-  end
-
   def self.find(id)
-    new(*client.private.query_orders(txid: id).first)
+    new(*KrakenApiWrapper.client.private.query_orders(txid: id).first)
   rescue KrakenClient::ErrorResponse => e
     retry
   end
@@ -45,13 +52,13 @@ class KrakenOrder
   end
 
   def self.open
-    client.private.open_orders['open'].collect { |o| new(*o) }
+    KrakenApiWrapper.client.private.open_orders['open'].map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
 
   def self.closed(start: 1.hour.ago.to_i)
-    client.private.closed_orders(start: start)[:closed].collect { |o| new(*o) }
+    KrakenApiWrapper.client.private.closed_orders(start: start)[:closed].map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse => e
     retry
   end
@@ -60,8 +67,9 @@ class KrakenOrder
     self.last_closed_order = closed.first.try(:id) || Time.now.to_i
     price = price.truncate(1)
     quantity = quantity.truncate(8)
-    order_info = client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit',
-      price: price, volume: quantity)
+    order_info =
+      KrakenApiWrapper.client.private
+      .add_order(pair: 'XBTUSD', type: type, ordertype: 'limit', price: price, volume: quantity)
     find(order_info['txid'].first)
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed

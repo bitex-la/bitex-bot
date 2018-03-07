@@ -8,8 +8,8 @@ class ApiWrapper
     :timestamp) # Integer
 
   Order = Struct.new(
-    :id, # Integer
-    :type, # Integer
+    :id, # String
+    :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
     :timestamp) # Integer
@@ -34,10 +34,10 @@ class ApiWrapper
     :available) # Decimal
 
   UserTransaction = Struct.new(
+    :order_id, # Integer
     :usd, # Decimal
     :btc, # Decimal,
     :btc_usd, # Decimal
-    :order_id, # Integer
     :fee, # Decimal,
     :type, # Integer
     :timestamp) # Integer

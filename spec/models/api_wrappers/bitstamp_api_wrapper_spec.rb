@@ -1,7 +1,13 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
-  def stub_bitstamp_balance(usd = nil, coin = nil, fee = nil)
+
+  before(:each) do
+    BitexBot::Robot.stub(taker: BitstampApiWrapper)
+    BitexBot::Robot.setup
+  end
+
+  def stub_balance(usd = nil, coin = nil, fee = nil)
     Bitstamp.stub(:balance) do
       {
         'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
@@ -12,7 +18,7 @@ describe BitstampApiWrapper do
   end
 
   # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
-  def stub_bitstamp_orders
+  def stub_orders
     Bitstamp.orders.stub(:all) do
       [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
     end
@@ -20,18 +26,13 @@ describe BitstampApiWrapper do
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @usd="0.00", @btc="-3.078", @btc_usd="0.00",
   #   @fee="0.00", @type=1, @datetime="2013-09-26 13:46:59">]
-  def stub_bitstamp_user_transactions
+  def stub_user_transactions
     Bitstamp.user_transactions.stub(:all) do
       [
         double(usd: '0.00', btc: '-3.00781124', btc_usd: '0.00', order_id: 14, fee: '0.00',
          type: 1, id: 14, datetime: '2013-09-26 13:46:59')
       ]
     end
-  end
-
-  before(:each) do
-    BitexBot::Robot.stub(taker: BitstampApiWrapper)
-    BitexBot::Robot.setup
   end
 
   it 'Sends User-Agent header' do
@@ -71,7 +72,7 @@ describe BitstampApiWrapper do
   end
 
   it '#balance' do
-    stub_bitstamp_balance
+    stub_balance
 
     balance = BitstampApiWrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -92,7 +93,7 @@ describe BitstampApiWrapper do
   end
 
   it '#cancel' do
-    stub_bitstamp_orders
+    stub_orders
     Bitstamp::Order.any_instance.stub(:cancel!) do
       Bitstamp.orders.stub(all: [])
     end
@@ -105,20 +106,20 @@ describe BitstampApiWrapper do
   end
 
   it '#orders' do
-    stub_bitstamp_orders
+    stub_orders
 
     BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
     order = BitstampApiWrapper.orders.sample
-    order.id.should be_a(Integer)
-    order.type.should be_a(Integer)
+    order.id.should be_a(String)
+    order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
   end
 
   it '#user_transaction' do
-    stub_bitstamp_user_transactions
+    stub_user_transactions
     BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
     user_transaction = BitstampApiWrapper.user_transactions.sample
