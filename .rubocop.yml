@@ -1,0 +1,14 @@
+Metrics/LineLength:
+  Max: 130
+
+AllCops:
+  Exclude:
+    - 'Gemfile'
+    - 'Gemfile.lock'
+    - 'LICENSE.txt'
+    - 'README.md'
+    - 'Rakefile'
+    - 'bin/*'
+    - 'bitex_bot.gemspec'
+    - 'settings.rb.sample'
+    - 'spec/**/*'

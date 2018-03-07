@@ -6,20 +6,18 @@ require 'bitex_bot/version'
 Gem::Specification.new do |spec|
   spec.name          = 'bitex_bot'
   spec.version       = BitexBot::VERSION
-  spec.authors       = ['Nubis', 'Eromirou']
-  spec.email         = ['nb@bitex.la', 'tr@bitex.la']
-  spec.description   = %q{Both a trading robot and a library to build trading
-                        robots. The bitex-bot lets you buy cheap on bitex and
-                        sell on another exchange and vice versa.}
-  spec.summary       = %q{A trading robot to do arbitrage between bitex.la and
-                        other exchanges!}
+  spec.authors       = %w[Nubis Eromirou]
+  spec.email         = %w[nb@bitex.la tr@bitex.la]
+  spec.description   = %q[Both a trading robot and a library to build trading robots. The bitex-bot lets you buy cheap
+                        on bitex and sell on another exchange and vice versa.]
+  spec.summary       = %q[A trading robot to do arbitrage between bitex.la and other exchanges!]
   spec.homepage      = ''
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files`.split($/)
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ['lib']
+  spec.executables   = spec.files.grep(%r[^bin/]) { |f| File.basename(f) }
+  spec.test_files    = spec.files.grep(%r[^(test|spec|features)/])
+  spec.require_paths = %w[lib]
 
   spec.add_dependency 'activerecord', '~> 4.2'
   spec.add_dependency 'sqlite3'
@@ -33,6 +31,7 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'byebug'
+  spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'rspec-mocks'

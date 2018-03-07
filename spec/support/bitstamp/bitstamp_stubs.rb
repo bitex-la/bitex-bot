@@ -13,7 +13,7 @@ module BitstampStubs
   def stub_bitstamp_transactions(price = 0.2, amount = 1 )
     Bitstamp.stub(:transactions) do
       5.times.collect do |i|
-        double(tid:i, date: (i+1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s)
+        double(tid: i, date: (i+1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s)
       end
     end
   end
