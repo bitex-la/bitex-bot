@@ -37,6 +37,7 @@ jobs:
           key: v1-dependencies-{{ checksum "bitex_bot.gemspec" }}-{{ checksum "Gemfile" }}
 
       # run lints
+      - run:
           name: run lints
           command: |
             bundle exec rubocop
