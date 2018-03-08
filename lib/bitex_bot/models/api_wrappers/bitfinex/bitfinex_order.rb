@@ -1,3 +1,5 @@
+##
+# Wrapper for bitfinex orders
 class BitfinexOrder
   attr_accessor :id, :amount, :price, :type, :datetime
 

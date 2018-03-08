@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BitfinexApiWrapper do
+describe 'BitfinexApiWrapperjhgsdjhdgjhdsgjh' do
   let(:api_wrapper) { BitfinexApiWrapper }
   let(:api_client) { Bitfinex::Client }
 
@@ -11,11 +11,12 @@ describe BitfinexApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    stub_request(:post, 'https://api.bitfinex.com/v1/balances')
+    orders_stub =
+      stub_request(:post, 'https://api.bitfinex.com/v1/orders')
       .with(headers: { 'User-Agent': BitexBot.user_agent })
-    stub_request(:post, 'https://api.bitfinex.com/v1/account_infos')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
-    BitfinexApiWrapper.balance rescue nil # we don't care about the response
+    BitfinexApiWrapper.orders rescue nil # we don't care about the response
+
+    expect(orders_stub).to have_been_requested
   end
 
   def stub_transactions

@@ -1,4 +1,9 @@
+##
+# Documentation here!
+
 module Bitfinex
+  ##
+  # Documentation here!
   module WithUserAgent
     def new_rest_connection
       super.tap do |conn|
@@ -7,6 +12,8 @@ module Bitfinex
     end
   end
 
+  ##
+  # Documentation here!
   class Client
     prepend WithUserAgent
   end
