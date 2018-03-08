@@ -12,3 +12,4 @@ AllCops:
     - 'bitex_bot.gemspec'
     - 'settings.rb.sample'
     - 'spec/**/*'
+    - 'vendor/**/*'
