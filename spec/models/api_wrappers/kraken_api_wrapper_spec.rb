@@ -21,8 +21,8 @@ describe KrakenApiWrapper do
     api_client.public.stub(:trades).with('XBTUSD') do
       {
         XXBTZUSD: [
-          ['202.51626', '0.01440000', 1440277319.1922, 'b', 'l', ''],
-          ['202.54000', '0.10000000', 1440277322.8993, 'b', 'l', '']
+          ['202.51626', '0.01440000', 1_440_277_319.1_922, 'b', 'l', ''],
+          ['202.54000', '0.10000000', 1_440_277_322.8_993, 'b', 'l', '']
         ]
       }
     end
@@ -33,16 +33,16 @@ describe KrakenApiWrapper do
       {
         'open' => {
           'O5TDV2-WDYB2-6OGJRD' => {
-            'refid' => nil, 'userref' => nil, 'status' => 'open', 'opentm' => 1440292821.4839, 'starttm' => 0,'expiretm' => 0,
+            'refid' => nil, 'userref' => nil, 'status' => 'open', 'opentm' => 1_440_292_821.839, 'starttm' => 0, 'expiretm' => 0,
             'descr' => {
               'pair' => 'ETHEUR', 'type' => 'buy', 'ordertype' => 'limit', 'price' => '1.19000', 'price2' => '0',
-              'leverage' => 'none', 'order' =>'buy 1204.00000000 ETHEUR @ limit 1.19000'
+              'leverage' => 'none', 'order' => 'buy 1204.00000000 ETHEUR @ limit 1.19000'
             },
             'vol' => '1204.00000000', 'vol_exec' => '0.00000000', 'cost' => '0.00000', 'fee' => '0.00000',
             'price' => '0.00008', 'misc' => '', 'oflags' => 'fciq'
           },
           'OGAEYL-LVSPL-BYGGRR' => {
-            'refid' => nil, 'userref' => nil, 'status' => 'open', 'opentm' => 1440254004.3621, 'starttm' => 0, 'expiretm' => 0,
+            'refid' => nil, 'userref' => nil, 'status' => 'open', 'opentm' => 1_440_254_004.621, 'starttm' => 0, 'expiretm' => 0,
             'descr' => {
               'pair' => 'ETHEUR', 'type' => 'sell', 'ordertype' => 'limit', 'price' => '1.29000', 'price2' => '0',
               'leverage' => 'none', 'order' => 'sell 99.74972000 ETHEUR @ limit 1.29000'
@@ -59,8 +59,8 @@ describe KrakenApiWrapper do
     api_client.public.stub(:order_book) do
       {
         'XXBTZUSD' => {
-          'bids' => [[ '574.61', '0.14397', '1472506127.0' ]],
-          'asks' => [[ '574.62', '19.1334', '1472506126.0 ']]
+          'bids' => [['574.61', '0.14397', '1472506127.0']],
+          'asks' => [['574.62', '19.1334', '1472506126.0']]
         }
       }.with_indifferent_access
     end

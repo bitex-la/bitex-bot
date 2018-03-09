@@ -1,7 +1,13 @@
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
 Metrics/LineLength:
   Max: 130
+Metrics/MethodLength:
+  Max: 20
 
 AllCops:
+  TargetRubyVersion: 2.5
   Exclude:
     - 'Gemfile'
     - 'Gemfile.lock'
