@@ -1,6 +1,3 @@
-##
-# This class represents the general behaviour for trading platform wrappers.
-#
 class ApiWrapper
   MIN_AMOUNT = 5
 
@@ -8,39 +5,33 @@ class ApiWrapper
     :id, # Integer
     :price, # Decimal
     :amount, # Decimal
-    :timestamp, # Integer Epoch
-  )
+    :timestamp) # Integer
 
   Order = Struct.new(
     :id, # String
     :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
-    :timestamp, # Integer Epoch
-  )
+    :timestamp) # Integer
 
   OrderBook = Struct.new(
     :timestamp, # Integer
     :bids, # [OrderSummary]
-    :asks, # [OrderSummary]
-  )
+    :asks) # [OrderSummary]
 
   OrderSummary = Struct.new(
     :price, # Decimal
-    :quantity, # Decimal
-  )
+    :quantity) # Decimal
 
   BalanceSummary = Struct.new(
     :btc, # Balance
     :usd, # Balance
-    :fee, # Decimal
-  )
+    :fee) # Decimal
 
   Balance = Struct.new(
     :total, # Decimal
     :reserved, # Decimal
-    :available, # Decimal
-  )
+    :available) # Decimal
 
   UserTransaction = Struct.new(
     :order_id, # Integer
@@ -49,87 +40,84 @@ class ApiWrapper
     :btc_usd, # Decimal
     :fee, # Decimal,
     :type, # Integer
-    :timestamp, # Integer Epoch
-  )
+    :timestamp) # Integer
 
-  class << self
-    # @return [Void]
-    def setup
-      raise 'self subclass responsibility'
-    end
+  # @return [Void]
+  def self.setup(settings)
+    raise 'self subclass responsibility'
+  end
 
-    # @return [Array<Transaction>]
-    def transactions
-      raise 'self subclass responsibility'
-    end
+  # @return [Array<Transaction>]
+  def self.transactions
+    raise 'self subclass responsibility'
+  end
 
-    # @return [OrderBook]
-    def order_book
-      raise 'self subclass responsibility'
-    end
+  # @return [OrderBook]
+  def self.order_book(retries = 20)
+    raise 'self subclass responsibility'
+  end
 
-    # @return [BalanceSummary]
-    def balance
-      raise 'self subclass responsibility'
-    end
+  # @return [BalanceSummary]
+  def self.balance
+    raise 'self subclass responsibility'
+  end
 
-    # @return [nil]
-    def cancel
-      raise 'self subclass responsibility'
-    end
+  # @return [nil]
+  def self.cancel
+    raise 'self subclass responsibility'
+  end
 
-    # @return [Array<Order>]
-    def orders
-      raise 'self subclass responsibility'
-    end
+  # @return [Array<Order>]
+  def self.orders
+    raise 'self subclass responsibility'
+  end
 
-    # @return [UserTransaction]
-    def user_transacitions
-      raise 'self subclass responsibility'
-    end
+  # @return [UserTransaction]
+  def self.user_transacitions
+    raise 'self subclass responsibility'
+  end
 
-    # @param type
-    # @param price
-    # @param quantity
-    def place_order(type, price, quantity)
-      order = send_order(type, price, quantity)
-      return order unless order.nil? || order.id.nil?
+  # @param type
+  # @param price
+  # @param quantity
+  def self.place_order(type, price, quantity)
+    order = send_order(type, price, quantity)
+    if order.nil? || order.id.nil?
       BitexBot::Robot.logger.debug("Captured error when placing order on #{self.class.name}")
-
-      # Order may have gone through and be stuck somewhere in Wrapper's piipeline.
+      # Order may have gone through and be stuck somewhere in Wrapper's piipeline
       # We just sleep for a bit and then look for the order.
       20.times do
-        BitexBot::Robot.sleep_for(10)
+        BitexBot::Robot.sleep_for 10
         order = find_lost(type, price, quantity)
         return order if order.present?
       end
-
-      raise(OrderNotFound, "Closing: #{type} not founded for #{quantity} BTC @ $#{price}. #{order}")
+      raise OrderNotFound.new("Closing: #{type} not founded for #{quantity} BTC @ $#{price}. #{order.to_s}")
     end
+    order
+  end
 
-    # Hook Method - thearguments could not be used in their entirety by the subclasses
-    def send_order
-      raise 'self subclass responsibility'
-    end
+  # Hook Method - thearguments could not be used in their entirety by the subclasses
+  def send_order(type, price, quantity)
+    raise 'self subclass responsibility'
+  end
 
-    # @param order_method [String] buy|sell
-    # @param price [Decimal]
-    #
-    # Hook Method - the arguments could not be used in their entirety by the subclasses
-    def find_lost
-      raise 'self subclass responsibility'
-    end
+  # @param order_method [String] buy|sell
+  # @param price [Decimal]
+  #
+  # Hook Method - the arguments could not be used in their entirety by the subclasses
+  def self.find_lost(type, price, quantity)
+    raise 'self subclass responsibility'
+  end
 
-    # @param order_id
-    # @param transactions
-    # @return [Array<Decimal, Decimal>]
-    def amount_and_quantity
-      raise 'self subclass responsibility'
-    end
+  # @param order_id
+  # @param transactions
+  # @return [Array<Decimal, Decimal>]
+  def self.amount_and_quantity(order_id, transactions)
+    raise 'self subclass responsibility'
+  end
 
-    def enough_order_size?(quantity, price)
-      (quantity * price) > MIN_AMOUNT
-    end
+  def self.enough_order_size?(quantity, price)
+    (quantity * price) > MIN_AMOUNT
   end
 end
 
