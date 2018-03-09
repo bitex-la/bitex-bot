@@ -8,6 +8,15 @@ describe ItbitApiWrapper do
     BitexBot::Robot.setup
   end
 
+  it 'Sends User-Agent header' do
+    order_book_stub =
+      stub_request(:get, 'https://api.itbit.com/v1/markets/XBTUSD/order_book')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
+
+    ItbitApiWrapper.order_book rescue nil # We don't care about the response
+    expect(order_book_stub).to have_been_requested
+  end
+
   def stub_transactions
     Itbit::XBTUSDMarketData.stub(:trades) do
       [
