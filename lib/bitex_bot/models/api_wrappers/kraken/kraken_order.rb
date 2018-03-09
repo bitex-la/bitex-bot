@@ -7,6 +7,78 @@ class KrakenOrder
   cattr_accessor :last_closed_order
   attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime
 
+  class << self
+    # rubocop:disable Metrics/AbcSize
+    def create!(type, price, quantity)
+      self.last_closed_order = closed.first.try(:id) || Time.now.to_i
+      find(order_info_by(type, price.truncate(1), quantity.trucante(8))['txid'].first)
+    rescue KrakenClient::ErrorResponse => e
+      # Order could not be placed
+      if e.message == 'EService:Unavailable'
+        BitexBot::Robot.logger.debug('Captured EService:Unavailable error when placing order on Kraken. Retrying...')
+        retry
+      elsif e.message.start_with?('EGeneral:Invalid')
+        BitexBot::Robot.logger.debug("Captured #{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
+        raise(OrderArgumentError, e.message)
+      elsif e.message != 'error'
+        raise
+      end
+    end
+    # rubocop:enable Metrics/AbcSize
+
+    def order_info_by(type, price, quantity)
+      KrakenApiWrapper.client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit', price: price, volume: quantity)
+    end
+
+    def find(id)
+      new(*KrakenApiWrapper.client.private.query_orders(txid: id).first)
+    rescue KrakenClient::ErrorResponse
+      retry
+    end
+
+    def amount_and_quantity(order_id)
+      order = find(order_id)
+      [order.avg_price * order.executed_amount, order.executed_amount]
+    end
+
+    def open
+      KrakenApiWrapper.client.private.open_orders['open'].map { |o| new(*o) }
+    rescue KrakenClient::ErrorResponse
+      retry
+    end
+
+    def closed(start: 1.hour.ago.to_i)
+      KrakenApiWrapper.client.private.closed_orders(start: start)[:closed].map { |o| new(*o) }
+    rescue KrakenClient::ErrorResponse
+      retry
+    end
+
+    def find_lost(type, price, quantity)
+      BitexBot::Robot.logger.debug("Looking for #{type} order in open orders...")
+      order = open_order_by(type, price, quantity)
+      return log_and_return(order, :open) if order.present?
+
+      BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
+      order = closed_order_by(type, price, quantity)
+      return log_and_return(order, :closed) if order && order.id != last_closed_order
+    end
+
+    def log_and_return(order, status)
+      BitexBot::Robot.logger.debug("Found open #{status} with ID #{order.id}")
+      order
+    end
+
+    # description: [type, price, quantity]
+    def open_order_by(type, price, quantity)
+      open.detect { |o| o == [type, price, quantity] }
+    end
+
+    # description: [type, price, quantity]
+    def closed_order_by(type, price, quantity)
+      closed(start: last_closed_order).detect { |o| o == [type, price, quantity] }
+    end
+  end
+
   # id: 'O5TDV2-WDYB2-6OGJRD'
   # order_data: {
   #     'refid': nil, 'userref': nil, 'status': 'open', 'opentm': 1440292821.4839, 'starttm': 0, 'expiretm': 0,
@@ -44,75 +116,6 @@ class KrakenOrder
     end
   end
 
-  # rubocop:disable Metrics/AbcSize
-  def self.create!(type, price, quantity)
-    self.last_closed_order = closed.first.try(:id) || Time.now.to_i
-    find(order_info_by(type, price.truncate(1), quantity.trucante(8))['txid'].first)
-  rescue KrakenClient::ErrorResponse => e
-    # Order could not be placed
-    if e.message == 'EService:Unavailable'
-      BitexBot::Robot.logger.debug('Captured EService:Unavailable error when placing order on Kraken. Retrying...')
-      retry
-    elsif e.message.start_with?('EGeneral:Invalid')
-      BitexBot::Robot.logger.debug("Captured #{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
-      raise(OrderArgumentError, e.message)
-    elsif e.message != 'error'
-      raise
-    end
-  end
-  # rubocop:enable Metrics/AbcSize
-
-  def self.order_info_by(type, price, quantity)
-    KrakenApiWrapper.client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit', price: price, volume: quantity)
-  end
-
-  def self.find(id)
-    new(*KrakenApiWrapper.client.private.query_orders(txid: id).first)
-  rescue KrakenClient::ErrorResponse
-    retry
-  end
-
-  def self.amount_and_quantity(order_id)
-    order = find(order_id)
-    [order.avg_price * order.executed_amount, order.executed_amount]
-  end
-
-  def self.open
-    KrakenApiWrapper.client.private.open_orders['open'].map { |o| new(*o) }
-  rescue KrakenClient::ErrorResponse
-    retry
-  end
-
-  def self.closed(start: 1.hour.ago.to_i)
-    KrakenApiWrapper.client.private.closed_orders(start: start)[:closed].map { |o| new(*o) }
-  rescue KrakenClient::ErrorResponse
-    retry
-  end
-
-  def self.find_lost(type, price, quantity)
-    BitexBot::Robot.logger.debug("Looking for #{type} order in open orders...")
-    order = open_order_by(type, price, quantity)
-    return log_and_return(order, :open) if order.present?
-
-    BitexBot::Robot.logger.debug("Looking for #{type} order in closed orders...")
-    order = closed_order_by(type, price, quantity)
-    return log_and_return(order, :closed) if order && order.id != last_closed_order
-  end
-
-  def log_and_return(order, status)
-    BitexBot::Robot.logger.debug("Found open #{status} with ID #{order.id}")
-    order
-  end
-
-  # description: [type, price, quantity]
-  def self.open_order_by(type, price, quantity)
-    open.detect { |o| o == [type, price, quantity] }
-  end
-
-  # description: [type, price, quantity]
-  def self.closed_order_by(type, price, quantity)
-    closed(start: last_closed_order).detect { |o| o == [type, price, quantity] }
-  end
 end
 
 class OrderArgumentError < StandardError; end
