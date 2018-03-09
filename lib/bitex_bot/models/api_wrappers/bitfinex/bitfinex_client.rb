@@ -1,9 +1,9 @@
 ##
-# Documentation here!
-
+# Open Bitfinex gem module.
+#
 module Bitfinex
   ##
-  # Documentation here!
+  # Set User Agen into Bitfinex gem.
   module WithUserAgent
     def new_rest_connection
       super.tap do |conn|
@@ -13,7 +13,7 @@ module Bitfinex
   end
 
   ##
-  # Documentation here!
+  # Open Bitfinex Client to preprend user agent.
   class Client
     prepend WithUserAgent
   end
