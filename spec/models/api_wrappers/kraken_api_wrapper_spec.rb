@@ -9,6 +9,15 @@ describe KrakenApiWrapper do
     BitexBot::Robot.setup
   end
 
+  it 'Sends User-Agent header' do
+    order_book_stub =
+      stub_request(:get, 'https://api.kraken.com/0/public/Depth?pair=XBTUSD')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
+
+    KrakenApiWrapper.order_book rescue nil # We don't care about the response
+    expect(order_book_stub).to have_been_requested
+  end
+
   def stub_public_client
     api_client.stub(public: double)
   end
