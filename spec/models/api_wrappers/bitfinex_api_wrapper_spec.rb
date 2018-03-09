@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe 'BitfinexApiWrapperjhgsdjhdgjhdsgjh' do
+describe 'BitfinexApiWrapper' do
   let(:api_wrapper) { BitfinexApiWrapper }
   let(:api_client) { Bitfinex::Client }
 
