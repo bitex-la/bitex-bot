@@ -35,7 +35,7 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def self.enough_order_size?(quantity, price)
-    (quantity * price) > MIN_AMOUNT
+    quantity >= MIN_AMOUNT
   end
 
   def self.send_order(type, price, quantity)
