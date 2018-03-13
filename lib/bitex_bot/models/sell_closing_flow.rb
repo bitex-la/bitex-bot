@@ -4,23 +4,27 @@ module BitexBot
     has_many :close_positions, class_name: 'CloseSell', foreign_key: :closing_flow_id
     scope :active, ->{ where(done: false) }
 
-    def self.open_position_class; OpenSell; end
+    class << self
+      def open_position_class
+        OpenSell
+      end
+    end
 
-    def order_method; :buy; end
+    def order_method
+      :buy
+    end
 
-    # The amount received when selling initially, minus
-    # the amount spent re-buying the sold coins.
-    def get_usd_profit
+    # The amount received when selling initially, minus the amount spent re-buying the sold coins.
+    def estimate_usd_profit
       open_positions.sum(:amount) - close_positions.sum(:amount)
     end
 
-    # The coins we actually bought minus the coins we were supposed
-    # to re-buy
-    def get_btc_profit
+    # The coins we actually bought minus the coins we were supposed to re-buy.
+    def estimate_btc_profit
       close_positions.sum(:quantity) - quantity
     end
 
-    def get_next_price_and_quantity
+    def next_price_and_quantity
       closes = close_positions
       next_price = desired_price + ((closes.count * (closes.count * 3)) / 100.0)
       next_quantity = ((quantity * desired_price) - closes.sum(:amount)) / next_price

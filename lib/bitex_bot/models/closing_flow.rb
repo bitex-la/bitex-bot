@@ -2,30 +2,37 @@ module BitexBot
   class ClosingFlow < ActiveRecord::Base
     self.abstract_class = true
 
-    # Start a new CloseBuy that closes exising OpenBuy's by selling
-    # on another exchange what was just bought on bitex.
-    def self.close_open_positions
-      open_positions = open_position_class.open
-      return if open_positions.empty?
+    class << self
 
-      quantity = open_positions.collect(&:quantity).sum
-      amount = open_positions.collect(&:amount).sum
-      suggested_amount = open_positions.collect do |open|
-        open.quantity * open.opening_flow.suggested_closing_price
-      end.sum
-      price = suggested_amount / quantity
+      def close_time_to_live
+        30
+      end
 
-      # Don't even bother trying to close a position that's too small.
-      return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
+      # Start a new CloseBuy that closes exising OpenBuy's by selling
+      # on another exchange what was just bought on bitex.
+      def close_open_positions
+        open_positions = open_position_class.open
+        return if open_positions.empty?
 
-      flow = create!(
-        desired_price: price,
-        quantity: quantity,
-        amount: amount,
-        open_positions: open_positions)
+        quantity = open_positions.collect(&:quantity).sum
+        amount = open_positions.collect(&:amount).sum
+        suggested_amount = open_positions.collect do |open|
+          open.quantity * open.opening_flow.suggested_closing_price
+        end.sum
+        price = suggested_amount / quantity
 
-      flow.create_initial_order_and_close_position  # May raise OrderNotFound
-      return
+        # Don't even bother trying to close a position that's too small.
+        return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
+
+        flow = create!(
+          desired_price: price,
+          quantity: quantity,
+          amount: amount,
+          open_positions: open_positions)
+
+        flow.create_initial_order_and_close_position  # May raise OrderNotFound
+        return
+      end
     end
 
     def create_initial_order_and_close_position
@@ -62,13 +69,13 @@ module BitexBot
           BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
         latest_close.save!
 
-        next_price, next_quantity = get_next_price_and_quantity
+        next_price, next_quantity = next_price_and_quantity
 
         if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
           create_order_and_close_position(next_quantity, next_price)
         else
-          self.btc_profit = get_btc_profit
-          self.usd_profit = get_usd_profit
+          self.btc_profit = estimate_btc_profit
+          self.usd_profit = estimate_usd_profit
           self.done = true
           Robot.logger.info("Closing: Finished #{self.class.name} ##{id} "\
             "earned $#{self.usd_profit} and #{self.btc_profit} BTC. ")
@@ -87,8 +94,16 @@ module BitexBot
       end
     end
 
-    def self.close_time_to_live
-      30
+    def estimate_btc_profit
+      raise 'self subclass responsibility'
+    end
+
+    def estimate_usd_profit
+      raise 'self subclass responsibility'
+    end
+
+    def next_price_and_quantity
+      raise 'self subclass responsibility'
     end
   end
 end
