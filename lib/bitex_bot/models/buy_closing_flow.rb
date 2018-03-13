@@ -1,4 +1,7 @@
 module BitexBot
+  ##
+  # It sold at Bitex and needs to close (buy) in the other market.
+  #
   class BuyClosingFlow < ClosingFlow
     has_many :open_positions, class_name: 'OpenBuy', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseBuy', foreign_key: :closing_flow_id
@@ -26,7 +29,7 @@ module BitexBot
 
     def next_price_and_quantity
       closes = close_positions
-      next_price = desired_price - ((closes.count * (closes.count * 3)) / 100.0)
+      next_price = desired_price - variation_price(closes.count)
       next_quantity = quantity - closes.sum(:quantity)
       [next_price, next_quantity]
     end
