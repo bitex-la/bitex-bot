@@ -105,5 +105,9 @@ module BitexBot
     def next_price_and_quantity
       raise 'self subclass responsibility'
     end
+
+    def variation_price(closes_count)
+      closes_count ** 2 * 0.03
+    end
   end
 end
