@@ -10,6 +10,7 @@ module BitexBot
   # created from its OpenBuy's
   #
   # @attr order_id The first thing a BuyOpeningFlow does is placing a Bid on Bitex, this is its unique id.
+  #
   class BuyOpeningFlow < OpeningFlow
     class << self
       # Start a workflow for buying bitcoin on bitex and selling on the other exchange. The amount to be spent on bitex is
@@ -29,6 +30,7 @@ module BitexBot
       # @return [BuyOpeningFlow] The newly created flow.
       # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of USD on bitex or out
       #   of BTC on the other exchange.
+      #
       def create_for_market(btc_balance, order_book, transactions, bitex_fee, other_fee, store)
         super
       end

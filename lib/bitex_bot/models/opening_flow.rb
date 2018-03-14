@@ -2,6 +2,7 @@ module BitexBot
   # Any arbitrage workflow has 2 stages, opening positions and then closing them.
   # The OpeningFlow stage places an order on bitex, detecting and storing all transactions spawn from that order as
   # Open positions.
+  #
   class OpeningFlow < ActiveRecord::Base
     self.abstract_class = true
 

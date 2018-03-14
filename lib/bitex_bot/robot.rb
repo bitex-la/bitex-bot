@@ -119,8 +119,8 @@ module BitexBot
       orders = with_cooldown { BitexBot::Robot.taker.orders }
       transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
 
-      [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
+      [BuyClosingFlow, SellClosingFlow].each do |closing_flow|
+        closing_flow.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
       end
     end
 

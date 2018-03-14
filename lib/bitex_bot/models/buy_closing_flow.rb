@@ -5,6 +5,7 @@ module BitexBot
   class BuyClosingFlow < ClosingFlow
     has_many :open_positions, class_name: 'OpenBuy', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseBuy', foreign_key: :closing_flow_id
+
     scope :active, -> { where(done: false) }
 
     class << self

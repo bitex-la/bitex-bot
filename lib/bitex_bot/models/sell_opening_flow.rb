@@ -10,6 +10,7 @@ module BitexBot
   # created from its OpenSell's
   #
   # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on Bitex, this is its unique id.
+  #
   class SellOpeningFlow < OpeningFlow
     class << self
       # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
@@ -28,6 +29,7 @@ module BitexBot
       # @return [SellOpeningFlow] The newly created flow.
       # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
       # of USD on the other exchange.
+      #
       def create_for_market(usd_balance, order_book, transactions, bitex_fee, other_fee, store)
         super
       end
