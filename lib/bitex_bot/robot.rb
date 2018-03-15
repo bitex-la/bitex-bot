@@ -25,7 +25,7 @@ module BitexBot
         log.level = Logger.const_get(Settings.log.level.upcase)
         log.formatter = proc do |severity, datetime, msg|
           date = datetime.strftime('%m/%d %H:%M:%S.%L')
-          "#{'%-6s' % severity} #{date}: #{msg}\n"
+          "#{format('%-6s', severity)} #{date}: #{msg}\n"
         end
       end
     end
