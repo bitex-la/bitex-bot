@@ -154,10 +154,6 @@ module BitexBot
       [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
     end
 
-    def simple_log(level, message)
-      BitexBot::Robot.logger.send(level, message)
-    end
-
     def start_opening_flows_if_needed
       return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
       return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
@@ -175,7 +171,7 @@ module BitexBot
       last_log = `tail -c 61440 #{file}` if file.present?
       store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
 
-      if store.last_warning.nil? || store.last_warning < 30.minutes.ago
+      if expired_last_warning?
         if store.usd_warning && total_usd <= store.usd_warning
           notify("USD balance is too low, it's #{total_usd}, make it #{store.usd_warning} to stop this warning.")
           store.update_attributes(last_warning: Time.now)
@@ -186,6 +182,7 @@ module BitexBot
           store.update_attributes(last_warning: Time.now)
         end
       end
+
 
       return simple_log(:debug, 'Not placing new orders, USD target not met') if store.usd_stop && total_usd <= store.usd_stop
       return simple_log(:debug, 'Not placing new orders, BTC target not met') if store.btc_stop && total_btc <= store.btc_stop
@@ -216,11 +213,19 @@ module BitexBot
       end
     end
 
+    def simple_log(level, message)
+      BitexBot::Robot.logger.send(level, message)
+    end
+
     def recent_operations
       [BuyOpeningFlow, SellOpeningFlow].map do |kind|
         threshold = (Settings.time_to_live / 2).seconds.ago
         kind.active.where('created_at > ?', threshold).first
       end
+    end
+
+    def expired_last_warning?
+      store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
     def notify(message, subj = 'Notice from your robot trader')
