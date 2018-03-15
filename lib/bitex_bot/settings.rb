@@ -1,13 +1,23 @@
 require 'hashie'
 
 module BitexBot
+  ##
+  # Documentation here!
+  #
   class FileSettings < ::Hashie::Clash
+    def respond_to_missing?(method_name, include_private)
+      super
+    end
+
     def method_missing(name, *args)
       return super unless args.size == 1 && args.none?
       self[name] = args.first
     end
   end
 
+  ##
+  # Documentation here!
+  #
   class SettingsClass < ::Hashie::Mash
     include ::Hashie::Extensions::Mash::SymbolizeKeys
 
