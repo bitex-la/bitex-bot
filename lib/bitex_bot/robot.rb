@@ -171,18 +171,7 @@ module BitexBot
       last_log = `tail -c 61440 #{file}` if file.present?
       store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
 
-      if expired_last_warning?
-        if store.usd_warning && total_usd <= store.usd_warning
-          notify("USD balance is too low, it's #{total_usd}, make it #{store.usd_warning} to stop this warning.")
-          store.update_attributes(last_warning: Time.now)
-        end
-
-        if store.btc_warning && total_btc <= store.btc_warning
-          notify("BTC balance is too low, it's #{total_btc}, ake it #{store.btc_warning} to stop this warning.")
-          store.update_attributes(last_warning: Time.now)
-        end
-      end
-
+      check_balance_warning(total_usd, total_btc) if expired_last_warning?
 
       return simple_log(:debug, 'Not placing new orders, USD target not met') if store.usd_stop && total_usd <= store.usd_stop
       return simple_log(:debug, 'Not placing new orders, BTC target not met') if store.btc_stop && total_btc <= store.btc_stop
@@ -226,6 +215,24 @@ module BitexBot
 
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
+    end
+
+    def check_balance_warning(total_usd, total_btc)
+      notify_balance_warning(:usd, total_usd, store.usd_warning) if usd_balance_notify?(total_usd)
+      notify_balance_warning(:btc, total_btc, store.btc_warning) if btc_balance_notify?(total_btc)
+    end
+
+    def usd_balance_notify?(total)
+      store.usd_warning && total <= store.usd_warning
+    end
+
+    def btc_balance_notify?(total)
+      store.btc_warning && total <= store.btc_warning
+    end
+
+    def notify_balance_warning(currency, total, currency_warning)
+      notify("#{currency.upcase} balance is too low, it's #{total}, make it #{currency_warning} to stop this warning.")
+      store.update(last_warning: Time.now)
     end
 
     def notify(message, subj = 'Notice from your robot trader')
