@@ -104,7 +104,7 @@ class ApiWrapper
         return order if order.present?
       end
 
-      raise(OrderNotFound, "Closing: #{type} not found for #{quantity} BTC @ $#{price}. #{order}")
+      raise OrderNotFound, "Closing: #{type} order not found for #{quantity} BTC @ $#{price}. #{order}"
     end
 
     # Hook Method - thearguments could not be used in their entirety by the subclasses
