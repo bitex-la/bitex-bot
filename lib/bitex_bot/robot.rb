@@ -31,19 +31,11 @@ module BitexBot
     end
 
     class << self
-      def setup
-        Bitex.api_key = Settings.bitex
-        Bitex.sandbox = Settings.sandbox
-        taker.setup(Settings)
-      end
-
       # Trade constantly respecting cooldown times so that we don't get banned by api clients.
       def run!
-        setup
-        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
-        cooldown_until = Time.now
-        bot = new
+        bot = start_robot
 
+        cooldown_until = Time.now
         loop do
           start_time = Time.now
           next if start_time < cooldown_until
@@ -54,6 +46,18 @@ module BitexBot
           sleep_for(0.3)
           cooldown_until = start_time + current_cooldowns.seconds
         end
+      end
+
+      def start_robot
+        setup
+        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+        new
+      end
+
+      def setup
+        Bitex.api_key = Settings.bitex
+        Bitex.sandbox = Settings.sandbox
+        taker.setup(Settings)
       end
 
       def with_cooldown
