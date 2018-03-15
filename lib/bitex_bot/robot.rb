@@ -9,52 +9,63 @@ trap 'INT' do
 end
 
 module BitexBot
+  ##
+  # Documentation here!
+  #
+  # rubocop:disable Metrics/ClassLength
   class Robot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
     cattr_accessor(:current_cooldowns) { 0 }
     cattr_accessor :logger do
-      STDOUT.sync = true unless logdev = Settings.log.try(:file)
-      Logger.new(logdev || STDOUT, 10, 10240000).tap do |l|
-        l.level = Logger.const_get(Settings.log.level.upcase)
-        l.formatter = proc do |severity, datetime, progname, msg|
+      logdev = Settings.log.try(:file)
+      STDOUT.sync = true unless logdev.present?
+      Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
+        log.level = Logger.const_get(Settings.log.level.upcase)
+        log.formatter = proc do |severity, datetime, msg|
           date = datetime.strftime('%m/%d %H:%M:%S.%L')
-          "#{ '%-6s' % severity } #{date}: #{msg}\n"
+          "#{'%-6s' % severity} #{date}: #{msg}\n"
         end
       end
     end
 
-    # Trade constantly respecting cooldown times so that we don't get
-    # banned by api clients.
-    def self.run!
-      setup
-      logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
-      self.cooldown_until = Time.now
-      bot = new
-
-      loop do
-        start_time = Time.now
-        next if start_time < cooldown_until
-        self.current_cooldowns = 0
-        bot.trade!
-        # This global sleep is so that we don't stress bitex too much.
-        sleep_for 0.3
-        self.cooldown_until = start_time + current_cooldowns.seconds
+    class << self
+      def setup
+        Bitex.api_key = Settings.bitex
+        Bitex.sandbox = Settings.sandbox
+        taker.setup(Settings)
       end
-    end
 
-    def self.setup
-      Bitex.api_key = Settings.bitex
-      Bitex.sandbox = Settings.sandbox
-      taker.setup(Settings)
-    end
+      # Trade constantly respecting cooldown times so that we don't get banned by api clients.
+      def run!
+        setup
+        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+        cooldown_until = Time.now
+        bot = new
 
-    def self.with_cooldown(&block)
-      result = block.call
-      self.current_cooldowns += 1
-      sleep_for 0.1
-      result
+        loop do
+          start_time = Time.now
+          next if start_time < cooldown_until
+          current_cooldowns = 0
+          bot.trade!
+
+          # This global sleep is so that we don't stress bitex too much.
+          sleep_for(0.3)
+          cooldown_until = start_time + current_cooldowns.seconds
+        end
+      end
+
+      def with_cooldown
+        result = yield
+        self.current_cooldowns += 1
+        sleep_for(0.1)
+        result
+      end
+
+      def sleep_for(seconds)
+        sleep(seconds)
+      end
     end
 
     def with_cooldown(&block)
@@ -64,44 +75,57 @@ module BitexBot
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
-      if(!active_opening_flows? && !open_positions? &&
-        !active_closing_flows? && self.class.graceful_shutdown)
-        self.class.logger.info('Shutdown completed')
-        exit
-      end
+      shutdown! if shutdable?
       start_closing_flows if open_positions?
       sync_closing_flows if active_closing_flows?
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
-      self.notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep_for (60 * 3)
+      notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
+      sleep_for(60 * 3)
     rescue Curl::Err::TimeoutError => e
       self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep_for 15
+      sleep_for(15)
     rescue OrderNotFound => e
-      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue ApiWrapperError => e
-      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue OrderArgumentError => e
-      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
-      self.notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
-      sleep_for 120
+      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      sleep_for(60 * 2)
+    end
+
+    def shutdable?
+      !(active_flows? || open_positions?) && turned_off?
+    end
+
+    def shutdown!
+      self.class.logger.info('Shutdown completed')
+      exit
+    end
+
+    def active_flows?
+      active_opening_flows? || active_closing_flows?
+    end
+
+    def turned_off?
+      self.class.graceful_shutdown
     end
 
     def finalise_some_opening_flows
       [BuyOpeningFlow, SellOpeningFlow].each do |kind|
         flows = self.class.graceful_shutdown ? kind.active : kind.old_active
-        flows.each { |flow| flow.finalise! }
+        flows.each(&:finalise!)
       end
     end
 
     def start_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.close_open_positions }
+      [BuyClosingFlow, SellClosingFlow].each(&:close_open_positions)
     end
 
     def open_positions?
-      OpenBuy.open.exists? || OpenSell.open.exists?
+      [OpenBuy.open, OpenSell.open].any?(&:exists?)
     end
 
     def sync_closing_flows
@@ -114,7 +138,7 @@ module BitexBot
     end
 
     def active_closing_flows?
-      BuyClosingFlow.active.exists? || SellClosingFlow.active.exists?
+      [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
     end
 
     def start_opening_flows_if_needed
@@ -133,10 +157,11 @@ module BitexBot
         return
       end
 
-      recent_buying, recent_selling = [BuyOpeningFlow, SellOpeningFlow].collect do |kind|
-        threshold = (Settings.time_to_live / 2).seconds.ago
-        kind.active.where('created_at > ?', threshold).first
-      end
+      recent_buying, recent_selling =
+        [BuyOpeningFlow, SellOpeningFlow].map do |kind|
+          threshold = (Settings.time_to_live / 2).seconds.ago
+          kind.active.where('created_at > ?', threshold).first
+        end
 
       if recent_buying && recent_selling
         BitexBot::Robot.logger.debug('Not placing new orders, recent ones exist.')
@@ -149,21 +174,19 @@ module BitexBot
       total_usd = balance.usd.total + profile[:usd_balance]
       total_btc = balance.btc.total + profile[:btc_balance]
 
-      last_log = `tail -c 61440 #{Settings.log.try(:file)}` if Settings.log.try(:file)
+      file = Settings.log.try(:file)
+      last_log = `tail -c 61440 #{file}` if file.present?
 
-      store.update_attributes(taker_usd: balance.usd.total, taker_btc: balance.btc.total,
-        log: last_log)
+      store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
 
       if store.last_warning.nil? || store.last_warning < 30.minutes.ago
         if store.usd_warning && total_usd <= store.usd_warning
-          notify("USD balance is too low, it's #{total_usd},"\
-            "make it #{store.usd_warning} to stop this warning.")
+          notify("USD balance is too low, it's #{total_usd}, make it #{store.usd_warning} to stop this warning.")
           store.update_attributes(last_warning: Time.now)
         end
 
         if store.btc_warning && total_btc <= store.btc_warning
-          notify("BTC balance is too low, it's #{total_btc},"\
-            "make it #{store.btc_warning} to stop this warning.")
+          notify("BTC balance is too low, it's #{total_btc}, ake it #{store.btc_warning} to stop this warning.")
           store.update_attributes(last_warning: Time.now)
         end
       end
@@ -188,7 +211,8 @@ module BitexBot
           transactions,
           profile[:fee],
           balance.fee,
-          store)
+          store
+        )
       end
 
       unless recent_selling
@@ -198,32 +222,31 @@ module BitexBot
           transactions,
           profile[:fee],
           balance.fee,
-          store)
+          store
+        )
       end
     end
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each { |o| o.sync_open_positions }
+      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_open_positions)
     end
 
     def active_opening_flows?
-      BuyOpeningFlow.active.exists? || SellOpeningFlow.active.exists?
+      [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
     end
 
     def notify(message, subj = 'Notice from your robot trader')
       self.class.logger.error(message)
-      if Settings.mailer
-        mail = Mail.new do
-          from Settings.mailer.from
-          to Settings.mailer.to
-          subject subj
-          body message
-        end
-
-        mail.delivery_method(Settings.mailer.delivery_method.to_sym,
-          Settings.mailer.options.to_hash)
-        mail.deliver!
+      return unless Settings.mailer.present?
+      mail = Mail.new do
+        from Settings.mailer.from
+        to Settings.mailer.to
+        subject subj
+        body message
       end
+
+      mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
+      mail.deliver!
     end
 
     # The trader has a Store
@@ -231,12 +254,9 @@ module BitexBot
       @store ||= Store.first || Store.create
     end
 
-    def self.sleep_for(seconds)
-      sleep seconds
-    end
-
     def sleep_for(seconds)
       self.class.sleep_for(seconds)
     end
   end
+  # rubocop:enable Metrics/ClassLength
 end
