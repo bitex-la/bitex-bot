@@ -127,7 +127,7 @@ module BitexBot
     end
 
     def shutdown!
-      self.class.logger.info('Shutdown completed')
+      simple_log(:info, 'Shutdown completed')
       exit
     end
 
