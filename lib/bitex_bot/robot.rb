@@ -126,7 +126,7 @@ module BitexBot
     end
 
     def finalise_some_opening_flows
-      [BuyOpeningFlow, SellOpeningFlow].each { |kind_flow| active_flows(kind_flow).each(&:finalise!) }
+      [BuyOpeningFlow, SellOpeningFlow].each { |kind| active_flows(kind).each(&:finalise!) }
     end
 
     def active_flows(opening_flow_class)
@@ -163,11 +163,7 @@ module BitexBot
       return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
       return simple_log(:debug, 'Not placing new orders, shutting down.') if self.class.graceful_shutdown
 
-      recent_buying, recent_selling =
-        [BuyOpeningFlow, SellOpeningFlow].map do |kind|
-          threshold = (Settings.time_to_live / 2).seconds.ago
-          kind.active.where('created_at > ?', threshold).first
-        end
+      recent_buying, recent_selling = recent_operations
       return simple_log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
       balance = with_cooldown { BitexBot::Robot.taker.balance }
@@ -217,6 +213,13 @@ module BitexBot
           balance.fee,
           store
         )
+      end
+    end
+
+    def recent_operations
+      [BuyOpeningFlow, SellOpeningFlow].map do |kind|
+        threshold = (Settings.time_to_live / 2).seconds.ago
+        kind.active.where('created_at > ?', threshold).first
       end
     end
 
