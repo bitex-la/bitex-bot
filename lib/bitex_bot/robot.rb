@@ -126,11 +126,11 @@ module BitexBot
     end
 
     def finalise_some_opening_flows
-      [BuyOpeningFlow, SellOpeningFlow].each { |flow_class| active_flows(flow_class).each(&:finalise!) }
+      [BuyOpeningFlow, SellOpeningFlow].each { |kind_flow| active_flows(kind_flow).each(&:finalise!) }
     end
 
-    def active_flows(flow_class)
-      turn_off? ? flow_class.active : flow_class.old_active
+    def active_flows(opening_flow_class)
+      turn_off? ? opening_flow_class.active : opening_flow_class.old_active
     end
 
     def start_closing_flows
@@ -154,42 +154,29 @@ module BitexBot
       [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
     end
 
+    def simple_log(level, message)
+      BitexBot::Robot.logger.send(level, message)
+    end
+
     def start_opening_flows_if_needed
-      if store.reload.hold?
-        BitexBot::Robot.logger.debug('Not placing new orders because of hold')
-        return
-      end
-
-      if active_closing_flows?
-        BitexBot::Robot.logger.debug('Not placing new orders, closing flows.')
-        return
-      end
-
-      if self.class.graceful_shutdown
-        BitexBot::Robot.logger.debug('Not placing new orders, shutting down.')
-        return
-      end
+      return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
+      return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
+      return simple_log(:debug, 'Not placing new orders, shutting down.') if self.class.graceful_shutdown
 
       recent_buying, recent_selling =
         [BuyOpeningFlow, SellOpeningFlow].map do |kind|
           threshold = (Settings.time_to_live / 2).seconds.ago
           kind.active.where('created_at > ?', threshold).first
         end
-
-      if recent_buying && recent_selling
-        BitexBot::Robot.logger.debug('Not placing new orders, recent ones exist.')
-        return
-      end
+      return simple_log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
       balance = with_cooldown { BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
-
       total_usd = balance.usd.total + profile[:usd_balance]
       total_btc = balance.btc.total + profile[:btc_balance]
 
       file = Settings.log.try(:file)
       last_log = `tail -c 61440 #{file}` if file.present?
-
       store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
 
       if store.last_warning.nil? || store.last_warning < 30.minutes.ago
@@ -204,15 +191,8 @@ module BitexBot
         end
       end
 
-      if store.usd_stop && total_usd <= store.usd_stop
-        BitexBot::Robot.logger.debug('Not placing new orders, USD target not met')
-        return
-      end
-
-      if store.btc_stop && total_btc <= store.btc_stop
-        BitexBot::Robot.logger.debug('Not placing new orders, BTC target not met')
-        return
-      end
+      return simple_log(:debug, 'Not placing new orders, USD target not met') if store.usd_stop && total_usd <= store.usd_stop
+      return simple_log(:debug, 'Not placing new orders, BTC target not met') if store.btc_stop && total_btc <= store.btc_stop
 
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }
