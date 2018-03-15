@@ -179,27 +179,8 @@ module BitexBot
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }
 
-      unless recent_buying
-        BuyOpeningFlow.create_for_market(
-          balance.btc.available,
-          order_book.bids,
-          transactions,
-          profile[:fee],
-          balance.fee,
-          store
-        )
-      end
-
-      unless recent_selling
-        SellOpeningFlow.create_for_market(
-          balance.usd.available,
-          order_book.asks,
-          transactions,
-          profile[:fee],
-          balance.fee,
-          store
-        )
-      end
+      create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
+      create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
     end
 
     def simple_log(level, message)
@@ -247,6 +228,14 @@ module BitexBot
 
       mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
       mail.deliver!
+    end
+
+    def create_buy_opening_flow(balance, order_book, transactions, profile)
+      BuyOpeningFlow.create_for_market(balance.btc.available, order_book.bids, transactions, profile[:fee], balance.fee, store)
+    end
+
+    def create_sell_opening_flow(balance, order_book, transactions, profile)
+      SellOpeningFlow.create_for_market(balance.usd.available, order_book.asks, transactions, profile[:fee], balance.fee, store)
     end
 
     # The trader has a Store
