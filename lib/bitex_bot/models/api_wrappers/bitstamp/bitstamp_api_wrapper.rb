@@ -15,13 +15,13 @@ class BitstampApiWrapper < ApiWrapper
     def transactions
       Bitstamp.transactions.map { |t| transaction_parser(t) }
     rescue StandardError => e
-      raise(ApiWrapperError, "Bitstamp transactions failed: #{e.message}")
+      raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
     end
 
     def orders
       Bitstamp.orders.all.map { |o| order_parser(o) }
     rescue StandardError => e
-      raise(ApiWrapperError, "Bitstamp orders failed: #{e.message}")
+      raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
     end
 
     # rubocop:disable Metrics/AbcSize
@@ -43,19 +43,19 @@ class BitstampApiWrapper < ApiWrapper
     def balance
       balance_summary_parser(Bitstamp.balance.symbolize_keys)
     rescue StandardError => e
-      raise(ApiWrapperError, "Bitstamp balance failed: #{e.message}")
+      raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
     end
 
     def cancel(order)
       Bitstamp::Order.new(id: order.id).cancel!
     rescue StandardError => e
-      raise(ApiWrapperError, "Bitstamp cancel! failed: #{e.message}")
+      raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
     end
 
     def user_transactions
       Bitstamp.user_transactions.all.map { |ut| user_transaction_parser(ut) }
     rescue StandardError => e
-      raise(ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}")
+      raise ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}"
     end
 
     def send_order(type, price, quantity)
