@@ -19,7 +19,7 @@ class KrakenOrder
         retry
       elsif e.message.start_with?('EGeneral:Invalid')
         BitexBot::Robot.logger.debug("Captured #{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
-        raise(OrderArgumentError, e.message)
+        raise OrderArgumentError, e.message
       elsif e.message != 'error'
         raise
       end
