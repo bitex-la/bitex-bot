@@ -45,8 +45,7 @@ class BitfinexApiWrapper < ApiWrapper
 
     def place_order(type, price, quantity)
       with_retry "place order #{type} #{price} #{quantity}" do
-        order_data =
-          Bitfinex::Client.new.new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
+        order_data = client.new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
         BitfinexOrder.new(order_data)
       end
     end
