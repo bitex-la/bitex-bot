@@ -12,18 +12,8 @@ module BitexBot
   class Robot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
-    cattr_accessor :taker do
-      case Settings.taker
-      when 'itbit'
-        ItbitApiWrapper
-      when 'bitstamp'
-        BitstampApiWrapper
-      when 'bitfinex'
-        BitfinexApiWrapper
-      when 'kraken'
-        KrakenApiWrapper
-      end
-    end
+    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
+    cattr_accessor(:current_cooldowns) { 0 }
     cattr_accessor :logger do
       STDOUT.sync = true unless logdev = Settings.log.try(:file)
       Logger.new(logdev || STDOUT, 10, 10240000).tap do |l|
@@ -34,7 +24,6 @@ module BitexBot
         end
       end
     end
-    cattr_accessor :current_cooldowns do 0 end
 
     # Trade constantly respecting cooldown times so that we don't get
     # banned by api clients.
