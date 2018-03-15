@@ -54,7 +54,7 @@ class ApiWrapper
 
   class << self
     # @return [Void]
-    def setup
+    def setup(_settings)
       raise 'self subclass responsibility'
     end
 
@@ -64,7 +64,7 @@ class ApiWrapper
     end
 
     # @return [OrderBook]
-    def order_book
+    def order_book(_retries = 20)
       raise 'self subclass responsibility'
     end
 
@@ -104,11 +104,11 @@ class ApiWrapper
         return order if order.present?
       end
 
-      raise(OrderNotFound, "Closing: #{type} not founded for #{quantity} BTC @ $#{price}. #{order}")
+      raise(OrderNotFound, "Closing: #{type} not found for #{quantity} BTC @ $#{price}. #{order}")
     end
 
     # Hook Method - thearguments could not be used in their entirety by the subclasses
-    def send_order
+    def send_order(_type, _price, _quantity)
       raise 'self subclass responsibility'
     end
 
@@ -116,7 +116,7 @@ class ApiWrapper
     # @param price [Decimal]
     #
     # Hook Method - the arguments could not be used in their entirety by the subclasses
-    def find_lost
+    def find_lost(_type, _price, _quantity)
       raise 'self subclass responsibility'
     end
 
