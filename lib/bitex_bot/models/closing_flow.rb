@@ -30,12 +30,12 @@ module BitexBot
 
       def create_closing_flow!(price, quantity, amount, open_positions)
         create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
-          .create_initial_order_and_close_position # May raise OrderNotFound
+          .create_initial_order_and_close_position!
         nil
       end
     end
 
-    def create_initial_order_and_close_position
+    def create_initial_order_and_close_position!
       create_order_and_close_position(quantity, desired_price)
     end
 
@@ -53,7 +53,7 @@ module BitexBot
 
       # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
       if latest_close.nil?
-        create_initial_order_and_close_position
+        create_initial_order_and_close_position!
         return
       end
 
