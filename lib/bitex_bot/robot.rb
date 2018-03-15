@@ -34,7 +34,6 @@ module BitexBot
       # Trade constantly respecting cooldown times so that we don't get banned by api clients.
       def run!
         bot = start_robot
-
         cooldown_until = Time.now
         loop do
           start_time = Time.now
@@ -46,12 +45,6 @@ module BitexBot
           sleep_for(0.3)
           cooldown_until = start_time + current_cooldowns.seconds
         end
-      end
-
-      def start_robot
-        setup
-        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
-        new
       end
 
       def setup
@@ -70,12 +63,17 @@ module BitexBot
         sleep_for(0.1)
         result
       end
+
+      private
+
+      def start_robot
+        setup
+        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+        new
+      end
     end
 
-    def with_cooldown(&block)
-      self.class.with_cooldown(&block)
-    end
-
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
@@ -99,9 +97,25 @@ module BitexBot
       notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+
+    def active_closing_flows?
+      [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
+    end
 
     def active_opening_flows?
       [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
+    end
+
+    # The trader has a Store
+    def store
+      @store ||= Store.first || Store.create
+    end
+
+    private
+
+    def with_cooldown(&block)
+      self.class.with_cooldown(&block)
     end
 
     def sync_opening_flows
@@ -150,14 +164,11 @@ module BitexBot
       end
     end
 
-    def active_closing_flows?
-      [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
-    end
-
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def start_opening_flows_if_needed
       return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
       return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
-      return simple_log(:debug, 'Not placing new orders, shutting down.') if self.class.graceful_shutdown
+      return simple_log(:debug, 'Not placing new orders, shutting down.') if turn_off?
 
       recent_buying, recent_selling = recent_operations
       return simple_log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
@@ -167,14 +178,10 @@ module BitexBot
       total_usd = balance.usd.total + profile[:usd_balance]
       total_btc = balance.btc.total + profile[:btc_balance]
 
-      file = Settings.log.try(:file)
-      last_log = `tail -c 61440 #{file}` if file.present?
-      store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
-
+      sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-
-      return simple_log(:debug, 'Not placing new orders, USD target not met') if store.usd_stop && total_usd <= store.usd_stop
-      return simple_log(:debug, 'Not placing new orders, BTC target not met') if store.btc_stop && total_btc <= store.btc_stop
+      return simple_log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
+      return simple_log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
 
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }
@@ -182,6 +189,7 @@ module BitexBot
       create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
       create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def simple_log(level, message)
       BitexBot::Robot.logger.send(level, message)
@@ -194,21 +202,35 @@ module BitexBot
       end
     end
 
+    def sync_log(balance)
+      file = Settings.log.try(:file)
+      last_log = `tail -c 61440 #{file}` if file.present?
+      store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
+    end
+
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
     def check_balance_warning(total_usd, total_btc)
-      notify_balance_warning(:usd, total_usd, store.usd_warning) if usd_balance_notify?(total_usd)
-      notify_balance_warning(:btc, total_btc, store.btc_warning) if btc_balance_notify?(total_btc)
+      notify_balance_warning(:usd, total_usd, store.usd_warning) if usd_balance_warning_notify?(total_usd)
+      notify_balance_warning(:btc, total_btc, store.btc_warning) if btc_balance_warning_notify?(total_btc)
     end
 
-    def usd_balance_notify?(total)
-      store.usd_warning && total <= store.usd_warning
+    def usd_balance_warning_notify?(total)
+      store.usd_warning.present? && total <= store.usd_warning
     end
 
-    def btc_balance_notify?(total)
-      store.btc_warning && total <= store.btc_warning
+    def btc_balance_warning_notify?(total)
+      store.btc_warning.present? && total <= store.btc_warning
+    end
+
+    def usd_target_met?(total)
+      store.usd_stop.present? && total <= store.usd_stop
+    end
+
+    def btc_target_met?(total)
+      store.btc_stop.present? && total <= store.btc_stop
     end
 
     def notify_balance_warning(currency, total, currency_warning)
@@ -219,15 +241,18 @@ module BitexBot
     def notify(message, subj = 'Notice from your robot trader')
       self.class.logger.error(message)
       return unless Settings.mailer.present?
-      mail = Mail.new do
+      mail = new_mail(subj, message)
+      mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
+      mail.deliver!
+    end
+
+    def new_mail(subj, message)
+      Mail.new do
         from Settings.mailer.from
         to Settings.mailer.to
         subject subj
         body message
       end
-
-      mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
-      mail.deliver!
     end
 
     def create_buy_opening_flow(balance, order_book, transactions, profile)
@@ -236,11 +261,6 @@ module BitexBot
 
     def create_sell_opening_flow(balance, order_book, transactions, profile)
       SellOpeningFlow.create_for_market(balance.usd.available, order_book.asks, transactions, profile[:fee], balance.fee, store)
-    end
-
-    # The trader has a Store
-    def store
-      @store ||= Store.first || Store.create
     end
 
     def sleep_for(seconds)
