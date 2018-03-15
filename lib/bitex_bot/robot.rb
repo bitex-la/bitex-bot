@@ -60,15 +60,15 @@ module BitexBot
         taker.setup(Settings)
       end
 
+      def sleep_for(seconds)
+        sleep(seconds)
+      end
+
       def with_cooldown
         result = yield
         self.current_cooldowns += 1
         sleep_for(0.1)
         result
-      end
-
-      def sleep_for(seconds)
-        sleep(seconds)
       end
     end
 
@@ -100,8 +100,16 @@ module BitexBot
       sleep_for(60 * 2)
     end
 
+    def active_opening_flows?
+      [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
+    end
+
+    def sync_opening_flows
+      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_open_positions)
+    end
+
     def shutdable?
-      !(active_flows? || open_positions?) && turned_off?
+      !(active_flows? || open_positions?) && turn_off?
     end
 
     def shutdown!
@@ -113,15 +121,16 @@ module BitexBot
       active_opening_flows? || active_closing_flows?
     end
 
-    def turned_off?
+    def turn_off?
       self.class.graceful_shutdown
     end
 
     def finalise_some_opening_flows
-      [BuyOpeningFlow, SellOpeningFlow].each do |kind|
-        flows = self.class.graceful_shutdown ? kind.active : kind.old_active
-        flows.each(&:finalise!)
-      end
+      [BuyOpeningFlow, SellOpeningFlow].each { |flow_class| active_flows(flow_class).each(&:finalise!) }
+    end
+
+    def active_flows(flow_class)
+      turn_off? ? flow_class.active : flow_class.old_active
     end
 
     def start_closing_flows
@@ -229,14 +238,6 @@ module BitexBot
           store
         )
       end
-    end
-
-    def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_open_positions)
-    end
-
-    def active_opening_flows?
-      [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
     end
 
     def notify(message, subj = 'Notice from your robot trader')
