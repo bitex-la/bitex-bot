@@ -121,8 +121,8 @@ class BitfinexApiWrapper < ApiWrapper
       self::OrderBook.new(Time.now.to_i, order_summary(book[:bids]), order_summary(book[:asks]))
     end
 
-    def order_summary(stock_market)
-      stock_market.map { |stock| self::OrderSummary.new(stock[:price].to_d, stock[:amount].to_d) }
+    def order_summary(orders)
+      orders.map { |stock| self::OrderSummary.new(stock[:price].to_d, stock[:amount].to_d) }
     end
   end
 end
