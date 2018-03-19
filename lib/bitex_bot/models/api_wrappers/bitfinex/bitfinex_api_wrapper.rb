@@ -6,6 +6,10 @@ class BitfinexApiWrapper < ApiWrapper
   cattr_accessor(:max_retries) { 1000 }
 
   class << self
+    def client
+      @client ||= Bitfinex::Client.new
+    end
+
     def setup(settings)
       Bitfinex::Client.configure do |conf|
         conf.api_key = settings.bitfinex.api_key
@@ -13,9 +17,10 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
-    def transactions
-      with_retry :transactions do
-        client.trades.map { |t| transaction_parser(t.symbolize_keys) }
+    def balance
+      with_retry :balance do
+        balances = client.balances(type: 'exchange').map(&:symbolize_keys)
+        balance_summary_parser(balances)
       end
     end
 
@@ -31,10 +36,9 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
-    def balance
-      with_retry :balance do
-        balances = client.balances(type: 'exchange').map(&:symbolize_keys)
-        balance_summary_parser(balances)
+    def transactions
+      with_retry :transactions do
+        client.trades.map { |t| transaction_parser(t.symbolize_keys) }
       end
     end
 
@@ -57,10 +61,6 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
-    def client
-      @client ||= Bitfinex::Client.new
-    end
-
     private
 
     def with_retry(action, retries = 0)
@@ -76,25 +76,10 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
-    # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
-    def transaction_parser(transaction)
-      self::Transaction.new(transaction[:tid], transaction[:price].to_d, transaction[:amount].to_d, transaction[:timestamp])
-    end
-
-    # {
-    #   id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
-    #   type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
-    #   was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
-    # }
-    def order_parser(order)
-      self::Order
-        .new(order[:id].to_s, order[:side].to_sym, order[:price].to_d, order[:original_amount].to_d, order[:timestamp].to_i)
-    end
-
     # [
-    #   { type: 'deposit', currency: 'btc', amount: '0.0', available: '0.0' },
-    #   { type: 'deposit', currency: 'usd', amount: '1.0', available: '1.0' },
-    #   { type: 'exchange', currency: 'btc', amount: '1', available: '1' }
+    #   { type: 'exchange', currency: 'btc', amount: '0.0', available: '0.0' },
+    #   { type: 'exchange', currency: 'usd', amount: '0.0', available: '0.0' },
+    #   ...
     # ]
     def balance_summary_parser(balances)
       self::BalanceSummary.new(
@@ -114,6 +99,16 @@ class BitfinexApiWrapper < ApiWrapper
     end
 
     # {
+    #   id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
+    #   type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
+    #   was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
+    # }
+    def order_parser(order)
+      self::Order
+        .new(order[:id].to_s, order[:side].to_sym, order[:price].to_d, order[:original_amount].to_d, order[:timestamp].to_i)
+    end
+
+    # {
     #   bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
     #   asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
     # }
@@ -123,6 +118,11 @@ class BitfinexApiWrapper < ApiWrapper
 
     def order_summary(orders)
       orders.map { |stock| self::OrderSummary.new(stock[:price].to_d, stock[:amount].to_d) }
+    end
+
+    # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
+    def transaction_parser(transaction)
+      self::Transaction.new(transaction[:tid], transaction[:price].to_d, transaction[:amount].to_d, transaction[:timestamp])
     end
   end
 end
