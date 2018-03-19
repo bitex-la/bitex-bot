@@ -8,7 +8,7 @@ class ApiWrapper
     :id, # Integer
     :price, # Decimal
     :amount, # Decimal
-    :timestamp, # Integer Epoch
+    :timestamp # Integer Epoch
   )
 
   Order = Struct.new(
@@ -35,24 +35,24 @@ class ApiWrapper
   OrderBook = Struct.new(
     :timestamp, # Integer
     :bids, # [OrderSummary]
-    :asks, # [OrderSummary]
+    :asks # [OrderSummary]
   )
 
   OrderSummary = Struct.new(
     :price, # Decimal
-    :quantity, # Decimal
+    :quantity # Decimal
   )
 
   BalanceSummary = Struct.new(
     :btc, # Balance
     :usd, # Balance
-    :fee, # Decimal
+    :fee # Decimal
   )
 
   Balance = Struct.new(
     :total, # Decimal
     :reserved, # Decimal
-    :available, # Decimal
+    :available # Decimal
   )
 
   UserTransaction = Struct.new(
@@ -62,7 +62,7 @@ class ApiWrapper
     :btc_usd, # Decimal
     :fee, # Decimal,
     :type, # Integer
-    :timestamp, # Integer Epoch
+    :timestamp # Integer Epoch
   )
 
   class << self
