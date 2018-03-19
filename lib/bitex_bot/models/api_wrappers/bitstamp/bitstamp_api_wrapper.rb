@@ -88,7 +88,7 @@ class BitstampApiWrapper < ApiWrapper
       self::Transaction.new(transaction.tid, transaction.price.to_d, transaction.amount.to_d, transaction.date.to_i)
     end
 
-    # <Bitstamp::Order: @id=7630204, @type=0, @price='1.01', @amount='1.00000000', @datetime='2013-09-26 23:15:04'>
+    # <Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
     def order_parser(order)
       type = order.type.zero? ? :buy : :sell
       self::Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i)

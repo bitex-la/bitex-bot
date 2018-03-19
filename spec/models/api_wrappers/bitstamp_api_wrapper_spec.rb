@@ -7,31 +7,64 @@ describe BitstampApiWrapper do
     BitexBot::Robot.setup
   end
 
-  def stub_balance(usd = nil, coin = nil, fee = nil)
+  # [<Bitstamp::Transactions @tid=14, @price='1.9', @amount='1.1', @date='1380648951'>]
+  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
+    Bitstamp.stub(:transactions) do
+      count.times.map do |i|
+        double(
+          tid: i,
+          date: 1.seconds.ago.to_i,
+          price: (price + i).to_s,
+          amount: (amount + i).to_s
+        )
+      end
+    end
+  end
+
+  def stub_balance
     Bitstamp.stub(:balance) do
       {
-        'btc_balance' => coin || '10.0', 'btc_reserved' => '0', 'btc_available' => coin || '10.0',
-        'usd_balance' => usd || '100.0', 'usd_reserved' => '0', 'usd_available' => usd || '100.0',
-        'fee' => fee || '0.5'
+        'btc_balance' => '10.0',
+        'btc_reserved' => '0',
+        'btc_available' => '10.0',
+        'usd_balance' => '100.0',
+        'usd_reserved' => '0',
+        'usd_available' => '100.0',
+        'fee' => '0.5'
       }
     end
   end
 
-  # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
-  def stub_orders
+  # [<Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>]
+  def stub_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
-      [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
+      count.times.map do |i|
+        double(
+          id: i,
+          type: (i % 2),
+          price: (price + 1).to_s,
+          amount: (amount + i).to_s,
+          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
+        )
+      end
     end
   end
 
-  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @usd="0.00", @btc="-3.078", @btc_usd="0.00",
-  #   @fee="0.00", @type=1, @datetime="2013-09-26 13:46:59">]
-  def stub_user_transactions
+  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
+  def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
     Bitstamp.user_transactions.stub(:all) do
-      [
-        double(usd: '0.00', btc: '-3.00781124', btc_usd: '0.00', order_id: 14, fee: '0.00',
-         type: 1, id: 14, datetime: '2013-09-26 13:46:59')
-      ]
+      count.times.map do |i|
+        double(
+          id: i,
+          order_id: i,
+          type: (i % 2),
+          usd: (usd + i).to_s,
+          btc: (btc + i).to_s,
+          btc_usd: (btc_usd + i).to_s,
+          fee: fee.to_s,
+          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
+        )
+      end
     end
   end
 
@@ -44,7 +77,7 @@ describe BitstampApiWrapper do
   end
 
   it '#transactions' do
-    stub_bitstamp_transactions
+    stub_transactions
 
     BitstampApiWrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -102,6 +135,7 @@ describe BitstampApiWrapper do
 
     order = BitstampApiWrapper.orders.sample
 
+    expect(order).to respond_to(:cancel!)
     BitstampApiWrapper.orders.should include(order)
     BitstampApiWrapper.cancel(order)
     BitstampApiWrapper.orders.should_not include(order)
