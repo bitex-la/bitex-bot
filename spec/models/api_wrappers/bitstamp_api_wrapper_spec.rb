@@ -20,7 +20,7 @@ describe BitstampApiWrapper do
   # [#<Bitstamp::Order @price="1.1", @amount="1.0", @type=0, @id=76, @datetime="2013-09-26 23:15:04">]
   def stub_orders
     Bitstamp.orders.stub(:all) do
-      [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime:  '23:26:56.849475')]
+      [double(id: 76, type: 0, amount: '1.23', price: '4.56', datetime: '23:26:56.849475')]
     end
   end
 
@@ -100,9 +100,9 @@ describe BitstampApiWrapper do
 
     order = BitstampApiWrapper.orders.sample
 
-    BitstampApiWrapper.orders.should include(order)
+    BitstampApiWrapper.orders.map(&:id).should include(order.id)
     BitstampApiWrapper.cancel(order)
-    BitstampApiWrapper.orders.should_not include(order)
+    BitstampApiWrapper.orders.map(&:id).should_not include(order.id)
   end
 
   it '#orders' do

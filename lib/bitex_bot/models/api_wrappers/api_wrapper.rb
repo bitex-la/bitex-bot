@@ -16,8 +16,21 @@ class ApiWrapper
     :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
-    :timestamp, # Integer Epoch
-  )
+    :timestamp, # Integer
+    :order # Actual order object
+  ) do
+    def method_missing(method_name, *args, &_block)
+      order.send(method_name, *args) || super
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      respond_to_custom_methods?(method_name) || super
+    end
+
+    def respond_to_custom_methods?(method_name)
+      %i[cancel!].include?(method_name)
+    end
+  end
 
   OrderBook = Struct.new(
     :timestamp, # Integer
