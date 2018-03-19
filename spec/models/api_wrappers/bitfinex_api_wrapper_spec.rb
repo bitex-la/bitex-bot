@@ -10,20 +10,11 @@ describe 'BitfinexApiWrapper' do
     BitexBot::Robot.setup
   end
 
-  it 'Sends User-Agent header' do
-    orders_stub =
-      stub_request(:post, 'https://api.bitfinex.com/v1/orders')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
-    BitfinexApiWrapper.orders rescue nil # we don't care about the response
-
-    expect(orders_stub).to have_been_requested
-  end
-
   def stub_transactions
     api_client.any_instance.stub(:trades) do
       [
-        { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 },
-        { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
+        { tid: 15_627_111, price: 404.01, amount: '2.45_116_479', exchange: 'bitfinex', type: 'sell', timestamp: 1_455_526_974 },
+        { tid: 15_627_111, price: 404.01, amount: '2.45_116_479', exchange: 'bitfinex', type: 'sell', timestamp: 1_455_526_975 }
       ]
     end
   end
@@ -32,8 +23,8 @@ describe 'BitfinexApiWrapper' do
     api_client.any_instance.stub(:orders) do
       [
         {
-          id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
-          type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
+          id: 448_411_365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
+          type: 'exchange limit', timestamp: '1_444_276_597.0', is_live: true, is_cancelled: false, is_hidden: false,
           was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
         }
       ]
@@ -43,8 +34,8 @@ describe 'BitfinexApiWrapper' do
   def stub_order_book
     api_client.any_instance.stub(:orderbook) do
       {
-        bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
-        asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
+        bids: [{ price: '574.61', amount: '0.1_437', timestamp: '1_472_506_126.0' }],
+        asks: [{ price: '574.62', amount: '19.1_334', timestamp: '1_472_506_127.0' }]
       }
     end
   end
@@ -58,6 +49,17 @@ describe 'BitfinexApiWrapper' do
         { type: 'exchange', currency: 'btc', amount: '1', available: '1' }
       ]
     end
+  end
+
+  it 'Sends User-Agent header' do
+    stub_stuff =
+      stub_request(:post, 'https://api.bitfinex.com/v1/orders')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
+
+    # we don't care about the response
+    BitfinexApiWrapper.orders rescue nil
+
+    expect(stub_stuff).to have_been_requested
   end
 
   it '#transactions' do
