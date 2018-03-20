@@ -17,6 +17,13 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
+    def amount_and_quantity(order_id)
+      with_retry "find order #{order_id}" do
+        order = Bitfinex::Client.new.order_status(order_id)
+        [order['avg_execution_price'].to_d * order['executed_amount'].to_d, order['executed_amount'].to_d]
+      end
+    end
+
     def balance
       with_retry :balance do
         balances = client.balances(type: 'exchange').map(&:symbolize_keys)
@@ -36,6 +43,13 @@ class BitfinexApiWrapper < ApiWrapper
       end
     end
 
+    def place_order(type, price, quantity)
+      with_retry "place order #{type} #{price} #{quantity}" do
+        order_data = client.new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
+        BitfinexOrder.new(order_data)
+      end
+    end
+
     def transactions
       with_retry :transactions do
         client.trades.map { |t| transaction_parser(t.symbolize_keys) }
@@ -45,20 +59,6 @@ class BitfinexApiWrapper < ApiWrapper
     # We don't need to fetch the list of transactions for bitfinex
     def user_transactions
       []
-    end
-
-    def place_order(type, price, quantity)
-      with_retry "place order #{type} #{price} #{quantity}" do
-        order_data = client.new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
-        BitfinexOrder.new(order_data)
-      end
-    end
-
-    def amount_and_quantity(order_id)
-      with_retry "find order #{order_id}" do
-        order = Bitfinex::Client.new.order_status(order_id)
-        [order['avg_execution_price'].to_d * order['executed_amount'].to_d, order['executed_amount'].to_d]
-      end
     end
 
     private

@@ -21,6 +21,22 @@ describe 'BitfinexApiWrapper' do
     expect(stub_stuff).to have_been_requested
   end
 
+  def stub_account_info
+    api_client.any_instance.stub(:account_info) do
+      [
+        {
+          maker_fees: '0.1',
+          taker_fees: '0.2',
+          fees: [
+            { pairs: 'BTC', maker_fees: '0.1', taker_fees: '0.2' },
+            { pairs: 'LTC', maker_fees: '0.1', taker_fees: '0.2' },
+            { pairs: 'ETH', maker_fees: '0.1', taker_fees: '0.2' }
+          ]
+        }
+      ]
+    end
+  end
+
   # [
   #   { type: 'exchange', currency: 'btc', amount: '0.0', available: '0.0' },
   #   { type: 'exchange', currency: 'usd', amount: '0.0', available: '0.0' },
@@ -37,22 +53,6 @@ describe 'BitfinexApiWrapper' do
           available: (available + i).to_s
         }
       end
-    end
-  end
-
-  def stub_account_info
-    api_client.any_instance.stub(:account_info) do
-      [
-        {
-          maker_fees: '0.1',
-          taker_fees: '0.2',
-          fees: [
-            { pairs: 'BTC', maker_fees: '0.1', taker_fees: '0.2' },
-            { pairs: 'LTC', maker_fees: '0.1', taker_fees: '0.2' },
-            { pairs: 'ETH', maker_fees: '0.1', taker_fees: '0.2' }
-          ]
-        }
-      ]
     end
   end
 
