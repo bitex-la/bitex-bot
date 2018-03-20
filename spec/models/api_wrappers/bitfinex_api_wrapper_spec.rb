@@ -11,9 +11,8 @@ describe 'BitfinexApiWrapper' do
   end
 
   it 'Sends User-Agent header' do
-    stub_stuff =
-      stub_request(:post, 'https://api.bitfinex.com/v1/orders')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
+    url = 'https://api.bitfinex.com/v1/orders'
+    stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
     BitfinexApiWrapper.orders rescue nil
