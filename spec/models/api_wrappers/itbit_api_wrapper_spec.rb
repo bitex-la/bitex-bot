@@ -96,7 +96,7 @@ describe ItbitApiWrapper do
   end
 
   def orders_stub(count: 1, amount: 1.5, price: 2.5)
-    Itbit::Order.stub(:all).with(status: :open) do
+    Itbit::Order.stub(:all).with(hash_including(status: :open)) do
       count.times.map do |i|
         double(
           id: "id-#{i.to_s.rjust(3, '0')}",
