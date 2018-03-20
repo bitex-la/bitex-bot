@@ -9,113 +9,40 @@ describe ItbitApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    order_book_stub =
-      stub_request(:get, 'https://api.itbit.com/v1/markets/XBTUSD/order_book')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
+    url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
+    stuff_stub = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
-    ItbitApiWrapper.order_book rescue nil # We don't care about the response
-    expect(order_book_stub).to have_been_requested
+    # We don't care about the response
+    ItbitApiWrapper.order_book rescue nil
+
+    expect(stuff_stub).to have_been_requested
   end
 
-  def stub_transactions
-    Itbit::XBTUSDMarketData.stub(:trades) do
-      [
-        { tid: 601855, price: 0.4.to_d, amount: 0.19.to_d, date: 1460161126 },
-        { tid: 601856, price: 0.5.to_d, amount: 0.18.to_d, date: 1460161129 }
-      ]
-    end
+  def default_wallet_id_stub
+    Itbit.stub(:default_wallet_id) { 'wallet-000' }
   end
 
-  def stub_orders
-    Itbit::Order.stub(:all).with(status: :open) do
-      [
-        double(
-          id: '8888888-ffff', wallet_id: 'b440efce-5555', side: :buy, instrument: :xbtusd, type: :limit,
-          amount: 3.to_d, display_amount: 3.to_d, amount_filled: 3.to_d, price: 0.5.to_d,
-          volume_weighted_average_price: 3.to_d, status: :open, client_order_identifier: 'o', created_time: 1415290187,
-          metadata: { foo: 'bar' }
-        ),
-        double(
-          id: '7777777-gggg', wallet_id: 'b440efce-4444', side: :buy, instrument: :xbtusd, type: :limit,
-          amount: 3.to_d, display_amount: 3.to_d, amount_filled: 3.to_d, price: 0.5.to_d,
-          volume_weighted_average_price: 3.to_d, status: :open, client_order_identifier: 'o', created_time: 1415290287,
-          metadata: { foo: 'bar' }
-        )
-      ]
-    end
-  end
-
-  def stub_order_book
-    Itbit::XBTUSDMarketData.stub(:orders) do
-      {
-        bids: [[0.63.to_d, 0.1.to_d], [0.63.to_d, 0.4.to_d], [0.63.to_d, 0.15.to_d]],
-        asks: [[0.64.to_d, 0.4.to_d], [0.64.to_d, 0.9.to_d], [0.64.to_d, 0.25.to_d]]
-      }
-    end
-  end
-
-  def stub_balance
-    Itbit.stub(:default_wallet_id) { 'fae1ce9a-848d-479b-b059-e93cb026cdf9' }
+  def balance_stub(count: 1, total: 1.5, available: 2.5)
+    default_wallet_id_stub
     Itbit::Wallet.stub(:all) do
-      [{
-        id: 'fae1ce9a-848d-479b-b059-e93cb026cdf9',
-        name: 'primary',
-        user_id: '326a3369-78fc-44e7-ad52-03e97371ca72',
-        account_identifier: 'PRIVATEBETA55-2285-2HN',
-        balances: [
-          { total_balance: 20.8.to_d, currency: :usd, available_balance: 10.0.to_d },
-          { total_balance: 0.to_d, currency: :xbt, available_balance: 0.to_d },
-          { total_balance: 0.to_d, currency: :eur, available_balance: 0.to_d }
-        ]
-      }]
+      count.times.map do |i|
+        {
+          id: "wallet-#{i.to_s.rjust(3, '0')}",
+          name: 'primary',
+          user_id: '326a3369-78fc-44e7-ad52-03e97371ca72',
+          account_identifier: 'PRIVATEBETA55-2285-2HN',
+          balances: [
+            { total_balance: (total + i).to_d, currency: :usd, available_balance: (available + i).to_d },
+            { total_balance: (total + i).to_d, currency: :xbt, available_balance: (available + i).to_d },
+            { total_balance: (total + i).to_d, currency: :eur, available_balance: (available + i).to_d }
+          ]
+        }
+      end
     end
-  end
-
-  it '#transactions' do
-    stub_transactions
-
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
-    transaction = api_wrapper.transactions.sample
-    transaction.id.should be_a(Integer)
-    transaction.price.should be_a(BigDecimal)
-    transaction.amount.should be_a(BigDecimal)
-    transaction.timestamp.should be_a(Integer)
-  end
-
-  it '#orders' do
-    stub_orders
-
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
-
-    order = api_wrapper.orders.sample
-    order.id.should be_a(String)
-    order.type.should be_a(Symbol)
-    order.price.should be_a(BigDecimal)
-    order.amount.should be_a(BigDecimal)
-    order.timestamp.should be_a(Integer)
-  end
-
-  it '#order_book' do
-    stub_order_book
-
-    order_book = api_wrapper.order_book
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
-    order_book.timestamp.should be_a(Integer)
-
-    bid = order_book.bids.sample
-    bid.price.should be_a(BigDecimal)
-    bid.quantity.should be_a(BigDecimal)
-
-    ask = order_book.asks.sample
-    ask.price.should be_a(BigDecimal)
-    ask.quantity.should be_a(BigDecimal)
   end
 
   it '#balance' do
-    stub_balance
+    balance_stub
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -133,6 +60,100 @@ describe ItbitApiWrapper do
     usd.available.should be_a(BigDecimal)
 
     balance.fee.should be_a(BigDecimal)
+  end
+
+  it '#cancel' do
+    orders_stub
+
+    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+  end
+
+  def order_book_stub(count: 3, price: 1.5, amount: 2.5)
+    Itbit::XBTUSDMarketData.stub(:orders) do
+      {
+        bids: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] },
+        asks: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] }
+      }
+    end
+  end
+
+  it '#order_book' do
+    order_book_stub
+
+    order_book = api_wrapper.order_book
+    order_book.should be_a(ApiWrapper::OrderBook)
+    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
+    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.timestamp.should be_a(Integer)
+
+    bid = order_book.bids.sample
+    bid.price.should be_a(BigDecimal)
+    bid.quantity.should be_a(BigDecimal)
+
+    ask = order_book.asks.sample
+    ask.price.should be_a(BigDecimal)
+    ask.quantity.should be_a(BigDecimal)
+  end
+
+  def orders_stub(count: 1, amount: 1.5, price: 2.5)
+    Itbit::Order.stub(:all).with(status: :open) do
+      count.times.map do |i|
+        double(
+          id: "id-#{i.to_s.rjust(3, '0')}",
+          wallet_id: "wallet-#{i.to_s.rjust(3, '0')}",
+          side: :buy,
+          instrument: :xbtusd,
+          type: :limit,
+          amount: (amount + i).to_d,
+          display_amount: (amount + i).to_d,
+          amount_filled: (amount + i).to_d,
+          price: (price + i).to_d,
+          volume_weighted_average_price: (price + i).to_d,
+          status: :open,
+          client_order_identifier: 'o',
+          metadata: { foo: 'bar' },
+          created_time: 1.seconds.ago.to_i
+        )
+      end
+    end
+  end
+
+  it '#orders' do
+    orders_stub
+
+    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+
+    order = api_wrapper.orders.sample
+    order.id.should be_a(String)
+    order.type.should be_a(Symbol)
+    order.price.should be_a(BigDecimal)
+    order.amount.should be_a(BigDecimal)
+    order.timestamp.should be_a(Integer)
+  end
+
+  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+    Itbit::XBTUSDMarketData.stub(:trades) do
+      count.times.map do |i|
+        {
+          tid: i,
+          price: (price + i).to_d,
+          amount: (amount + i).to_d,
+          date: 1.seconds.ago.to_i
+        }
+      end
+    end
+  end
+
+  it '#transactions' do
+    transactions_stub
+
+    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+
+    transaction = api_wrapper.transactions.sample
+    transaction.id.should be_a(Integer)
+    transaction.price.should be_a(BigDecimal)
+    transaction.amount.should be_a(BigDecimal)
+    transaction.timestamp.should be_a(Integer)
   end
 
   it '#user_transaction' do
