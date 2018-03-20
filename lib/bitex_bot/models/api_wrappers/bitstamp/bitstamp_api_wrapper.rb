@@ -12,16 +12,31 @@ class BitstampApiWrapper < ApiWrapper
       end
     end
 
-    def transactions
-      Bitstamp.transactions.map { |t| transaction_parser(t) }
-    rescue StandardError => e
-      raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
+    def amount_and_quantity(order_id, transactions)
+      closes = transactions.select { |t| t.order_id.to_s == order_id }
+      amount = closes.collect { |c| c.usd.to_d }.sum.abs
+      quantity = closes.collect { |c| c.btc.to_d }.sum.abs
+      [amount, quantity]
     end
 
-    def orders
-      Bitstamp.orders.all.map { |o| order_parser(o) }
+    def balance
+      balance_summary_parser(Bitstamp.balance.symbolize_keys)
     rescue StandardError => e
-      raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
+      raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
+    end
+
+    def cancel(order)
+      Bitstamp::Order.new(id: order.id).cancel!
+    rescue StandardError => e
+      raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
+    end
+
+    def find_lost(type, price)
+      orders.find do |o|
+        o.order_method == type &&
+          o.price == price &&
+          o.datetime.to_datetime >= 5.minutes.ago.to_datetime
+      end
     end
 
     # rubocop:disable Metrics/AbcSize
@@ -40,16 +55,20 @@ class BitstampApiWrapper < ApiWrapper
     end
     # rubocop:enable Metrics/AbcSize
 
-    def balance
-      balance_summary_parser(Bitstamp.balance.symbolize_keys)
+    def orders
+      Bitstamp.orders.all.map { |o| order_parser(o) }
     rescue StandardError => e
-      raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
+      raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
     end
 
-    def cancel(order)
-      Bitstamp::Order.new(id: order.id).cancel!
+    def send_order(type, price, quantity)
+      Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
+    end
+
+    def transactions
+      Bitstamp.transactions.map { |t| transaction_parser(t) }
     rescue StandardError => e
-      raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
+      raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
     end
 
     def user_transactions
@@ -58,54 +77,8 @@ class BitstampApiWrapper < ApiWrapper
       raise ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}"
     end
 
-    def send_order(type, price, quantity)
-      Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
-    end
-
-    def find_lost(type, price)
-      orders.find do |o|
-        o.order_method == type &&
-          o.price == price &&
-          o.datetime.to_datetime >= 5.minutes.ago.to_datetime
-      end
-    end
-
-    def amount_and_quantity(order_id, transactions)
-      closes = transactions.select { |t| t.order_id.to_s == order_id }
-      amount = closes.collect { |c| c.usd.to_d }.sum.abs
-      quantity = closes.collect { |c| c.btc.to_d }.sum.abs
-      [amount, quantity]
-    end
-
     private
 
-    def order_is_done?(order)
-      order.nil?
-    end
-
-    # <Bitstamp::Transactions: @tid=1469074, @price='126.95', @amount='1.10000000', @date='1380648951'>
-    def transaction_parser(transaction)
-      self::Transaction.new(transaction.tid, transaction.price.to_d, transaction.amount.to_d, transaction.date.to_i)
-    end
-
-    # <Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
-    def order_parser(order)
-      type = order.type.zero? ? :buy : :sell
-      self::Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i)
-    end
-
-    # {
-    #   timestamp: '1380237884',
-    #   bids: [['124.55', '1.58057006'], ['124.40', '14.91779125']],
-    #   asks: [['124.56', '0.81888247'], ['124.57', '0.81078911']]
-    # }
-    def order_book_parser(book)
-      self::OrderBook.new(book[:timestamp].to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
-    end
-
-    def order_summary_parser(stock_market)
-      stock_market.map { |stock| self::OrderSummary.new(stock[0].to_d, stock[1].to_d) }
-    end
 
     # {
     #   btc_reserved: '0', btc_available: '0', btc_balance: '0',
@@ -122,6 +95,34 @@ class BitstampApiWrapper < ApiWrapper
         balances["#{currency}_reserved".to_sym].to_d,
         balances["#{currency}_available".to_sym].to_d
       )
+    end
+
+    # {
+    #   timestamp: '1380237884',
+    #   bids: [['124.55', '1.58057006'], ['124.40', '14.91779125']],
+    #   asks: [['124.56', '0.81888247'], ['124.57', '0.81078911']]
+    # }
+    def order_book_parser(book)
+      self::OrderBook.new(book[:timestamp].to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
+    end
+
+    def order_is_done?(order)
+      order.nil?
+    end
+
+    # <Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
+    def order_parser(order)
+      type = order.type.zero? ? :buy : :sell
+      self::Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i)
+    end
+
+    def order_summary_parser(orders)
+      orders.map { |order| self::OrderSummary.new(order[0].to_d, order[1].to_d) }
+    end
+
+    # <Bitstamp::Transactions: @tid=1469074, @price='126.95', @amount='1.10000000', @date='1380648951'>
+    def transaction_parser(transaction)
+      self::Transaction.new(transaction.tid, transaction.price.to_d, transaction.amount.to_d, transaction.date.to_i)
     end
 
     # <Bitstamp::UserTransaction:
