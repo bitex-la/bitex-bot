@@ -77,13 +77,18 @@ describe 'BitfinexApiWrapper' do
     balance.fee.should be_a(BigDecimal)
   end
 
-    # [
-    #   {
-    #     id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
-    #     type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
-    #     was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
-    #   }
-    # ]
+  it '#cancel' do
+    stub_orders
+    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+  end
+
+  # [
+  #   {
+  #     id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
+  #     type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
+  #     was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
+  #   }
+  # ]
   def stub_orders(count: 1)
     api_client.any_instance.stub(:orders) do
       count.times.map do |i|
