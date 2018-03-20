@@ -9,35 +9,121 @@ describe KrakenApiWrapper do
     BitexBot::Robot.setup
   end
 
-  it 'Sends User-Agent header' do
-    order_book_stub =
-      stub_request(:get, 'https://api.kraken.com/0/public/Depth?pair=XBTUSD')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
-
-    KrakenApiWrapper.order_book rescue nil # We don't care about the response
-    expect(order_book_stub).to have_been_requested
-  end
-
-  def stub_public_client
+  def public_client_stub
     api_client.stub(public: double)
   end
 
-  def stub_private_client
+  def private_client_stub
     api_client.stub(private: double)
   end
 
-  def stub_transactions
-    api_client.public.stub(:trades).with('XBTUSD') do
-      {
-        XXBTZUSD: [
-          ['202.51626', '0.01440000', 1_440_277_319.1_922, 'b', 'l', ''],
-          ['202.54000', '0.10000000', 1_440_277_322.8_993, 'b', 'l', '']
-        ]
-      }
+  it 'Sends User-Agent header' do
+    url = 'https://api.kraken.com/0/public/Depth?pair=XBTUSD'
+    stuff_stub = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+
+    # We don't care about the response
+    KrakenApiWrapper.order_book rescue nil
+
+    expect(stuff_stub).to have_been_requested
+  end
+
+  def balance_stub
+    api_client.private.stub(account_info: [{ taker_fees: '89.2' }])
+    api_client.private.stub(:balance) do
+      { 'XXBT': '1433.0939', 'ZUSD': '1230.0233', 'XETH': '99.7497224800' }.with_indifferent_access
     end
   end
 
-  def stub_orders
+  def trade_volume_stub
+    api_client.private.stub(:trade_volume).with(hash_including(pair: 'XBTUSD')) do
+      {
+        'currency' => 'ZUSD', 'volume' => '3878.8703',
+        'fees' => {
+          'XXBTZUSD' => {
+            'fee' => '0.2600',
+            'minfee' => '0.1000',
+            'maxfee' => '0.2600',
+            'nextfee' => '0.2400',
+            'nextvolume' => '10000.0000',
+            'tiervolume' => '0.0000'
+          }
+        },
+        'fees_maker' => {
+          'XETHZEUR' => {
+            'fee' => '0.1600',
+            'minfee' => '0.0000',
+            'maxfee' => '0.1600',
+            'nextfee' => '0.1400',
+            'nextvolume' => '10000.0000',
+            'tiervolume' => '0.0000'
+          }
+        }
+      }.with_indifferent_access
+    end
+  end
+
+  it '#balance' do
+    private_client_stub
+    orders_stub
+    balance_stub
+    trade_volume_stub
+
+    balance = api_wrapper.balance
+    balance.should be_a(ApiWrapper::BalanceSummary)
+    balance.btc.should be_a(ApiWrapper::Balance)
+    balance.usd.should be_a(ApiWrapper::Balance)
+
+    btc = balance.btc
+    btc.total.should be_a(BigDecimal)
+    btc.reserved.should be_a(BigDecimal)
+    btc.available.should be_a(BigDecimal)
+
+    usd = balance.usd
+    usd.total.should be_a(BigDecimal)
+    usd.reserved.should be_a(BigDecimal)
+    usd.available.should be_a(BigDecimal)
+
+    balance.fee.should be_a(BigDecimal)
+  end
+
+  it '#cancel' do
+    private_client_stub
+    orders_stub
+
+    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+  end
+
+  def order_book_stub(count: 3, price: 1.5, amount: 2.5)
+    api_client.public.stub(:order_book) do
+      {
+        'XXBTZUSD' => {
+          'bids' => count.times.map { |i| [(price + i).to_d, (amount + i).to_d, 1.seconds.ago.to_i.to_s] },
+          'asks' => count.times.map { |i| [(price + i).to_d, (amount + i).to_d, 1.seconds.ago.to_i.to_s] }
+        }
+      }.with_indifferent_access
+    end
+  end
+
+  it '#order_book' do
+    public_client_stub
+    order_book_stub
+
+    order_book = api_wrapper.order_book
+    order_book.should be_a(ApiWrapper::OrderBook)
+    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
+    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.timestamp.should be_a(Integer)
+
+    bid = order_book.bids.sample
+    bid.price.should be_a(BigDecimal)
+    bid.quantity.should be_a(BigDecimal)
+
+    ask = order_book.asks.sample
+    ask.price.should be_a(BigDecimal)
+    ask.quantity.should be_a(BigDecimal)
+  end
+
+  def orders_stub
     api_client.private.stub(:open_orders) do
       {
         'open' => {
@@ -64,60 +150,9 @@ describe KrakenApiWrapper do
     end
   end
 
-  def stub_order_book
-    api_client.public.stub(:order_book) do
-      {
-        'XXBTZUSD' => {
-          'bids' => [['574.61', '0.14397', '1472506127.0']],
-          'asks' => [['574.62', '19.1334', '1472506126.0']]
-        }
-      }.with_indifferent_access
-    end
-  end
-
-  def stub_balance
-    api_client.private.stub(account_info: [{ taker_fees: '89.2' }])
-    api_client.private.stub(:balance) do
-      { 'XXBT': '1433.0939', 'ZUSD': '1230.0233', 'XETH': '99.7497224800' }.with_indifferent_access
-    end
-  end
-
-  def stub_trade_volume
-    api_client.private.stub(:trade_volume).with(pair: 'XBTUSD') do
-      {
-        'currency' => 'ZUSD', 'volume' => '3878.8703',
-        'fees' => {
-          'XXBTZUSD' => {
-            'fee' => '0.2600', 'minfee' => '0.1000', 'maxfee' => '0.2600', 'nextfee' => '0.2400',
-            'nextvolume' => '10000.0000', 'tiervolume' => '0.0000'
-          }
-        },
-        'fees_maker' => {
-          'XETHZEUR' => {
-            'fee' => '0.1600', 'minfee' => '0.0000', 'maxfee' => '0.1600', 'nextfee' => '0.1400',
-            'nextvolume' => '10000.0000', 'tiervolume' => '0.0000'
-          }
-        }
-      }.with_indifferent_access
-    end
-  end
-
-  it '#transactions' do
-    stub_public_client
-    stub_transactions
-
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
-    transaction = api_wrapper.transactions.sample
-    transaction.id.should be_a(Integer)
-    transaction.price.should be_a(BigDecimal)
-    transaction.amount.should be_a(BigDecimal)
-    transaction.timestamp.should be_a(Integer)
-  end
-
   it '#orders' do
-    stub_private_client
-    stub_orders
+    private_client_stub
+    orders_stub
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -129,47 +164,28 @@ describe KrakenApiWrapper do
     order.timestamp.should be_a(Integer)
   end
 
-  it '#order_book' do
-    stub_public_client
-    stub_order_book
-
-    order_book = api_wrapper.order_book
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
-    order_book.timestamp.should be_a(Integer)
-
-    bid = order_book.bids.sample
-    bid.price.should be_a(BigDecimal)
-    bid.quantity.should be_a(BigDecimal)
-
-    ask = order_book.asks.sample
-    ask.price.should be_a(BigDecimal)
-    ask.quantity.should be_a(BigDecimal)
+  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+    api_client.public.stub(:trades).with('XBTUSD') do
+      {
+        XXBTZUSD: [
+          ['202.51626', '0.01440000', 1_440_277_319.1_922, 'b', 'l', ''],
+          ['202.54000', '0.10000000', 1_440_277_322.8_993, 'b', 'l', '']
+        ]
+      }
+    end
   end
 
-  it '#balance' do
-    stub_private_client
-    stub_orders
-    stub_balance
-    stub_trade_volume
+  it '#transactions' do
+    public_client_stub
+    transactions_stub
 
-    balance = api_wrapper.balance
-    balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
-    btc = balance.btc
-    btc.total.should be_a(BigDecimal)
-    btc.reserved.should be_a(BigDecimal)
-    btc.available.should be_a(BigDecimal)
-
-    usd = balance.usd
-    usd.total.should be_a(BigDecimal)
-    usd.reserved.should be_a(BigDecimal)
-    usd.available.should be_a(BigDecimal)
-
-    balance.fee.should be_a(BigDecimal)
+    transaction = api_wrapper.transactions.sample
+    transaction.id.should be_a(Integer)
+    transaction.price.should be_a(BigDecimal)
+    transaction.amount.should be_a(BigDecimal)
+    transaction.timestamp.should be_a(Integer)
   end
 
   it '#user_transaction' do
