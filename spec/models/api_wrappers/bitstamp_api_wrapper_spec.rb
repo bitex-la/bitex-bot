@@ -60,10 +60,10 @@ describe BitstampApiWrapper do
 
     order = BitstampApiWrapper.orders.sample
 
-    BitstampApiWrapper.orders.should include(order)
+    BitstampApiWrapper.orders.map(&:id).should include(order.id)
     expect(order).to respond_to(:cancel!)
     BitstampApiWrapper.cancel(order)
-    BitstampApiWrapper.orders.should_not include(order)
+    BitstampApiWrapper.orders.map(&:id).should_not include(order.id)
   end
 
   def order_book_stub(count: 3, price: 1.5, amount: 2.5)
