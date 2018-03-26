@@ -55,10 +55,6 @@ module BitexBot
       store.buying_amount_to_spend_per_order || Settings.buying.amount_to_spend_per_order
     end
 
-    def self.profit
-      store.buying_profit || Settings.buying.profit
-    end
-
     def self.safest_price(transactions, order_book, dollars_to_use)
       OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, dollars_to_use, nil)
     end
@@ -70,5 +66,13 @@ module BitexBot
     def self.bitex_price(usd_to_spend, bitcoin_to_resell)
       (usd_to_spend / bitcoin_to_resell) * (1 - profit / 100.0)
     end
+
+    # private class methods
+
+    def self.profit
+      store.buying_profit || Settings.buying.profit
+    end
+
+    # end: private class methods
   end
 end
