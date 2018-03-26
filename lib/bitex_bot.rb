@@ -28,10 +28,8 @@ require 'bitex_bot/robot'
 # Get version and bitex-bot as user-agent
 #
 module BitexBot
-  class << self
-    def user_agent
-      "Bitexbot/#{VERSION} (https://github.com/bitex-la/bitex-bot)"
-    end
+  def self.user_agent
+    "Bitexbot/#{VERSION} (https://github.com/bitex-la/bitex-bot)"
   end
 end
 
