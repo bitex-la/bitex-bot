@@ -12,7 +12,13 @@ class ApiWrapper
     :type, # Symbol
     :price, # Decimal
     :amount, # Decimal
-    :timestamp) # Integer
+    :timestamp, # Integer
+    :order # Actual order object
+  ) do
+    def method_missing(method_name, *args)
+      order.send(method_name, *args)
+    end
+  end
 
   OrderBook = Struct.new(
     :timestamp, # Integer
