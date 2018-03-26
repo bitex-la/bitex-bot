@@ -30,48 +30,50 @@ module BitexBot
       end
     end
 
-    class << self
-      # Trade constantly respecting cooldown times so that we don't get banned by api clients.
-      def run!
-        bot = start_robot
-        cooldown_until = Time.now
-        loop do
-          start_time = Time.now
-          next if start_time < cooldown_until
-          current_cooldowns = 0
-          bot.trade!
+    # class methods
 
-          # This global sleep is so that we don't stress bitex too much.
-          sleep_for(0.3)
-          cooldown_until = start_time + current_cooldowns.seconds
-        end
-      end
+    def self.setup
+      Bitex.api_key = Settings.bitex
+      Bitex.sandbox = Settings.sandbox
+      taker.setup(Settings)
+    end
 
-      def setup
-        Bitex.api_key = Settings.bitex
-        Bitex.sandbox = Settings.sandbox
-        taker.setup(Settings)
-      end
+    # Trade constantly respecting cooldown times so that we don't get banned by api clients.
+    def self.run!
+      bot = start_robot
+      cooldown_until = Time.now
+      loop do
+        start_time = Time.now
+        next if start_time < cooldown_until
+        current_cooldowns = 0
+        bot.trade!
 
-      def sleep_for(seconds)
-        sleep(seconds)
-      end
-
-      def with_cooldown
-        result = yield
-        self.current_cooldowns += 1
-        sleep_for(0.1)
-        result
-      end
-
-      private
-
-      def start_robot
-        setup
-        logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
-        new
+        # This global sleep is so that we don't stress bitex too much.
+        sleep_for(0.3)
+        cooldown_until = start_time + current_cooldowns.seconds
       end
     end
+
+    def self.sleep_for(seconds)
+      sleep(seconds)
+    end
+
+    def self.with_cooldown
+      result = yield
+      self.current_cooldowns += 1
+      sleep_for(0.1)
+      result
+    end
+
+    # private class methods
+
+    def self.start_robot
+      setup
+      logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+      new
+    end
+
+    # end: private class methods
 
     # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def trade!
