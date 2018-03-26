@@ -5,35 +5,37 @@ module BitexBot
   class ClosingFlow < ActiveRecord::Base
     self.abstract_class = true
 
-    class << self
-      def close_time_to_live
-        30
-      end
-
-      # Start a new CloseBuy that closes exising OpenBuy's by selling on another exchange what was just bought on bitex.
-      def close_open_positions
-        open_positions = open_position_class.open
-        return if open_positions.empty?
-
-        quantity = open_positions.collect(&:quantity).sum
-        amount = open_positions.collect(&:amount).sum
-        price = suggested_amount(open_positions) / quantity
-
-        # Don't even bother trying to close a position that's too small.
-        return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
-        create_closing_flow!(price, quantity, amount, open_positions)
-      end
-
-      def suggested_amount(positions)
-        positions.map { |p| p.quantity * p.opening_flow.suggested_closing_price }.sum
-      end
-
-      def create_closing_flow!(price, quantity, amount, open_positions)
-        create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
-          .create_initial_order_and_close_position!
-        nil
-      end
+    def self.close_time_to_live
+      30
     end
+
+    # Start a new CloseBuy that closes exising OpenBuy's by selling on another exchange what was just bought on bitex.
+    def self.close_open_positions
+      open_positions = open_position_class.open
+      return if open_positions.empty?
+
+      quantity = open_positions.collect(&:quantity).sum
+      amount = open_positions.collect(&:amount).sum
+      price = suggested_amount(open_positions) / quantity
+
+      # Don't even bother trying to close a position that's too small.
+      return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
+      create_closing_flow!(price, quantity, amount, open_positions)
+    end
+
+    # private class methods
+
+    def self.suggested_amount(positions)
+      positions.map { |p| p.quantity * p.opening_flow.suggested_closing_price }.sum
+    end
+
+    def self.create_closing_flow!(price, quantity, amount, open_positions)
+      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
+        .create_initial_order_and_close_position!
+      nil
+    end
+
+    # end: private class methods
 
     def create_initial_order_and_close_position!
       create_order_and_close_position(quantity, desired_price)

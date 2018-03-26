@@ -8,10 +8,8 @@ module BitexBot
 
     scope :active, -> { where(done: false) }
 
-    class << self
-      def open_position_class
-        OpenBuy
-      end
+    def self.open_position_class
+      OpenBuy
     end
 
     def order_method
