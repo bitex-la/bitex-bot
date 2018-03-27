@@ -8,16 +8,11 @@ module BitexBot
 
     scope :active, -> { where(done: false) }
 
-    class << self
-      def open_position_class
-        OpenSell
-      end
-    end
+    cattr_reader(:open_position_class) { OpenSell }
 
-    def order_method
-      :buy
-    end
+    private
 
+    # create_or_cancel! helpers
     # The amount received when selling initially, minus the amount spent re-buying the sold coins.
     def estimate_usd_profit
       open_positions.sum(:amount) - close_positions.sum(:amount)
@@ -34,5 +29,12 @@ module BitexBot
       next_quantity = ((quantity * desired_price) - closes.sum(:amount)) / next_price
       [next_price, next_quantity]
     end
+    # end: create_or_cancel! helpers
+
+    # create_order_and_close_position helpers
+    def order_method
+      :buy
+    end
+    # end: create_order_and_close_position helpers
   end
 end
