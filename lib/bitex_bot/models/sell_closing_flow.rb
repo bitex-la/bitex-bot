@@ -8,7 +8,9 @@ module BitexBot
 
     scope :active, -> { where(done: false) }
 
-    cattr_reader(:open_position_class) { OpenSell }
+    def self.open_position_class
+      OpenSell
+    end
 
     private
 

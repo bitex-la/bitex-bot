@@ -52,6 +52,8 @@ module BitexBot
       create_or_cancel!(order, order_id, transactions, latest_close)
     end
 
+    private
+
     # sync_closed_positions helpers
     def create_or_cancel!(order, order_id, transactions, latest_close)
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
