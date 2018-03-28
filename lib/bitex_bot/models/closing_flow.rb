@@ -100,7 +100,7 @@ module BitexBot
     # end: create_or_cancel! helpers
 
     # next_price_and_quantity helpers
-    def variation_price(closes_count)
+    def price_variation(closes_count)
       closes_count**2 * 0.03
     end
     # end: next_price_and_quantity helpers
