@@ -4,6 +4,15 @@ Style/FrozenStringLiteralComment:
 Metrics/LineLength:
   Max: 130
 
+Metrics/ParameterLists:
+  Max: 7
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/ClassLength:
+  Max: 130
+
 AllCops:
   TargetRubyVersion: 2.5
   Exclude:
