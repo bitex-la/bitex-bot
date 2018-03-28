@@ -39,32 +39,29 @@ module BitexBot
 
     # TODO: should receive a order_ids and user_transaccions array, then each Wrapper should know how to search for them.
     def sync_closed_positions(orders, transactions)
-      latest_close = close_positions.last
-
       # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
-      if latest_close.nil?
-        create_initial_order_and_close_position!
-        return
-      end
-
-      order_id = latest_close.order_id.to_s
-      order = orders.find { |o| o.id.to_s == order_id }
-      create_or_cancel!(order, order_id, transactions, latest_close)
+      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders, transactions)
     end
 
     private
 
     # sync_closed_positions helpers
-    def create_or_cancel!(order, order_id, transactions, latest_close)
+    def create_or_cancel!(orders, transactions)
+      order_id = latest_close.order_id.to_s
+      order = orders.find { |o| o.id.to_s == order_id }
+
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
       # spawned from it.
       if order.nil?
-        sync_position(latest_close, order_id, transactions)
-        next_price, next_quantity = next_price_and_quantity
-        create_next_position!(next_price, next_quantity)
-      elsif latest_close.created_at < self.class.close_time_to_live.seconds.ago
+        sync_position(order_id, transactions)
+        create_next_position!
+      elsif latest_close.created_at < close_time_to_live.seconds.ago
         cancel!(order)
       end
+    end
+
+    def latest_close
+      close_positions.last
     end
     # end: sync_closed_positions helpers
 
@@ -83,7 +80,8 @@ module BitexBot
     #   estimate_btc_profit
     #   estimate_usd_profit
     #   next_price_and_quantity
-    def create_next_position!(next_price, next_quantity)
+    def create_next_position!
+      next_price, next_quantity = next_price_and_quantity
       if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
@@ -93,7 +91,8 @@ module BitexBot
       end
     end
 
-    def sync_position(latest, order_id, transactions)
+    def sync_position(order_id, transactions)
+      latest = latest_close
       latest.amount, latest.quantity = BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
       latest.save!
     end
