@@ -12,9 +12,7 @@ module BitexBot
     # @!group Statuses
     # All possible flow statuses
     # @return [Array<String>]
-    def self.statuses
-      %w[executing settling finalised]
-    end
+    cattr_accessor(:statuses) { %w[executing settling finalised] }
 
     def self.active
       where('status != "finalised"')
@@ -73,7 +71,7 @@ module BitexBot
     end
 
     def self.enough_funds?(order)
-      order.reason != :not_enough_funds
+      !order.reason.to_s.inquiry.not_enough_funds?
     end
 
     def self.plus_bitex(fee)
@@ -136,19 +134,12 @@ module BitexBot
     validates :order_id, presence: true
     validates_presence_of :price, :value_to_use
 
-    # The Bitex order has been placed, its id stored as order_id.
-    def executing?
-      status == 'executing'
-    end
-
-    # In process of cancelling the Bitex order and any other outstanding order in the other exchange.
-    def settling?
-      status == 'settling'
-    end
-
-    # Successfully settled or finished executing.
-    def finalised?
-      status == 'finalised'
+    # Statuses:
+    #   executing: The Bitex order has been placed, its id stored as order_id.
+    #   setting: In process of cancelling the Bitex order and any other outstanding order in the other exchange.
+    #   finalised: Successfully settled or finished executing.
+    statuses.each do |status_name|
+      define_method("#{status_name}?") { status == status_name }
     end
 
     def finalise!
