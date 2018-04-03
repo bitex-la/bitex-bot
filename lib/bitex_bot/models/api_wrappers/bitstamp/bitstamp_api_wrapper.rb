@@ -86,7 +86,7 @@ class BitstampApiWrapper < ApiWrapper
   def self.order_parser(o)
     timestamp = DateTime.parse(o.datetime).to_time.to_i
     type = o.type == 0 ? :buy : :sell
-    Order.new(o.id.to_s, type, o.price.to_d, o.amount.to_d, timestamp)
+    Order.new(o.id.to_s, type, o.price.to_d, o.amount.to_d, timestamp, o)
   end
 
   # {

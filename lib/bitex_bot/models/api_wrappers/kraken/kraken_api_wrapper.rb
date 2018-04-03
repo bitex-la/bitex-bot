@@ -67,7 +67,7 @@ class KrakenApiWrapper < ApiWrapper
 
   # <KrakenOrder: @id='O5TDV2-WDYB2-6OGJRD', @type=:buy, @price='1.01', @amount='1.00000000', @datetime='2013-09-26 23:15:04'>
   def self.order_parser(o)
-    Order.new(o.id.to_s, o.type, o.price, o.amount, o.datetime)
+    Order.new(o.id.to_s, o.type, o.price, o.amount, o.datetime, o)
   end
 
   # {

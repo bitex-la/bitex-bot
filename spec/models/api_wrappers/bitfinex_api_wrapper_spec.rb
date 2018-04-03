@@ -34,7 +34,7 @@ describe BitfinexApiWrapper do
           id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
           type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
           was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
-        }
+        }.stringify_keys
       ]
     end
   end
