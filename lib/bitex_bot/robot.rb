@@ -166,7 +166,7 @@ module BitexBot
       end
     end
 
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def start_opening_flows_if_needed
       return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
       return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
@@ -191,7 +191,7 @@ module BitexBot
       create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
       create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def simple_log(level, message)
       BitexBot::Robot.logger.send(level, message)
