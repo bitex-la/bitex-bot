@@ -41,16 +41,16 @@ module BitexBot
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
     def self.run!
       bot = start_robot
-      cooldown_until = Time.now
+      self.cooldown_until = Time.now
       loop do
         start_time = Time.now
         next if start_time < cooldown_until
-        current_cooldowns = 0
+        self.current_cooldowns = 0
         bot.trade!
 
         # This global sleep is so that we don't stress bitex too much.
         sleep_for(0.3)
-        cooldown_until = start_time + current_cooldowns.seconds
+        self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end
 
