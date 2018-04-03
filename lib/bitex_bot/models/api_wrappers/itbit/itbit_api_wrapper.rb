@@ -75,7 +75,7 @@ class ItbitApiWrapper < ApiWrapper
   #   @metadata={foo: 'bar'}, @client_order_identifier='o'
   # >
   def self.order_parser(o)
-    Order.new(o.id, o.side, o.price, o.amount, o.created_time)
+    Order.new(o.id, o.side, o.price, o.amount, o.created_time, o)
   end
 
   # {
