@@ -5,7 +5,6 @@ module BitexBot
   # which is the 'safest' price at which we can expect this order to get executed quickly.
   #
   class OrderBookSimulator
-
     # @param volatility [Integer] How many seconds of recent volume we need to skip from the start of the order book to be more
     #   certain that our order will get executed.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
@@ -23,30 +22,29 @@ module BitexBot
       BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
       seen = 0
 
-      order_book.tap do |book|
-        book.each do |order_summary|
-          price = order_summary.price
-          quantity = order_summary.quantity
+      order_book.each do |order_summary|
+        price = order_summary.price
+        quantity = order_summary.quantity
 
-          # An order may be partially or completely skipped due to volatility.
-          if to_skip.positive?
-            dropped = [quantity, to_skip].min
-            to_skip -= dropped
-            quantity -= dropped
-            BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
-            next if quantity.zero?
-          end
-
-          if quantity_target.present?
-            return best_price('BTC', quantity_target, price) if best_price?(quantity, quantity_target, seen)
-            seen += quantity
-          elsif amount_target.present?
-            amount = price * quantity
-            return best_price('$', amount_target, price) if best_price?(amount, amount_target, seen)
-            seen += amount
-          end
+        # An order may be partially or completely skipped due to volatility.
+        if to_skip.positive?
+          dropped = [quantity, to_skip].min
+          to_skip -= dropped
+          quantity -= dropped
+          BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
+          next if quantity.zero?
         end
-      end.last.price
+
+        if quantity_target.present?
+          return best_price('BTC', quantity_target, price) if best_price?(quantity, quantity_target, seen)
+          seen += quantity
+        elsif amount_target.present?
+          amount = price * quantity
+          return best_price('$', amount_target, price) if best_price?(amount, amount_target, seen)
+          seen += amount
+        end
+      end
+      order_book.last.price
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
 
