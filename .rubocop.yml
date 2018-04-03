@@ -30,3 +30,4 @@ AllCops:
     - 'spec/**/*'
     - 'vendor/**/*'
     - 'lib/bitex_bot/database.rb'
+    - 'lib/bitex_bot/version.rb'
