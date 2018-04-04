@@ -90,7 +90,6 @@ class KrakenOrder
   #     'misc': '', 'oflags': 'fciq'
   #   }
   # }
-  # rubocop:disable Metrics/AbcSize
   def initialize(id, order_data)
     self.id = id
     self.type = order_data[:descr][:type].to_sym
@@ -100,7 +99,6 @@ class KrakenOrder
     self.price = order_data[:descr][:price].to_d
     self.avg_price = order_data[:price].to_d
   end
-  # rubocop:enable Metrics/AbcSize
 
   def cancel!
     KrakenApiWrapper.client.private.cancel_order(txid: id)
@@ -115,7 +113,6 @@ class KrakenOrder
       other == [type, price, amount]
     end
   end
-
 end
 
 class OrderArgumentError < StandardError; end
