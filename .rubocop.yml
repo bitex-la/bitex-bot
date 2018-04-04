@@ -1,11 +1,20 @@
 Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
-Metrics/LineLength:
-  Max: 130
+Metrics/AbcSize:
+  Max: 16
 
 Metrics/ClassLength:
   Max: 130
+
+Metrics/LineLength:
+  Max: 130
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/ParameterLists:
+  Max: 7
 
 AllCops:
   TargetRubyVersion: 2.5
@@ -20,3 +29,5 @@ AllCops:
     - 'settings.rb.sample'
     - 'spec/**/*'
     - 'vendor/**/*'
+    - 'lib/bitex_bot/database.rb'
+    - 'lib/bitex_bot/version.rb'
