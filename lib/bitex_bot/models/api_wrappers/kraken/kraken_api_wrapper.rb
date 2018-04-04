@@ -24,8 +24,8 @@ class KrakenApiWrapper < ApiWrapper
     retry
   end
 
-  def self.enough_order_size?(quantity, price)
-    (quantity * price) > MIN_AMOUNT
+  def self.enough_order_size?(quantity, _price)
+    quantity >= MIN_AMOUNT
   end
 
   def self.find_lost(type, price, quantity)
