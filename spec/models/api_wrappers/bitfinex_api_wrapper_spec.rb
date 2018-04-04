@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BitfinexApiWrapper do
+describe 'BitfinexApiWrapper' do
   let(:api_wrapper) { BitfinexApiWrapper }
   let(:api_client) { Bitfinex::Client }
 
@@ -11,101 +11,52 @@ describe BitfinexApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    stub_request(:post, 'https://api.bitfinex.com/v1/balances')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
-    stub_request(:post, 'https://api.bitfinex.com/v1/account_infos')
-      .with(headers: { 'User-Agent': BitexBot.user_agent })
-    BitfinexApiWrapper.balance rescue nil # we don't care about the response
+    url = 'https://api.bitfinex.com/v1/orders'
+    stuff_stub = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+
+    # we don't care about the response
+    BitfinexApiWrapper.orders rescue nil
+
+    expect(stuff_stub).to have_been_requested
   end
 
-  def stub_transactions
-    api_client.any_instance.stub(:trades) do
-      [
-        { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 },
-        { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
-      ]
-    end
-  end
-
-  def stub_orders
-    api_client.any_instance.stub(:orders) do
+  def account_info_stub
+    api_client.any_instance.stub(:account_info) do
       [
         {
-          id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
-          type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
-          was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
-        }.stringify_keys
+          maker_fees: '0.1',
+          taker_fees: '0.2',
+          fees: [
+            { pairs: 'BTC', maker_fees: '0.1', taker_fees: '0.2' },
+            { pairs: 'LTC', maker_fees: '0.1', taker_fees: '0.2' },
+            { pairs: 'ETH', maker_fees: '0.1', taker_fees: '0.2' }
+          ]
+        }
       ]
     end
   end
 
-  def stub_order_book
-    api_client.any_instance.stub(:orderbook) do
-      {
-        bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
-        asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
-      }
+  # [
+  #   { type: 'exchange', currency: 'btc', amount: '0.0', available: '0.0' },
+  #   { type: 'exchange', currency: 'usd', amount: '0.0', available: '0.0' },
+  #   ...
+  # ]
+  def balance_stub(count: 2, amount: 1.5, available: 2.5, fee: 1.0)
+    account_info_stub
+    api_client.any_instance.stub(:balances).with(hash_including(type: 'exchange')) do
+      count.times.map do |i|
+        {
+          type: 'exchange',
+          currency: (i % 2).zero? ? 'usd' : 'btc',
+          amount: (amount + i).to_s,
+          available: (available + i).to_s
+        }
+      end
     end
-  end
-
-  def stub_balance
-    api_client.any_instance.stub(:account_info) { [{ taker_fees: '89.2' }] }
-    api_client.any_instance.stub(:balances) do
-      [
-        { type: 'deposit', currency: 'btc', amount: '0.0', available: '0.0' },
-        { type: 'deposit', currency: 'usd', amount: '1.0', available: '1.0' },
-        { type: 'exchange', currency: 'btc', amount: '1', available: '1' }
-      ]
-    end
-  end
-
-  it '#transactions' do
-    stub_transactions
-
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
-    transaction = api_wrapper.transactions.sample
-    transaction.id.should be_a(Integer)
-    transaction.price.should be_a(BigDecimal)
-    transaction.amount.should be_a(BigDecimal)
-    transaction.timestamp.should be_a(Integer)
-  end
-
-  it '#orders' do
-    stub_orders
-
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
-
-    order = api_wrapper.orders.sample
-    order.id.should be_a(String)
-    order.type.should be_a(Symbol)
-    order.price.should be_a(BigDecimal)
-    order.amount.should be_a(BigDecimal)
-    order.timestamp.should be_a(Integer)
-
-    expect(order).to respond_to(:cancel!)
-  end
-
-  it '#order_book' do
-    stub_order_book
-
-    order_book = api_wrapper.order_book
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
-    order_book.timestamp.should be_a(Integer)
-
-    bid = order_book.bids.sample
-    bid.price.should be_a(BigDecimal)
-    bid.quantity.should be_a(BigDecimal)
-
-    ask = order_book.asks.sample
-    ask.price.should be_a(BigDecimal)
-    ask.quantity.should be_a(BigDecimal)
   end
 
   it '#balance' do
-    stub_balance
+    balance_stub
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -123,6 +74,117 @@ describe BitfinexApiWrapper do
     usd.available.should be_a(BigDecimal)
 
     balance.fee.should be_a(BigDecimal)
+  end
+
+  it '#cancel' do
+    orders_stub
+
+    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+  end
+
+  # [
+  #   {
+  #     id: 448411365, symbol: 'btcusd', exchange: 'bitfinex', price: '0.02', avg_execution_price: '0.0',  side: 'buy',
+  #     type: 'exchange limit', timestamp: '1444276597.0', is_live: true, is_cancelled: false, is_hidden: false,
+  #     was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
+  #   }
+  # ]
+  def orders_stub(count: 1)
+    api_client.any_instance.stub(:orders) do
+      count.times.map do |i|
+        {
+          id: i,
+          symbol: 'btcusd',
+          exchange: 'bitfinex',
+          price: '0.02',
+          avg_execution_price: '0.0',
+          side: 'buy',
+          type: 'exchange limit',
+          timestamp: 1.seconds.ago.to_f.to_s,
+          is_live: true,
+          is_cancelled: false,
+          is_hidden: false,
+          was_forced: false,
+          original_amount: '0.02',
+          remaining_amount: '0.02',
+          executed_amount: '0.0'
+        }
+      end
+    end
+  end
+
+  it '#orders' do
+    orders_stub
+
+    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+
+    order = api_wrapper.orders.sample
+    order.id.should be_a(String)
+    order.type.should be_a(Symbol)
+    order.price.should be_a(BigDecimal)
+    order.amount.should be_a(BigDecimal)
+    order.timestamp.should be_a(Integer)
+
+    expect(order).to respond_to(:cancel!)
+  end
+
+  # {
+  #   bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
+  #   asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
+  # }
+  def order_book_stub(count: 3, amount: 1.5, price: 2.5)
+    api_client.any_instance.stub(:orderbook) do
+      {
+        bids: count.times.map { |i| { price: (price + i).to_s, amount: (amount + i).to_s, timestamp: 1.seconds.ago.to_f.to_s } },
+        asks: count.times.map { |i| { price: (price + i).to_s, amount: (amount + i).to_s, timestamp: 1.seconds.ago.to_f.to_s } }
+      }
+    end
+  end
+
+  it '#order_book' do
+    order_book_stub
+
+    order_book = api_wrapper.order_book
+    order_book.should be_a(ApiWrapper::OrderBook)
+    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
+    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.timestamp.should be_a(Integer)
+
+    bid = order_book.bids.sample
+    bid.price.should be_a(BigDecimal)
+    bid.quantity.should be_a(BigDecimal)
+
+    ask = order_book.asks.sample
+    ask.price.should be_a(BigDecimal)
+    ask.quantity.should be_a(BigDecimal)
+  end
+
+  # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
+  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+    api_client.any_instance.stub(:trades) do
+      count.times.map do |i|
+        {
+          tid: i,
+          price: price + 1,
+          amount: (amount + i).to_s,
+          exchange: 'bitfinex',
+          type: (i % 2).zero? ? 'sell' : 'buy',
+          timestamp: 1.seconds.ago.to_i
+        }
+      end
+    end
+  end
+
+  it '#transactions' do
+    transactions_stub
+
+    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+
+    transaction = api_wrapper.transactions.sample
+    transaction.id.should be_a(Integer)
+    transaction.price.should be_a(BigDecimal)
+    transaction.amount.should be_a(BigDecimal)
+    transaction.timestamp.should be_a(Integer)
   end
 
   it '#user_transaction' do
