@@ -22,7 +22,7 @@ module BitexBot
     include ::Hashie::Extensions::Mash::SymbolizeKeys
 
     def load_default
-      path = ARGV[0] || 'bitex_botss_settings.rb'
+      path = ARGV[0] || 'bitex_bot_settings.rb'
       show_sample(path) unless FileTest.exists?(path)
       load_settings(path)
     end
