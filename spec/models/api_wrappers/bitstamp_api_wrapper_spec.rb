@@ -116,6 +116,8 @@ describe BitstampApiWrapper do
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
+
+    expect(order).to respond_to(:cancel!)
   end
 
   it '#user_transaction' do
