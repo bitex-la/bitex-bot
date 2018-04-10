@@ -16,7 +16,7 @@ class BitfinexApiWrapper < ApiWrapper
     end
   end
 
-  def self.amount_and_quantity(order_id)
+  def self.amount_and_quantity(order_id, _transactions)
     with_retry "find order #{order_id}" do
       order = Bitfinex::Client.new.order_status(order_id)
       [order['avg_execution_price'].to_d * order['executed_amount'].to_d, order['executed_amount'].to_d]
