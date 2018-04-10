@@ -10,20 +10,20 @@ describe ItbitApiWrapper do
 
   it 'Sends User-Agent header' do
     url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
-    stuff_stub = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
     ItbitApiWrapper.order_book rescue nil
 
-    expect(stuff_stub).to have_been_requested
+    expect(stub_stuff).to have_been_requested
   end
 
-  def default_wallet_id_stub
+  def stub_default_wallet_id
     Itbit.stub(:default_wallet_id) { 'wallet-000' }
   end
 
-  def balance_stub(count: 1, total: 1.5, available: 2.5)
-    default_wallet_id_stub
+  def stub_balance(count: 1, total: 1.5, available: 2.5)
+    stub_default_wallet_id
     Itbit::Wallet.stub(:all) do
       count.times.map do |i|
         {
@@ -42,7 +42,7 @@ describe ItbitApiWrapper do
   end
 
   it '#balance' do
-    balance_stub
+    stub_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -63,12 +63,12 @@ describe ItbitApiWrapper do
   end
 
   it '#cancel' do
-    orders_stub
+    stub_orders
 
     expect(api_wrapper.orders.sample).to respond_to(:cancel!)
   end
 
-  def order_book_stub(count: 3, price: 1.5, amount: 2.5)
+  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
     Itbit::XBTUSDMarketData.stub(:orders) do
       {
         bids: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] },
@@ -78,7 +78,7 @@ describe ItbitApiWrapper do
   end
 
   it '#order_book' do
-    order_book_stub
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -95,7 +95,7 @@ describe ItbitApiWrapper do
     ask.quantity.should be_a(BigDecimal)
   end
 
-  def orders_stub(count: 1, amount: 1.5, price: 2.5)
+  def stub_orders(count: 1, amount: 1.5, price: 2.5)
     Itbit::Order.stub(:all).with(hash_including(status: :open)) do
       count.times.map do |i|
         double(
@@ -119,7 +119,7 @@ describe ItbitApiWrapper do
   end
 
   it '#orders' do
-    orders_stub
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -131,7 +131,7 @@ describe ItbitApiWrapper do
     order.timestamp.should be_a(Integer)
   end
 
-  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
     Itbit::XBTUSDMarketData.stub(:trades) do
       count.times.map do |i|
         {
@@ -145,7 +145,7 @@ describe ItbitApiWrapper do
   end
 
   it '#transactions' do
-    transactions_stub
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
