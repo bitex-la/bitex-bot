@@ -36,12 +36,6 @@ jobs:
             - ./vendor/bundle
           key: v1-dependencies-{{ checksum "bitex_bot.gemspec" }}-{{ checksum "Gemfile" }}
 
-      # run lints
-      - run:
-          name: run lints
-          command: |
-            bundle exec rubocop
-
       # run tests!
       - run:
           name: run tests
@@ -54,6 +48,12 @@ jobs:
                             --out /tmp/test-results/rspec.xml \
                             --format progress \
                             $TEST_FILES
+
+      # run lints
+      - run:
+          name: run lints
+          command: |
+            bundle exec rubocop
 
       # collect reports
       - store_test_results:
