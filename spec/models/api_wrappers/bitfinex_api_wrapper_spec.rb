@@ -20,7 +20,7 @@ describe 'BitfinexApiWrapper' do
     expect(stuff_stub).to have_been_requested
   end
 
-  def account_info_stub
+  def stub_account_info
     api_client.any_instance.stub(:account_info) do
       [
         {
@@ -41,8 +41,8 @@ describe 'BitfinexApiWrapper' do
   #   { type: 'exchange', currency: 'usd', amount: '0.0', available: '0.0' },
   #   ...
   # ]
-  def balance_stub(count: 2, amount: 1.5, available: 2.5, fee: 1.0)
-    account_info_stub
+  def stub_balance(count: 2, amount: 1.5, available: 2.5, fee: 1.0)
+    stub_account_info
     api_client.any_instance.stub(:balances).with(hash_including(type: 'exchange')) do
       count.times.map do |i|
         {
@@ -56,7 +56,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   it '#balance' do
-    balance_stub
+    stub_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -77,7 +77,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   it '#cancel' do
-    orders_stub
+    stub_orders
 
     expect(api_wrapper.orders.sample).to respond_to(:cancel!)
   end
@@ -89,7 +89,7 @@ describe 'BitfinexApiWrapper' do
   #     was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
   #   }
   # ]
-  def orders_stub(count: 1)
+  def stub_orders(count: 1)
     api_client.any_instance.stub(:orders) do
       count.times.map do |i|
         {
@@ -114,7 +114,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   it '#orders' do
-    orders_stub
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -132,7 +132,7 @@ describe 'BitfinexApiWrapper' do
   #   bids: [{ price: '574.61', amount: '0.14397', timestamp: '1472506127.0' }],
   #   asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
   # }
-  def order_book_stub(count: 3, amount: 1.5, price: 2.5)
+  def stub_order_book(count: 3, amount: 1.5, price: 2.5)
     api_client.any_instance.stub(:orderbook) do
       {
         bids: count.times.map { |i| { price: (price + i).to_s, amount: (amount + i).to_s, timestamp: 1.seconds.ago.to_f.to_s } },
@@ -142,7 +142,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   it '#order_book' do
-    order_book_stub
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -160,7 +160,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
-  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
     api_client.any_instance.stub(:trades) do
       count.times.map do |i|
         {
@@ -176,7 +176,7 @@ describe 'BitfinexApiWrapper' do
   end
 
   it '#transactions' do
-    transactions_stub
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
