@@ -23,10 +23,12 @@ module BitexBot
       STDOUT.sync = true unless logdev.present?
       Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
         log.level = Logger.const_get(Settings.log.level.upcase)
-        log.formatter = proc do |severity, datetime, msg|
+        # rubocop:disable Lint/UnusedBlockArgument
+        log.formatter = proc do |severity, datetime, progname, msg|
           date = datetime.strftime('%m/%d %H:%M:%S.%L')
           "#{format('%-6s', severity)} #{date}: #{msg}\n"
         end
+        # rubocop:enable Lint/UnusedBlockArgument
       end
     end
 
