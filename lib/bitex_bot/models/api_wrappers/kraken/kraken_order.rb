@@ -46,7 +46,7 @@ class KrakenOrder
     retry
   end
 
-  def self.amount_and_quantity(order_id, transactions)
+  def self.amount_and_quantity(order_id)
     order = find(order_id)
     [order.avg_price * order.executed_amount, order.executed_amount]
   end
