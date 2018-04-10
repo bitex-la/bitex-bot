@@ -9,15 +9,15 @@ describe BitstampApiWrapper do
 
   it 'Sends User-Agent header' do
     url = 'https://www.bitstamp.net/api/v2/balance/btcusd/'
-    stuff_stub = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
     BitstampApiWrapper.balance rescue nil
 
-    expect(stuff_stub).to have_been_requested
+    expect(stub_stuff).to have_been_requested
   end
 
-  def balance_stub(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
+  def stub_balance(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
     Bitstamp.stub(:balance) do
       {
         'btc_balance' => balance,
@@ -32,7 +32,7 @@ describe BitstampApiWrapper do
   end
 
   it '#balance' do
-    balance_stub
+    stub_balance
 
     balance = BitstampApiWrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -53,7 +53,7 @@ describe BitstampApiWrapper do
   end
 
   it '#cancel' do
-    orders_stub
+    stub_orders
     Bitstamp::Order.any_instance.stub(:cancel!) do
       Bitstamp.orders.stub(all: [])
     end
@@ -66,7 +66,7 @@ describe BitstampApiWrapper do
     BitstampApiWrapper.orders.map(&:id).should_not include(order.id)
   end
 
-  def order_book_stub(count: 3, price: 1.5, amount: 2.5)
+  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
     Bitstamp.stub(:order_book) do
       {
         'timestamp' => Time.now.to_i.to_s,
@@ -77,7 +77,7 @@ describe BitstampApiWrapper do
   end
 
   it '#order_book' do
-    order_book_stub
+    stub_order_book
 
     order_book = BitstampApiWrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -95,7 +95,7 @@ describe BitstampApiWrapper do
   end
 
   # [<Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>]
-  def orders_stub(count: 1, price: 1.5, amount: 2.5)
+  def stub_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
       count.times.map do |i|
         double(
@@ -110,7 +110,7 @@ describe BitstampApiWrapper do
   end
 
   it '#orders' do
-    orders_stub
+    stub_orders
 
     BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -137,7 +137,7 @@ describe BitstampApiWrapper do
   end
 
   # [<Bitstamp::Transactions @tid=14, @price='1.9', @amount='1.1', @date='1380648951'>]
-  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.stub(:transactions) do
       count.times.map do |i|
         double(
@@ -151,7 +151,7 @@ describe BitstampApiWrapper do
   end
 
   it '#transactions' do
-    transactions_stub
+    stub_transactions
 
     BitstampApiWrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -163,7 +163,7 @@ describe BitstampApiWrapper do
   end
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
-  def user_transactions_stub(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
+  def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
     Bitstamp.user_transactions.stub(:all) do
       count.times.map do |i|
         double(
@@ -181,7 +181,7 @@ describe BitstampApiWrapper do
   end
 
   it '#user_transaction' do
-    user_transactions_stub
+    stub_user_transactions
     BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
     user_transaction = BitstampApiWrapper.user_transactions.sample
