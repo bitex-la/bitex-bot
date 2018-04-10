@@ -9,32 +9,32 @@ describe KrakenApiWrapper do
     BitexBot::Robot.setup
   end
 
-  def public_client_stub
+  def stub_public_client
     api_client.stub(public: double)
   end
 
-  def private_client_stub
+  def stub_private_client
     api_client.stub(private: double)
   end
 
   it 'Sends User-Agent header' do
     url = 'https://api.kraken.com/0/public/Depth?pair=XBTUSD'
-    stuff_stub = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
     KrakenApiWrapper.order_book rescue nil
 
-    expect(stuff_stub).to have_been_requested
+    expect(stub_stuff).to have_been_requested
   end
 
-  def balance_stub
+  def stub_balance
     api_client.private.stub(account_info: [{ taker_fees: '89.2' }])
     api_client.private.stub(:balance) do
       { 'XXBT': '1433.0939', 'ZUSD': '1230.0233', 'XETH': '99.7497224800' }.with_indifferent_access
     end
   end
 
-  def trade_volume_stub
+  def stub_trade_volume
     api_client.private.stub(:trade_volume).with(hash_including(pair: 'XBTUSD')) do
       {
         'currency' => 'ZUSD', 'volume' => '3878.8703',
@@ -63,10 +63,10 @@ describe KrakenApiWrapper do
   end
 
   it '#balance' do
-    private_client_stub
-    orders_stub
-    balance_stub
-    trade_volume_stub
+    stub_private_client
+    stub_orders
+    stub_balance
+    stub_trade_volume
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -87,13 +87,13 @@ describe KrakenApiWrapper do
   end
 
   it '#cancel' do
-    private_client_stub
-    orders_stub
+    stub_private_client
+    stub_orders
 
     expect(api_wrapper.orders.sample).to respond_to(:cancel!)
   end
 
-  def order_book_stub(count: 3, price: 1.5, amount: 2.5)
+  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
     api_client.public.stub(:order_book) do
       {
         'XXBTZUSD' => {
@@ -105,8 +105,8 @@ describe KrakenApiWrapper do
   end
 
   it '#order_book' do
-    public_client_stub
-    order_book_stub
+    stub_public_client
+    stub_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -123,7 +123,7 @@ describe KrakenApiWrapper do
     ask.quantity.should be_a(BigDecimal)
   end
 
-  def orders_stub
+  def stub_orders
     api_client.private.stub(:open_orders) do
       {
         'open' => {
@@ -151,8 +151,8 @@ describe KrakenApiWrapper do
   end
 
   it '#orders' do
-    private_client_stub
-    orders_stub
+    stub_private_client
+    stub_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -164,7 +164,7 @@ describe KrakenApiWrapper do
     order.timestamp.should be_a(Integer)
   end
 
-  def transactions_stub(count: 1, price: 1.5, amount: 2.5)
+  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
     api_client.public.stub(:trades).with('XBTUSD') do
       {
         XXBTZUSD: [
@@ -176,8 +176,8 @@ describe KrakenApiWrapper do
   end
 
   it '#transactions' do
-    public_client_stub
-    transactions_stub
+    stub_public_client
+    stub_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
