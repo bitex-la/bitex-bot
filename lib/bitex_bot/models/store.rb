@@ -1,1 +1,4 @@
-class BitexBot::Store < ActiveRecord::Base; end
+module BitexBot
+  class Store < ActiveRecord::Base
+  end
+end
