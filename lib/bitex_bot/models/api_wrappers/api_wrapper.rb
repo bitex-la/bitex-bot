@@ -20,7 +20,7 @@ class ApiWrapper
     :order # Actual order object
   ) do
     def method_missing(method_name, *args, &block)
-      order.send(method_name, args, block) || super
+      order.send(method_name, *args, &block) || super
     end
 
     def respond_to_missing?(method_name, include_private = false)
