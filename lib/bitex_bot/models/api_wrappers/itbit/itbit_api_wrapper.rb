@@ -13,7 +13,7 @@ class ItbitApiWrapper < ApiWrapper
     end
   end
 
-  def self.amount_and_quantity(order_id)
+  def self.amount_and_quantity(order_id, _transactions)
     order = Itbit::Order.find(order_id)
     [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
   end
