@@ -1,3 +1,7 @@
+##
+# Wrapper implementation for Itbit API.
+# https://api.itbit.com/docs
+#
 class ItbitApiWrapper < ApiWrapper
   def self.setup(settings)
     Itbit.tap do |conf|
@@ -9,16 +13,9 @@ class ItbitApiWrapper < ApiWrapper
     end
   end
 
-  def self.transactions
-    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
-  end
-
-  def self.orders
-    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
-  end
-
-  def self.order_book
-    order_book_parser(Itbit::XBTUSDMarketData.orders)
+  def self.amount_and_quantity(order_id, _transactions)
+    order = Itbit::Order.find(order_id)
+    [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
   end
 
   def self.balance
@@ -34,9 +31,12 @@ class ItbitApiWrapper < ApiWrapper
     end
   end
 
-  # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
-  def self.user_transactions
-    []
+  def self.order_book
+    order_book_parser(Itbit::XBTUSDMarketData.orders)
+  end
+
+  def self.orders
+    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
   end
 
   def self.place_order(type, price, quantity)
@@ -46,26 +46,57 @@ class ItbitApiWrapper < ApiWrapper
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
     BitexBot::Robot.logger.error('Captured Timeout on itbit')
-    latest =
-      Itbit::Order.all.select do |o|
-        o.price == price && (o.created_time - Time.now.to_i).abs < 500
-      end.first
+    latest = last_order_by(price)
 
     return latest if latest.present?
     BitexBot::Robot.logger.error('Could not find my order')
     raise e
   end
 
-  def self.amount_and_quantity(order_id, transactions)
-    order = Itbit::Order.find(order_id)
-    [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
+  def self.transactions
+    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
-  private
+  # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
+  def self.user_transactions
+    []
+  end
 
-  # { tid: 601855, price: 0.41814e3, amount: 0.19e-1, date: 1460161126 }
-  def self.transaction_parser(t)
-    Transaction.new(t[:tid], t[:price], t[:amount], t[:date])
+  private_class_method
+
+  # [
+  #   { total_balance: 0.2e2, currency: :usd, available_balance: 0.1e2 },
+  #   { total_balance: 0.0, currency: :xbt, available_balance: 0.0 },
+  #   { total_balance: 0.0, currency: :eur, available_balance: 0.0 },
+  #   { total_balance: 0.0, currency: :sgd, available_balance: 0.0 }
+  # ]
+  def self.balance_summary_parser(balances)
+    BalanceSummary.new(balance_parser(balances, :xbt), balance_parser(balances, :usd), 0.5.to_d)
+  end
+
+  def self.balance_parser(balances, currency)
+    currency_balance = balances.find { |balance| balance[:currency] == currency }
+    Balance.new(
+      currency_balance[:total_balance].to_d,
+      currency_balance[:total_balance].to_d - currency_balance[:available_balance].to_d,
+      currency_balance[:available_balance].to_d
+    )
+  end
+
+  def self.last_order_by(price)
+    Itbit::Order.all.select { |o| o.price == price && (o.created_time - Time.now.to_i).abs < 500 }.first
+  end
+
+  # {
+  #   bids: [[0.63921e3, 0.195e1], [0.637e3, 0.47e0], [0.63e3, 0.158e1]],
+  #   asks: [[0.6424e3, 0.4e0], [0.6433e3, 0.95e0], [0.6443e3, 0.25e0]]
+  # }
+  def self.order_book_parser(book)
+    OrderBook.new(Time.now.to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
+  end
+
+  def self.order_summary_parser(orders)
+    orders.map { |order| OrderSummary.new(order[0], order[1]) }
   end
 
   # <Itbit::Order:
@@ -74,39 +105,12 @@ class ItbitApiWrapper < ApiWrapper
   #   @volume_weighted_average_price=0.0, @amount_filled=0.0, @created_time=1415290187, @status=:open,
   #   @metadata={foo: 'bar'}, @client_order_identifier='o'
   # >
-  def self.order_parser(o)
-    Order.new(o.id, o.side, o.price, o.amount, o.created_time, o)
+  def self.order_parser(order)
+    Order.new(order.id, order.side, order.price, order.amount, order.created_time)
   end
 
-  # {
-  #   bids: [[0.63921e3, 0.195e1], [0.637e3, 0.47e0], [0.63e3, 0.158e1]],
-  #   asks: [[0.6424e3, 0.4e0], [0.6433e3, 0.95e0], [0.6443e3, 0.25e0]]
-  # }
-  def self.order_book_parser(ob)
-    OrderBook.new(
-      Time.now.to_i,
-      ob[:bids].map { |bid| OrderSummary.new(bid[0], bid[1]) },
-      ob[:asks].map { |ask| OrderSummary.new(ask[0], ask[1]) }
-    )
-  end
-
-  # [
-  #   { total_balance: 0.2e2, currency: :usd, available_balance: 0.1e2 },
-  #   { total_balance: 0.0, currency: :xbt, available_balance: 0.0 },
-  #   { total_balance: 0.0, currency: :eur, available_balance: 0.0 },
-  #   { total_balance: 0.0, currency: :sgd, available_balance: 0.0 }
-  # ]
-  def self.balance_summary_parser(b)
-    BalanceSummary.new.tap do |summary|
-      btc = b.find { |balance| balance[:currency] == :xbt }
-      summary[:btc] =
-        Balance.new(btc[:total_balance], btc[:total_balance] - btc[:available_balance], btc[:available_balance])
-
-      usd = b.find { |balance| balance[:currency] == :usd }
-      summary[:usd] =
-        Balance.new(usd[:total_balance], usd[:total_balance] - usd[:available_balance], usd[:available_balance])
-
-      summary[:fee] = 0.5.to_d
-    end
+  # { tid: 601855, price: 0.41814e3, amount: 0.19e-1, date: 1460161126 }
+  def self.transaction_parser(transaction)
+    Transaction.new(transaction[:tid], transaction[:price], transaction[:amount], transaction[:date])
   end
 end
