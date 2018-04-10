@@ -136,7 +136,7 @@ class ApiWrapper
     # @param order_id
     # @param transactions
     # @return [Array<Decimal, Decimal>]
-    def amount_and_quantity
+    def amount_and_quantity(_order_id, _transactions)
       raise 'self subclass responsibility'
     end
 
