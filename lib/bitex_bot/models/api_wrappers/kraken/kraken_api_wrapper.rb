@@ -14,8 +14,8 @@ class KrakenApiWrapper < ApiWrapper
     @client ||= KrakenClient.load(@settings)
   end
 
-  def self.amount_and_quantity(order_id, transactions)
-    KrakenOrder.amount_and_quantity(order_id, transactions)
+  def self.amount_and_quantity(order_id, _transactions)
+    KrakenOrder.amount_and_quantity(order_id)
   end
 
   def self.balance
