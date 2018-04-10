@@ -74,9 +74,9 @@ module BitexBot
         Robot.logger.debug("Finalising #{order.class}##{order.id}")
         order.cancel!
         Robot.logger.debug("Finalised #{order.class}##{order.id}")
-      rescue StandardError
-        nil # just pass, we'll keep on trying until it's not in orders anymore.
       end
+    rescue StandardError
+      nil # just pass, we'll keep on trying until it's not in orders anymore.
     end
 
     # This use hooks methods, these must be defined in the subclass:
