@@ -65,7 +65,7 @@ module BitexBot
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(:btc, value_to_use, bitex_price, true)
+      order_class.create!(Settings.bitex.orderbook, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
