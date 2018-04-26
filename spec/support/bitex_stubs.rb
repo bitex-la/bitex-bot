@@ -33,22 +33,25 @@ module BitexStubs
     end
 
     Bitex::Ask.stub(:create!) do |orderbook, to_sell, price|
-      ask = Bitex::Ask.new
-      ask.id = 12345
-      ask.created_at = Time.now
-      ask.price = price
-      ask.quantity = to_sell
-      ask.remaining_quantity = to_sell
-      ask.status = :executing
-      ask.orderbook = orderbook
-      ask.stub(:cancel!) do
-        ask.status = :cancelled
-        BitexStubs.active_asks.delete(ask.id)
+      orderbook.should eq BitexBot::Settings.bitex.orderbook.to_sym
+
+      Bitex::Ask.new.tap do |ask|
+        ask.id = 12345
+        ask.created_at = Time.now
+        ask.price = price
+        ask.quantity = to_sell
+        ask.remaining_quantity = to_sell
+        ask.status = :executing
+        ask.orderbook = orderbook
+        ask.stub(:cancel!) do
+          ask.status = :cancelled
+          BitexStubs.active_asks.delete(ask.id)
+          ask
+        end
+        BitexStubs.asks[ask.id] = ask
+        BitexStubs.active_asks[ask.id] = ask
         ask
       end
-      BitexStubs.asks[ask.id] = ask
-      BitexStubs.active_asks[ask.id] = ask
-      ask
     end
   end
 
