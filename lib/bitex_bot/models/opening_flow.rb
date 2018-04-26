@@ -113,7 +113,7 @@ module BitexBot
       !transaction.is_a?(transaction_class) ||
         active_transaction?(transaction, threshold) ||
         open_position?(transaction) ||
-        !btc_usd_orderbook?(transaction)
+        !expected_orderbook?(transaction)
     end
     # end: sync_open_positions helpers
 
@@ -126,7 +126,7 @@ module BitexBot
       open_position_class.find_by_transaction_id(transaction.id)
     end
 
-    def self.btc_usd_orderbook?(transaction)
+    def self.expected_orderbook?(transaction)
       transaction.orderbook == Settings.bitex.orderbook.to_sym
     end
     # end: sought_transaction helpers
