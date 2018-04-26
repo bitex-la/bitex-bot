@@ -127,7 +127,7 @@ module BitexBot
     end
 
     def self.btc_usd_orderbook?(transaction)
-      transaction.orderbook == :btc_usd
+      transaction.orderbook == Settings.bitex.orderbook.to_sym
     end
     # end: sought_transaction helpers
 
