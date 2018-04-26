@@ -140,7 +140,7 @@ describe BitexBot::BuyOpeningFlow do
       end.to change { BitexBot::OpenBuy.count }.by(1)
     end
 
-    it 'does not register litecoin buys' do
+    it 'does not register buys from another orderbook' do
       flow.order_id.should == 12_345
       Bitex::Trade.stub(all: [build(:bitex_buy, id: 23_456, orderbook: :btc_ars)])
 
