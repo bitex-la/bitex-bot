@@ -141,8 +141,8 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     it 'does not register litecoin buys' do
-      flow.order_id.should == 12345
-      Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, specie: :ltc)])
+      flow.order_id.should == 12_345
+      Bitex::Trade.stub(all: [build(:bitex_buy, id: 23_456, orderbook: :btc_ars)])
 
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty

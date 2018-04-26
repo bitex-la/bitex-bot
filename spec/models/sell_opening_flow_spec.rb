@@ -141,10 +141,10 @@ describe BitexBot::SellOpeningFlow do
       end.to change { BitexBot::OpenSell.count }.by(1)
     end
 
-    it 'does not register litecoin buys' do
-      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
+    it 'does not register btc_ars buys' do
+      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23_456, orderbook: :btc_ars)])
 
-      flow.order_id.should == 12345
+      flow.order_id.should == 12_345
       expect do
         BitexBot::SellOpeningFlow.sync_open_positions.should be_empty
       end.not_to change { BitexBot::OpenSell.count }
@@ -162,12 +162,18 @@ describe BitexBot::SellOpeningFlow do
 
   it 'cancels the associated bitex bid' do
     stub_bitex_orders
-    BitexBot::Settings.stub(time_to_live: 3,
-      selling: double(quantity_to_sell_per_order: 4, profit: 50))
+    BitexBot::Settings.stub(time_to_live: 3, selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
-    flow = BitexBot::SellOpeningFlow.create_for_market(1000,
-      bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
-      store)
+    flow =
+      BitexBot::SellOpeningFlow
+        .create_for_market(
+          1000,
+          bitstamp_api_wrapper_order_book.asks,
+          bitstamp_api_wrapper_transactions_stub,
+          0.5,
+          0.25,
+          store
+        )
 
     flow.finalise!
     flow.should be_settling
