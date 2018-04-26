@@ -12,7 +12,8 @@ module BitexStubs
     Bitex::Ask.stub(:find) { |id| BitexStubs.asks[id] }
 
     Bitex::Bid.stub(:create!) do |orderbook, to_spend, price|
-      # TODO: TAPpear!
+      orderbook.should eq BitexBot::Settings.bitex.orderbook.to_sym
+
       Bitex::Bid.new.tap do |bid|
         bid.id = 12345
         bid.created_at = Time.now
