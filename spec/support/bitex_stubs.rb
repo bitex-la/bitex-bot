@@ -5,38 +5,33 @@ module BitexStubs
   mattr_accessor(:active_asks) { {} }
 
   def stub_bitex_orders
-    Bitex::Order.stub(:all) do
-      BitexStubs.active_bids + BitexStubs.active_asks
-    end
+    Bitex::Order.stub(:all) { BitexStubs.active_bids + BitexStubs.active_asks }
 
-    Bitex::Bid.stub(:find) do |id|
-      BitexStubs.bids[id]
-    end
+    Bitex::Bid.stub(:find) { |id| BitexStubs.bids[id] }
 
-    Bitex::Ask.stub(:find) do |id|
-      BitexStubs.asks[id]
-    end
+    Bitex::Ask.stub(:find) { |id| BitexStubs.asks[id] }
 
-    Bitex::Bid.stub(:create!) do |specie, to_spend, price|
-      bid = Bitex::Bid.new
-      bid.id = 12345
-      bid.created_at = Time.now
-      bid.price = price
-      bid.amount = to_spend
-      bid.remaining_amount = to_spend
-      bid.status = :executing
-      bid.specie = specie
-      bid.stub(:cancel!) do
-        bid.status = :cancelled
-        BitexStubs.active_bids.delete(bid.id)
-        bid
+    Bitex::Bid.stub(:create!) do |orderbook, to_spend, price|
+      # TODO: TAPpear!
+      Bitex::Bid.new.tap do |bid|
+        bid.id = 12345
+        bid.created_at = Time.now
+        bid.price = price
+        bid.amount = to_spend
+        bid.remaining_amount = to_spend
+        bid.status = :executing
+        bid.orderbook = orderbook
+        bid.stub(:cancel!) do
+          bid.status = :cancelled
+          BitexStubs.active_bids.delete(bid.id)
+          bid
+        end
+        BitexStubs.bids[bid.id] = bid
+        BitexStubs.active_bids[bid.id] = bid
       end
-      BitexStubs.bids[bid.id] = bid
-      BitexStubs.active_bids[bid.id] = bid
-      bid
     end
 
-    Bitex::Ask.stub(:create!) do |specie, to_sell, price|
+    Bitex::Ask.stub(:create!) do |orderbook, to_sell, price|
       ask = Bitex::Ask.new
       ask.id = 12345
       ask.created_at = Time.now
@@ -44,7 +39,7 @@ module BitexStubs
       ask.quantity = to_sell
       ask.remaining_quantity = to_sell
       ask.status = :executing
-      ask.specie = specie
+      ask.orderbook = orderbook
       ask.stub(:cancel!) do
         ask.status = :cancelled
         BitexStubs.active_asks.delete(ask.id)
