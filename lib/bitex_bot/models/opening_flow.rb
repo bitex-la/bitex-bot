@@ -65,7 +65,7 @@ module BitexBot
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(Settings.bitex.orderbook, value_to_use, bitex_price, true)
+      order_class.create!(Settings.bitex.orderbook.to_sym, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -85,6 +85,7 @@ module BitexBot
     #   #open_position_class
     def self.sync_open_positions
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
+
       Bitex::Trade.all.map do |transaction|
         next if sought_transaction?(threshold, transaction)
         flow = find_by_order_id(transaction_order_id(transaction))
@@ -112,7 +113,7 @@ module BitexBot
       !transaction.is_a?(transaction_class) ||
         active_transaction?(transaction, threshold) ||
         open_position?(transaction) ||
-        !btc_specie?(transaction)
+        !btc_usd_orderbook?(transaction)
     end
     # end: sync_open_positions helpers
 
@@ -125,8 +126,8 @@ module BitexBot
       open_position_class.find_by_transaction_id(transaction.id)
     end
 
-    def self.btc_specie?(transaction)
-      transaction.specie == :btc
+    def self.btc_usd_orderbook?(transaction)
+      transaction.orderbook == :btc_usd
     end
     # end: sought_transaction helpers
 
