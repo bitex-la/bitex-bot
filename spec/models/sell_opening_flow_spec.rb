@@ -141,7 +141,7 @@ describe BitexBot::SellOpeningFlow do
       end.to change { BitexBot::OpenSell.count }.by(1)
     end
 
-    it 'does not register btc_ars buys' do
+    it 'does not register buys from another orderbook' do
       Bitex::Trade.stub(all: [build(:bitex_sell, id: 23_456, orderbook: :btc_ars)])
 
       flow.order_id.should == 12_345
