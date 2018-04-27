@@ -3,6 +3,7 @@ require 'spec_helper'
 describe BitexBot::Robot do
   before(:each) do
     Bitex.api_key = 'valid_key'
+
     BitexBot::Settings.stub(
       time_to_live: 10,
       buying: double(amount_to_spend_per_order: 50, profit: 0),
@@ -14,6 +15,7 @@ describe BitexBot::Robot do
         options: {}
       )
     )
+
     Bitex::Profile.stub(get: {
       fee: 0.5,
       usd_balance:       10000.00,   # Total USD balance
@@ -26,6 +28,7 @@ describe BitexBot::Robot do
       ltc_reserved:  100.00000000,   # LTC reserved in open orders
       ltc_available: 150.00000000
     })
+
     stub_bitex_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
@@ -40,8 +43,10 @@ describe BitexBot::Robot do
   it 'Starts out by creating opening flows that timeout' do
     stub_bitex_orders
     stub_bitstamp_api_wrapper_order_book
+
     bot.trade!
     stub_bitex_transactions
+
     buying = BitexBot::BuyOpeningFlow.last
     selling = BitexBot::SellOpeningFlow.last
 
@@ -59,26 +64,29 @@ describe BitexBot::Robot do
   it 'creates alternating opening flows' do
     Bitex::Trade.stub(all: [])
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 2.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 5.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 2
 
-    # When transactions appear, all opening flows
-    # should get old and die.
-    # We stub our finder to make it so all orders
-    # have been successfully cancelled.
+    # When transactions appear, all opening flows should get old and die.
+    # We stub our finder to make it so all orders have been successfully cancelled.
     stub_bitex_transactions
 
     Timecop.travel 5.seconds.from_now
     bot.trade!
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 5.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 0
   end
 
