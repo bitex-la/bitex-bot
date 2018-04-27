@@ -36,7 +36,7 @@ describe BitexBot::Settings do
         },
         sandbox: false,
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
-        taker: 'bitstamp',
+        taker: :bitstamp,
         time_to_live: 20
       })
     end
