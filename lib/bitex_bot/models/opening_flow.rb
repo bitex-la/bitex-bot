@@ -157,8 +157,7 @@ module BitexBot
 
     # finalise! helpers
     def canceled_or_completed?(order)
-      # TODO: En que situacion un Bid/Ask se le settea alguno de estos estados, no esta descrito ninugo de ellos esn statuses.
-      %i[cancelled completed].any?(order.status)
+      %i[cancelled completed].any? { |status| status == order.status }
     end
 
     def do_finalize
