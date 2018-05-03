@@ -44,9 +44,9 @@ describe BitexBot::Robot do
 
   it 'orderbook formed from your base currency and another quote currency' do
     BitexBot::Settings.bitex.orderbook do |orderbook|
-      BitexBot::Robot.base_coin.should be orderbook.base
-      BitexBot::Robot.quote_coin.should be orderbook.quote
-      BitexBot::Robot.orderbook.should be "#{orderbook.base}_#{orderbook.quote}".to_sym
+      BitexBot::Robot.orderbook.should be orderbook
+      BitexBot::Robot.base_coin.should eq orderbook.to_s.split('_')[0].upcase
+      BitexBot::Robot.quote_coin.should eq orderbook.to_s.split('_')[1].upcase
     end
   end
 

@@ -14,9 +14,10 @@ module BitexBot
   #
   # rubocop:disable Metrics/ClassLength
   class Robot
-    cattr_accessor(:base_coin) { Settings.bitex.orderbook.base }
-    cattr_accessor(:quote_coin) { Settings.bitex.orderbook.quote }
-    cattr_accessor(:orderbook) { "#{base_coin}_#{quote_coin}".to_sym }
+    cattr_accessor(:orderbook) { Settings.bitex.orderbook }
+    cattr_accessor(:base_coin) { orderbook.to_s.split('_')[0].upcase }
+    cattr_accessor(:quote_coin) { orderbook.to_s.split('_')[1].upcase }
+    cattr_accessor(:fx_rate) { Settings.fx_rate }
 
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
