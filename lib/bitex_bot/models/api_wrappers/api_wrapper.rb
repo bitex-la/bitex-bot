@@ -107,7 +107,7 @@ class ApiWrapper
     def place_order(type, price, quantity)
       order = send_order(type, price, quantity)
       return order unless order.nil? || order.id.nil?
-      BitexBot::Robot.logger.debug("Captured error when placing order on #{self.class.name}")
+      BitexBot::Robot.log(:debug, "Captured error when placing order on #{self.class.name}")
 
       # Order may have gone through and be stuck somewhere in Wrapper's piipeline.
       # We just sleep for a bit and then look for the order.
@@ -117,7 +117,9 @@ class ApiWrapper
         return order if order.present?
       end
 
-      raise OrderNotFound, "Closing: #{type} order not found for #{quantity} BTC @ $#{price}. #{order}"
+      raise OrderNotFound,
+            "Closing: #{type} order not found for #{quantity} #{BitexBot::Robot.base_coin} @ #{BitexBot::Robot.quote_coin}"\
+            " #{price}. #{order}"
     end
 
     # Hook Method - thearguments could not be used in their entirety by the subclasses

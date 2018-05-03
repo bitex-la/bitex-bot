@@ -1,11 +1,11 @@
 trap 'INT' do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
-    BitexBot::Robot.logger.info("Ok, ok, I'm out.")
+    BitexBot::Robot.log(:info, "Ok, ok, I'm out.")
     exit 1
   end
   BitexBot::Robot.graceful_shutdown = true
-  BitexBot::Robot.logger.info("Shutting down as soon as I've cleaned up.")
+  BitexBot::Robot.log(:info, "Shutting down as soon as I've cleaned up.")
 end
 
 module BitexBot
@@ -62,18 +62,22 @@ module BitexBot
       sleep(seconds)
     end
 
+    def self.log(level, message)
+      logger.send(level, message)
+    end
+
     def self.with_cooldown
-      result = yield
-      self.current_cooldowns += 1
-      sleep_for(0.1)
-      result
+      yield.tap do
+        self.current_cooldowns += 1
+        sleep_for(0.1)
+      end
     end
 
     # private class methods
 
     def self.start_robot
       setup
-      logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+      log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
       new
     end
 
@@ -91,7 +95,7 @@ module BitexBot
       notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 3)
     rescue Curl::Err::TimeoutError => e
-      self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      log(:error, "#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
     rescue OrderNotFound => e
       notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
@@ -133,7 +137,7 @@ module BitexBot
     end
 
     def shutdown!
-      simple_log(:info, 'Shutdown completed')
+      log(:info, 'Shutdown completed')
       exit
     end
 
@@ -172,12 +176,12 @@ module BitexBot
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def start_opening_flows_if_needed
-      return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
-      return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
-      return simple_log(:debug, 'Not placing new orders, shutting down.') if turn_off?
+      return log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
+      return log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
+      return log(:debug, 'Not placing new orders, shutting down.') if turn_off?
 
       recent_buying, recent_selling = recent_operations
-      return simple_log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
+      return log(:debug, 'Not placing new orders, recent ones exist.') if [recent_buying, recent_selling].all?(&:present?)
 
       balance = with_cooldown { BitexBot::Robot.taker.balance }
       profile = Bitex::Profile.get
@@ -186,26 +190,23 @@ module BitexBot
 
       sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return simple_log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
-      return simple_log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
+      return log(:debug, "Not placing new orders, #{base_coin} target not met") if usd_target_met?(total_usd)
+      return log(:debug, "Not placing new orders, #{quote_coin} target not met") if btc_target_met?(total_btc)
 
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }
 
-      create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
-      create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
+      create_buy_opening_flow(balance, order_book, transactions, profile) if recent_buying.nil?
+      create_sell_opening_flow(balance, order_book, transactions, profile) if recent_selling.nil?
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
-    def simple_log(level, message)
-      BitexBot::Robot.logger.send(level, message)
+    def recent_operations
+      [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.active.where('created_at > ?', threshold).first }
     end
 
-    def recent_operations
-      [BuyOpeningFlow, SellOpeningFlow].map do |kind|
-        threshold = (Settings.time_to_live / 2).seconds.ago
-        kind.active.where('created_at > ?', threshold).first
-      end
+    def threshold
+      (Settings.time_to_live / 2).seconds.ago
     end
 
     def sync_log(balance)
@@ -219,16 +220,13 @@ module BitexBot
     end
 
     def check_balance_warning(total_usd, total_btc)
-      notify_balance_warning(:usd, total_usd, store.usd_warning) if usd_balance_warning_notify?(total_usd)
-      notify_balance_warning(:btc, total_btc, store.btc_warning) if btc_balance_warning_notify?(total_btc)
+      notify_balance_warning(:usd, total_usd, store.usd_warning) if balance_warning_notify?(:usd, total_usd)
+      notify_balance_warning(:btc, total_btc, store.btc_warning) if balance_warning_notify?(:btc, total_btc)
     end
 
-    def usd_balance_warning_notify?(total)
-      store.usd_warning.present? && total <= store.usd_warning
-    end
-
-    def btc_balance_warning_notify?(total)
-      store.btc_warning.present? && total <= store.btc_warning
+    def balance_warning_notify?(currency, total)
+      warning = "#{currency}_warning"
+      store.send(warning).present? && total <= store.send(warning)
     end
 
     def usd_target_met?(total)
@@ -245,7 +243,7 @@ module BitexBot
     end
 
     def notify(message, subj = 'Notice from your robot trader')
-      self.class.logger.error(message)
+      log(:error, message)
       return unless Settings.mailer.present?
       mail = new_mail(subj, message)
       mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
@@ -271,6 +269,10 @@ module BitexBot
 
     def sleep_for(seconds)
       self.class.sleep_for(seconds)
+    end
+
+    def log(level, message)
+      self.class.log(level, message)
     end
   end
   # rubocop:enable Metrics/ClassLength

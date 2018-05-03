@@ -41,9 +41,7 @@ module BitexBot
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
 
-      Robot
-        .logger
-        .info("Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{bitex_price} (#{remote_value})")
+      Robot.log(:info, "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{bitex_price} (#{remote_value})")
 
       create!(
         price: bitex_price,
@@ -98,7 +96,12 @@ module BitexBot
 
     # sync_open_positions helpers
     def self.create_open_position!(transaction, flow)
-      Robot.logger.info("Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ $#{transaction.price}")
+      Robot.log(
+        :info,
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_coin} @ #{transaction.quote_coin}"\
+        " #{transaction.price}"
+      )
+
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
@@ -142,6 +145,7 @@ module BitexBot
     #   finalised: Successfully settled or finished executing.
     statuses.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
+      define_method("#{status_name}!") { update!(status: status_name) }
     end
 
     def finalise!
@@ -153,17 +157,19 @@ module BitexBot
 
     # finalise! helpers
     def canceled_or_completed?(order)
-      order.status == :cancelled || order.status == :completed
+      # TODO: En que situacion un Bid/Ask se le settea alguno de estos estados, no esta descrito ninugo de ellos esn statuses.
+      %i[cancelled completed].any?(order.status)
     end
 
     def do_finalize
-      Robot.logger.info("Opening: #{self.class.order_class.name} ##{order_id} finalised.")
-      update!(status: 'finalised')
+      Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} finalised.")
+      finalised!
     end
 
     def do_cancel(order)
+      # No deberiamos loggear una orden cancelada o settling?
       order.cancel!
-      update!(status: 'settling') unless settling?
+      settling! unless settling?
     end
     # end: finalise! helpers
   end
