@@ -14,10 +14,13 @@ module BitexBot
   #
   # rubocop:disable Metrics/ClassLength
   class Robot
-    cattr_accessor :graceful_shutdown
+    cattr_accessor(:base_coin) { Settings.bitex.orderbook.base }
+    cattr_accessor(:quote_coin) { Settings.bitex.orderbook.quote }
+    cattr_accessor(:orderbook) { "#{base_coin}_#{quote_coin}".to_sym }
+
     cattr_accessor :cooldown_until
-    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
     cattr_accessor(:current_cooldowns) { 0 }
+    cattr_accessor :graceful_shutdown
     cattr_accessor :logger do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
@@ -31,6 +34,7 @@ module BitexBot
         # rubocop:enable Lint/UnusedBlockArgument
       end
     end
+    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
 
     def self.setup
       Bitex.api_key = Settings.bitex.api_key
