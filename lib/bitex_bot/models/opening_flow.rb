@@ -36,7 +36,7 @@ module BitexBot
       remote_value, safest_price = calc_remote_value(bitex_fee, other_fee, order_book, transactions)
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" if remote_value > remote_balance
 
-      bitex_price = bitex_price(value_to_use, remote_value)
+      bitex_price = bitex_price(remote_value)
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
@@ -85,7 +85,6 @@ module BitexBot
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
 
       Bitex::Trade.all.map do |transaction|
-        # TODO: cuales descartamos y cuales no? entiendo que buscamos aquellas que no tengan posiciones abiertas.
         next if sought_transaction?(threshold, transaction)
         flow = find_by_order_id(transaction_order_id(transaction))
         next unless flow.present?

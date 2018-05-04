@@ -52,8 +52,8 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.bitex_price(btc_to_sell, usd_to_spend_re_buying)
-      (usd_to_spend_re_buying / btc_to_sell) * (1 + profit / 100.0)
+    def self.bitex_price(usd_to_spend_re_buying)
+      ((usd_to_spend_re_buying / value_to_use) * (1 + profit / 100.0)) / Robot.fx_rate
     end
 
     def self.order_class
