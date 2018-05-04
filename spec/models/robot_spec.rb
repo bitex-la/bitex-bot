@@ -44,10 +44,20 @@ describe BitexBot::Robot do
 
   it 'orderbook formed from your base currency and another quote currency' do
     BitexBot::Settings.bitex.orderbook do |orderbook|
-      BitexBot::Robot.orderbook.should be orderbook
-      BitexBot::Robot.base_coin.should eq orderbook.to_s.split('_')[0].upcase
-      BitexBot::Robot.quote_coin.should eq orderbook.to_s.split('_')[1].upcase
+      bot.orderbook.should be orderbook
+      bot.orderbook.should be_a Symbol
+
+      bot.base_coin.should eq orderbook.to_s.split('_')[0].upcase
+      bot.base_coin.should be_a String
+
+      bot.quote_coin.should eq orderbook.to_s.split('_')[1].upcase
+      bot.quote_coin.should be_a String
     end
+  end
+
+  it 'fx rate be a BigDecimal' do
+    bot.class.fx_rate.should be BitexBot::Settings.fx_rate
+    bot.class.fx_rate.should be_a BigDecimal
   end
 
   it 'Starts out by creating opening flows that timeout' do

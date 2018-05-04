@@ -17,7 +17,6 @@ module BitexBot
     cattr_accessor(:orderbook) { Settings.bitex.orderbook }
     cattr_accessor(:base_coin) { orderbook.to_s.split('_')[0].upcase }
     cattr_accessor(:quote_coin) { orderbook.to_s.split('_')[1].upcase }
-    cattr_accessor(:fx_rate) { Settings.fx_rate }
 
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
@@ -41,6 +40,10 @@ module BitexBot
       Bitex.api_key = Settings.bitex.api_key
       Bitex.sandbox = Settings.sandbox
       taker.setup(Settings)
+    end
+
+    def self.fx_rate
+      Settings.fx_rate
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.

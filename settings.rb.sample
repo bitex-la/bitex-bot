@@ -51,7 +51,7 @@ selling quantity_to_sell_per_order: 0.1, profit: 0.5
 bitex api_key: 'your_bitex_api_key_which_should_be_kept_safe', orderbook: :btc_usd
 
 # Fx rate for bitex orderbook
-fx_rate '1.5'
+fx_rate '1.0'.to_d
 
 # These are passed in to the Bitstamp gem: https://github.com/kojnapp/bitstamp.
 bitstamp api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'

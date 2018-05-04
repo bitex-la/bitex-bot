@@ -5,7 +5,7 @@ describe BitexBot::Settings do
     it 'returns a symbolized hash' do
       expect(BitexBot::Settings.to_hash).to eq(
         bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', orderbook: :btc_usd },
-        fx_rate: '1.5',
+        fx_rate: '1.0'.to_d,
         bitfinex: { api_key: 'your_api_key', api_secret: 'your_api_secret' },
         bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
         buying: { amount_to_spend_per_order: 10.0, profit: 0.5 },
