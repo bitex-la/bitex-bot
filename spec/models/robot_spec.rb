@@ -47,11 +47,11 @@ describe BitexBot::Robot do
       bot.orderbook.should be orderbook
       bot.orderbook.should be_a Symbol
 
-      bot.base_coin.should eq orderbook.to_s.split('_')[0].upcase
-      bot.base_coin.should be_a String
+      bot.base_currency.should eq orderbook.to_s.split('_')[0].upcase
+      bot.base_currency.should be_a String
 
-      bot.quote_coin.should eq orderbook.to_s.split('_')[1].upcase
-      bot.quote_coin.should be_a String
+      bot.quote_currency.should eq orderbook.to_s.split('_')[1].upcase
+      bot.quote_currency.should be_a String
     end
   end
 

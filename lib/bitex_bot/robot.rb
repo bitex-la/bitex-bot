@@ -15,8 +15,8 @@ module BitexBot
   # rubocop:disable Metrics/ClassLength
   class Robot
     cattr_accessor(:orderbook) { Settings.bitex.orderbook }
-    cattr_accessor(:base_coin) { orderbook.to_s.split('_')[0].upcase }
-    cattr_accessor(:quote_coin) { orderbook.to_s.split('_')[1].upcase }
+    cattr_accessor(:base_currency) { orderbook.to_s.split('_')[0].upcase }
+    cattr_accessor(:quote_currency) { orderbook.to_s.split('_')[1].upcase }
 
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
@@ -194,8 +194,8 @@ module BitexBot
 
       sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return log(:debug, "Not placing new orders, #{base_coin} target not met") if usd_target_met?(total_usd)
-      return log(:debug, "Not placing new orders, #{quote_coin} target not met") if btc_target_met?(total_btc)
+      return log(:debug, "Not placing new orders, #{base_currency} target not met") if usd_target_met?(total_usd)
+      return log(:debug, "Not placing new orders, #{quote_currency} target not met") if btc_target_met?(total_btc)
 
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }

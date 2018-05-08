@@ -12,26 +12,26 @@ module BitexBot
   # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on Bitex, this is its unique id.
   #
   class SellOpeningFlow < OpeningFlow
-    # BASE_COIN = Settings.bitex.orderbook.base
-    # QUOTE_COIN = Settings.bitex.orderbook.quote
+    # BASE_CURRENCY = Settings.bitex.orderbook.base
+    # QUOTE_CURRENCY = Settings.bitex.orderbook.quote
     #
     # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
-    # retrieved from Settings, if there is not enough BASE_COIN on bitex or QUOTE_COIN on the other exchange then no order will
-    # be placed and an exception will be raised instead.
+    # retrieved from Settings, if there is not enough BASE_CURRENCY on bitex or QUOTE_CURRENCY on the other exchange then no
+    # order will be placed and an exception will be raised instead.
     # The amount a SellOpeningFlow will try to sell and the price it will try to charge are derived from these parameters:
     #
     # @param usd_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
     # @param order_book [[price, quantity]] a list of lists representing an ask order book in the other exchange.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
-    #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BASE_COIN transacted.
+    #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BASE_CURRENCY transacted.
     # @param bitex_fee [BigDecimal] the transaction fee to pay on bitex.
     # @param other_fee [BigDecimal] the transaction fee to pay on the other exchange.
     # @param store [Store] An updated config for this robot, mainly to use for profit.
     #
     # @return [SellOpeningFlow] The newly created flow.
-    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BASE_COIN on bitex or
-    # out of QUOTE_COIN on the other exchange.
-    def self.create_for_market(quote_coin_balance, order_book, transactions, bitex_fee, other_fee, store)
+    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BASE_CURRENCY on bitex
+    #   or out of QUOTE_CURRENCY on the other exchange.
+    def self.create_for_market(quote_currency_balance, order_book, transactions, bitex_fee, other_fee, store)
       super
     end
 
