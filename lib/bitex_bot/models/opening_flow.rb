@@ -19,7 +19,7 @@ module BitexBot
     end
 
     def self.old_active
-      where('status != "finalised" AND created_at < ?', Settings.time_to_live.seconds.ago)
+      active.where('created_at < ?', Settings.time_to_live.seconds.ago)
     end
     # @!endgroup
 
@@ -79,13 +79,13 @@ module BitexBot
 
     # Buys on bitex represent open positions, we mirror them locally so that we can plan on how to close them.
     # This use hooks methods, these must be defined in the subclass:
-    #   #transaction_order_id(transaction)
-    #   #open_position_class
+    #   #transaction_order_id(transaction) => [Sell: ask_id | Buy: bid_id]
+    #   #open_position_class => [Sell: OpenSell | Buy: OpenBuy]
     def self.sync_open_positions
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
 
       Bitex::Trade.all.map do |transaction|
-        next if sought_transaction?(threshold, transaction)
+        next unless sought_transaction?(threshold, transaction)
         flow = find_by_order_id(transaction_order_id(transaction))
         next unless flow.present?
 
@@ -113,16 +113,20 @@ module BitexBot
     # This use hooks methods, these must be defined in the subclass:
     #   #transaction_class
     def self.sought_transaction?(threshold, transaction)
-      !transaction.is_a?(transaction_class) ||
-        active_transaction?(transaction, threshold) ||
-        open_position?(transaction) ||
-        !expected_orderbook?(transaction)
+      belong_to_me?(transaction) &&
+        !expired_transaction?(transaction, threshold) &&
+        !open_position?(transaction) &&
+        expected_orderbook?(transaction)
     end
     # end: sync_open_positions helpers
 
     # sought_transaction helpers
-    def self.active_transaction?(transaction, threshold)
-      threshold && transaction.created_at < (threshold - 30.minutes)
+    def self.belong_to_me?(transaction)
+      transaction.is_a?(transaction_class)
+    end
+
+    def self.expired_transaction?(transaction, threshold)
+      threshold.present? && transaction.created_at < (threshold - 30.minutes)
     end
 
     def self.open_position?(transaction)
@@ -165,7 +169,7 @@ module BitexBot
     end
 
     def do_cancel(order)
-      # No deberiamos loggear una orden cancelada o settling?
+      Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} canceled.")
       order.cancel!
       settling! unless settling?
     end

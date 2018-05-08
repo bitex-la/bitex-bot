@@ -55,13 +55,17 @@ module BitexBot
       if order.nil?
         sync_position(order_id, transactions)
         create_next_position!
-      elsif latest_close.created_at < close_time_to_live.seconds.ago
+      elsif expired?
         cancel!(order)
       end
     end
 
     def latest_close
       close_positions.last
+    end
+
+    def expired?
+      latest_close.created_at < close_time_to_live.seconds.ago
     end
     # end: sync_closed_positions helpers
 
