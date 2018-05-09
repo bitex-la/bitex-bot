@@ -58,9 +58,11 @@ module BitexBot
 
     # create_for_market helpers
     def self.calc_remote_value(bitex_fee, other_fee, order_book, transactions)
-      value_to_use_needed = plus_bitex(bitex_fee) / (1 - other_fee / 100.0)
+      value_to_use_needed = bitex_plus(bitex_fee) / (1 - other_fee / 100.0)
       safest_price = safest_price(transactions, order_book, value_to_use_needed)
-      [remote_value_to_use(value_to_use_needed, safest_price), safest_price]
+      remote_value = remote_value_to_use(value_to_use_needed, safest_price)
+
+      [remote_value, safest_price]
     end
 
     def self.create_order!(bitex_price)
@@ -77,7 +79,7 @@ module BitexBot
       remote_balance >= remote_value
     end
 
-    def self.plus_bitex(fee)
+    def self.bitex_plus(fee)
       value_to_use + (value_to_use * fee / 100.0)
     end
     # end: create_for_market helpers
