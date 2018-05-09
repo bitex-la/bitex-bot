@@ -80,7 +80,11 @@ module BitexBot
     end
 
     def self.bitex_plus(fee)
-      value_to_use + (value_to_use * fee / 100.0)
+      value_to_use + profit_percentage(fee)
+    end
+
+    def self.profit_percentage(fee)
+      value_to_use * fee / 100.0
     end
 
     # This return a percentage.
