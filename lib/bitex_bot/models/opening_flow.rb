@@ -58,7 +58,7 @@ module BitexBot
 
     # create_for_market helpers
     def self.calc_remote_value(bitex_fee, other_fee, order_book, transactions)
-      value_to_use_needed = bitex_plus(bitex_fee) / (1 - other_fee / 100.0)
+      value_to_use_needed = bitex_plus(bitex_fee) / other_plus(-other_fee)
       safest_price = safest_price(transactions, order_book, value_to_use_needed)
       remote_value = remote_value_to_use(value_to_use_needed, safest_price)
 
@@ -81,6 +81,12 @@ module BitexBot
 
     def self.bitex_plus(fee)
       value_to_use + (value_to_use * fee / 100.0)
+    end
+
+    # This return a percentage.
+    # If you multiply this factor returned, and give it a positive percentage, it will increase, so if negative, will decrease.
+    def self.other_plus(percentage)
+      1 + percentage / 100.0
     end
     # end: create_for_market helpers
 

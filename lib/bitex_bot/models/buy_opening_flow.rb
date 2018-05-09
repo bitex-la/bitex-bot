@@ -54,7 +54,7 @@ module BitexBot
 
     # create_for_market helpers
     def self.bitex_price(bitcoin_to_resell)
-      (value_to_use / bitcoin_to_resell) * (1 - profit / 100.0)
+      (value_to_use / bitcoin_to_resell) * other_plus(-profit)
     end
 
     def self.order_class
