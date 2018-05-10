@@ -37,7 +37,7 @@ module BitexBot
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
          enough_remote_funds?(remote_balance, remote_value)
 
-      bitex_price = bitex_price(remote_value)
+      bitex_price = bitex_price(remote_value) * fx_rate
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
@@ -91,6 +91,10 @@ module BitexBot
     # If you multiply this factor returned, and give it a positive percentage, it will increase, so if negative, will decrease.
     def self.other_plus(percentage)
       1 + percentage / 100.0
+    end
+
+    def self.fx_rate
+      store.fx_rate || Robot.fx_rate
     end
     # end: create_for_market helpers
 
