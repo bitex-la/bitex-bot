@@ -118,8 +118,8 @@ module BitexBot
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ #{transaction.quote_currency}"\
-        " #{transaction.price}"
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @"\
+        "#{transaction.quote_currency} #{transaction.price}"
       )
 
       open_position_class.create!(
