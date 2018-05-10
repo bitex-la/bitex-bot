@@ -33,7 +33,7 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          Robot.log(:debug, "Skipped #{dropped} BTC @ #{Robot.quote_currency} #{price}")
+          Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
           next if quantity.zero?
         end
 
@@ -42,7 +42,7 @@ module BitexBot
           seen += quantity
         elsif amount_target.present?
           amount = price * quantity
-          return best_price(Robot.quote_currency, amount_target, price) if best_price?(amount, amount_target, seen)
+          return best_price('$', amount_target, price) if best_price?(amount, amount_target, seen)
           seen += amount
         end
       end
