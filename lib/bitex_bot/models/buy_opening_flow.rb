@@ -50,7 +50,7 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.bitex_price(bitcoin_to_resell)
+    def self.maker_price(bitcoin_to_resell)
       (value_to_use / bitcoin_to_resell) * (1 - profit / 100.to_d)
     end
 
