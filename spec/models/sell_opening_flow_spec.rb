@@ -55,7 +55,7 @@ describe BitexBot::SellOpeningFlow do
           store
         )
 
-      flow.order_id.should be order_id
+      flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_sell
       flow.price.should >= flow.suggested_closing_price
       flow.price.round(12).should eq usd_price
@@ -82,7 +82,7 @@ describe BitexBot::SellOpeningFlow do
           store
         )
 
-      flow.order_id.should be order_id
+      flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_sell
       flow.price.should >= flow.suggested_closing_price * other_fx_rate
       flow.price.truncate(11).should eq usd_price * other_fx_rate
