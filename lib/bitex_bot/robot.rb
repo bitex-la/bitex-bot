@@ -14,9 +14,8 @@ module BitexBot
   #
   # rubocop:disable Metrics/ClassLength
   class Robot
-    cattr_accessor(:orderbook) { Settings.bitex.orderbook }
-    cattr_accessor(:base_currency) { orderbook.to_s.split('_')[0].upcase }
-    cattr_accessor(:quote_currency) { orderbook.to_s.split('_')[1].upcase }
+    cattr_accessor(:base_currency) { Settings.bitex.orderbook.to_s.split('_')[0].upcase }
+    cattr_accessor(:quote_currency) { Settings.bitex.orderbook.to_s.split('_')[1].upcase }
 
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }

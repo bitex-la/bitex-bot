@@ -12,7 +12,7 @@ module BitexStubs
     Bitex::Ask.stub(:find) { |id| BitexStubs.asks[id] }
 
     Bitex::Bid.stub(:create!) do |orderbook, to_spend, price|
-      orderbook.should eq BitexBot::Robot.orderbook
+      orderbook.should eq BitexBot::Settings.bitex.orderbook
 
       Bitex::Bid.new.tap do |bid|
         bid.id = 12345
@@ -33,7 +33,7 @@ module BitexStubs
     end
 
     Bitex::Ask.stub(:create!) do |orderbook, to_sell, price|
-      orderbook.should eq BitexBot::Robot.orderbook
+      orderbook.should eq BitexBot::Settings.bitex.orderbook
 
       Bitex::Ask.new.tap do |ask|
         ask.id = 12345

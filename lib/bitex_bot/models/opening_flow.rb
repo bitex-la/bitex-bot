@@ -66,7 +66,7 @@ module BitexBot
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(Robot.orderbook, value_to_use, bitex_price, true)
+      order_class.create!(Settings.bitex.orderbook, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -153,7 +153,7 @@ module BitexBot
     end
 
     def self.expected_orderbook?(transaction)
-      transaction.orderbook == Robot.orderbook
+      transaction.orderbook == Settings.bitex.orderbook
     end
     # end: sync_open_positions helpers
 
