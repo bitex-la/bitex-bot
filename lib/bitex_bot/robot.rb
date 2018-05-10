@@ -193,8 +193,8 @@ module BitexBot
 
       sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return log(:debug, "Not placing new orders, USD target not met") if usd_target_met?(total_usd)
-      return log(:debug, "Not placing new orders, BTC target not met") if btc_target_met?(total_btc)
+      return log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
+      return log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
 
       order_book = with_cooldown { BitexBot::Robot.taker.order_book }
       transactions = with_cooldown { BitexBot::Robot.taker.transactions }
