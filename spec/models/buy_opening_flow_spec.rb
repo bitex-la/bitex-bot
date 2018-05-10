@@ -29,7 +29,7 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     let(:order_id) { 12_345 }
-    let(:usd_price) { 14.888_059_701_492.to_d }
+    let(:usd_price) { '14.888_059_701_492'.to_d }
     let(:suggested_closing_price) { 15.to_d }
     let(:amount_to_spend) { 100.to_d }
     let(:btc_balance) { 100_000.to_d }
