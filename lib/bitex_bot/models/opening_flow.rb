@@ -118,8 +118,8 @@ module BitexBot
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @"\
-        " #{transaction.quote_currency} #{transaction.price}"
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ #{transaction.quote_currency}"\
+        " #{transaction.price}"
       )
 
       open_position_class.create!(
@@ -134,15 +134,13 @@ module BitexBot
     # This use hooks methods, these must be defined in the subclass:
     #   #transaction_class
     def self.sought_transaction?(threshold, transaction)
-      belong_to_me?(transaction) &&
+      fit_operation_kind?(transaction) &&
         !expired_transaction?(transaction, threshold) &&
         !open_position?(transaction) &&
         expected_orderbook?(transaction)
     end
-    # end: sync_open_positions helpers
 
-    # sought_transaction helpers
-    def self.belong_to_me?(transaction)
+    def self.fit_operation_kind?(transaction)
       transaction.is_a?(transaction_class)
     end
 
@@ -157,7 +155,7 @@ module BitexBot
     def self.expected_orderbook?(transaction)
       transaction.orderbook == Robot.orderbook
     end
-    # end: sought_transaction helpers
+    # end: sync_open_positions helpers
 
     validates :status, presence: true, inclusion: { in: statuses }
     validates :order_id, presence: true

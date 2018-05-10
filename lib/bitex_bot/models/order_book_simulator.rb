@@ -1,17 +1,16 @@
 module BitexBot
-  #  BASE_CURRENCY = Settings.bitex.orderbook.base
   #  QUOTE_CURRENCY = Settings.bitex.orderbook.quote
   #
   # Simulates hitting an order-book to find a price at which an order can be assumed to get executed completely.
   # It essentially drops the start of the order book, to account for price volatility (assuming those orders may be taken by
-  # someone else), and then digs until the given QUOTE_CURRENCY amount or BASE_CURRENCY quantity are reached, finally returning
+  # someone else), and then digs until the given QUOTE_CURRENCY amount or BTC quantity are reached, finally returning
   # the last price seen, which is the 'safest' price at which we can expect this order to get executed quickly.
   #
   class OrderBookSimulator
     # @param volatility [Integer] How many seconds of recent volume we need to skip from the start of the order book to be more
     #   certain that our order will get executed.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
-    #    Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BASE_CURRENCY transacted.
+    #    Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BTC transacted.
     # @param order_book [[price, quantity]] a list of lists representing the order book to dig in.
     # @param amount_target [BigDecimal] stop when this amount has been reached, leave as nil if looking for a quantity_target.
     # @param quantity_target [BigDecimal] stop when this quantity has been reached, leave as nil if looking for an
@@ -22,7 +21,7 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
     def self.run(volatility, transactions, order_book, amount_target, quantity_target)
       to_skip = estimate_quantity_to_skip(volatility, transactions)
-      Robot.log(:debug, "Skipping #{to_skip} #{Robot.base_currency}")
+      Robot.log(:debug, "Skipping #{to_skip} BTC")
       seen = 0
 
       order_book.each do |order_summary|
@@ -34,18 +33,16 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          Robot.log(:debug, "Skipped #{dropped} #{Robot.base_currency} @ #{Robot.quote_currency} #{price}")
+          Robot.log(:debug, "Skipped #{dropped} BTC @ #{Robot.quote_currency} #{price}")
           next if quantity.zero?
         end
 
         if quantity_target.present?
-          return best_price(Robot.base_currency, Robot.quote_currency, quantity_target, price) if
-            best_price?(quantity, quantity_target, seen)
+          return best_price(Robot.base_currency, quantity_target, price) if best_price?(quantity, quantity_target, seen)
           seen += quantity
         elsif amount_target.present?
           amount = price * quantity
-          return best_price(Robot.quote_currency, Robot.base_currency, amount_target, price) if
-            best_price?(amount, amount_target, seen)
+          return best_price(Robot.quote_currency, amount_target, price) if best_price?(amount, amount_target, seen)
           seen += amount
         end
       end
@@ -67,8 +64,8 @@ module BitexBot
       volume >= (target - seen)
     end
 
-    def self.best_price(base_currency, quote_currency, target, price)
-      Robot.log(:debug, "Best price to get #{base_currency} #{target} is #{quote_currency} #{price}")
+    def self.best_price(currency, target, price)
+      Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}")
       price
     end
   end

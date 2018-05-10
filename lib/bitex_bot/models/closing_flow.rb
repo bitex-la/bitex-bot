@@ -89,11 +89,7 @@ module BitexBot
       return create_order_and_close_position(next_quantity, next_price) if enough_order_size?(next_quantity, next_price)
 
       update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
-      Robot.log(
-        :info,
-        "Closing: Finished #{self.class.name} ##{id} earned #{Robot.quote_currency} #{usd_profit} and #{btc_profit}"\
-        " #{Robot.base_currency}."
-      )
+      Robot.log(:info, "Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
       save!
     end
 
@@ -118,11 +114,7 @@ module BitexBot
     #   order_method
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
-      Robot.log(
-        :info,
-        "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} #{Robot.base_currency} @"\
-        " #{Robot.quote_currency} #{price}"
-      )
+      Robot.log(:info, "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
       order = Robot.taker.place_order(order_method, price, quantity)
       close_positions.create!(order_id: order.id)
     end
