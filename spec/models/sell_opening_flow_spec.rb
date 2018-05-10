@@ -24,7 +24,7 @@ describe BitexBot::SellOpeningFlow do
       flow.order_id.should == 12345
       flow.value_to_use.should == 2
       flow.price.should >= flow.suggested_closing_price
-      flow.price.should == '20.15037593984962'.to_d
+      flow.price.truncate(14).should == '20.15037593984962'.to_d
       flow.suggested_closing_price.should == 20
     end
 
@@ -101,7 +101,7 @@ describe BitexBot::SellOpeningFlow do
       flow.order_id.should == 12345
       flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
-      flow.price.round(14).should == '37.78195488721804'.to_d
+      flow.price.truncate(14).should == '37.78195488721804'.to_d
       flow.suggested_closing_price.should == 25
     end
 

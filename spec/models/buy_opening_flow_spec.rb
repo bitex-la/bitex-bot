@@ -101,7 +101,7 @@ describe BitexBot::BuyOpeningFlow do
       flow.order_id.should == 12345
       flow.value_to_use.should == 100
       flow.price.should <= flow.suggested_closing_price
-      flow.price.round(15).should == '7.44402985074627'.to_d
+      flow.price.round(14).should == '7.44402985074627'.to_d
       flow.suggested_closing_price.should == 15
     end
 
