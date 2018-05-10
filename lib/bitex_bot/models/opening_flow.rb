@@ -42,7 +42,10 @@ module BitexBot
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
 
-      Robot.log(:info, "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{bitex_price} (#{remote_value})")
+      Robot.log(
+        :info,
+        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{Robot.quote_currency} #{bitex_price} (#{remote_value})"
+      )
 
       create!(
         price: bitex_price,
