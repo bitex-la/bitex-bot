@@ -87,12 +87,12 @@ describe BitexBot::SellOpeningFlow do
       it 'fails when there is a problem placing the ask on bitex' do
         quantity_to_sell = 4.to_d
         BitexBot::Settings.stub(selling: double(quantity_to_sell_per_order: quantity_to_sell, profit: 0))
-        Bitex::Ask.stub(:create!) { raise StandardError.new('Cannot Create') }
+        Bitex::Ask.stub(:create!) { raise StandardError, 'Cannot Create' }
 
         expect do
           flow.should be_nil
           BitexBot::SellOpeningFlow.count.should be_zero
-        end.to raise_exception(BitexBot::CannotCreateFlow)
+        end.to raise_exception(BitexBot::CannotCreateFlow, 'Cannot Create')
       end
 
       context 'with preloaded store' do
@@ -129,7 +129,7 @@ describe BitexBot::SellOpeningFlow do
         expect do
           flow.should be_nil
           BitexBot::SellOpeningFlow.count.should be_zero
-        end.to raise_exception(BitexBot::CannotCreateFlow)
+        end.to raise_exception(BitexBot::CannotCreateFlow, 'Needed 100.7518796992481203 but you only have 1.0')
       end
     end
   end
@@ -139,7 +139,7 @@ describe BitexBot::SellOpeningFlow do
 
     let(:flow) { create(:sell_opening_flow) }
     let(:trades) { BitexBot::SellOpeningFlow.sync_open_positions }
-    let(:transaction_id) { 12_345_678 }
+    let(:trade_id) { 12_345_678 }
 
     it 'only gets sells' do
       flow.order_id.should eq order_id
@@ -148,7 +148,7 @@ describe BitexBot::SellOpeningFlow do
         trades.size.should eq 1
         trades.sample.tap do |t|
           t.opening_flow.should eq flow
-          t.transaction_id.should eq transaction_id
+          t.transaction_id.should eq trade_id
           t.price.should eq 300.0
           t.amount.should eq 600.0
           t.quantity.should eq 2
@@ -163,20 +163,20 @@ describe BitexBot::SellOpeningFlow do
       BitexBot::OpenSell.count.should eq 1
 
       Timecop.travel(1.second.from_now)
-      transaction_id = 23_456
-      stub_bitex_transactions(build(:bitex_sell, id: transaction_id))
+      trade_id = 23_456
+      stub_bitex_transactions(build(:bitex_sell, id: trade_id))
 
       expect do
-        news = BitexBot::SellOpeningFlow.sync_open_positions
-        news.first.transaction_id.should eq transaction_id
+        trades.size.should eq 1
+        trades.sample.transaction_id.should eq trade_id
       end.to change { BitexBot::OpenSell.count }.by(1)
     end
 
     it 'does not register buys from another orderbook' do
       flow.order_id.should eq order_id
 
-      transaction_id = 23_456
-      Bitex::Trade.stub(all: [build(:bitex_sell, id: transaction_id, orderbook: :btc_ars)])
+      trade_id = 23_456
+      Bitex::Trade.stub(all: [build(:bitex_sell, id: trade_id, orderbook: :btc_ars)])
 
       expect do
         BitexBot::SellOpeningFlow.sync_open_positions.should be_empty
