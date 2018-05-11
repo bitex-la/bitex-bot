@@ -15,7 +15,7 @@ module BitexStubs
       orderbook.should eq BitexBot::Settings.bitex.orderbook
 
       Bitex::Bid.new.tap do |bid|
-        bid.id = 12345
+        bid.id = 12_345
         bid.created_at = Time.now
         bid.price = price
         bid.amount = to_spend
@@ -36,7 +36,7 @@ module BitexStubs
       orderbook.should eq BitexBot::Settings.bitex.orderbook
 
       Bitex::Ask.new.tap do |ask|
-        ask.id = 12345
+        ask.id = 12_345
         ask.created_at = Time.now
         ask.price = price
         ask.quantity = to_sell
