@@ -76,7 +76,7 @@ module BitexBot
       end
     end
 
-    # private class methods
+    private_class_method
 
     def self.start_robot
       setup
@@ -84,9 +84,7 @@ module BitexBot
       new
     end
 
-    # end: private class methods
-
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
@@ -110,7 +108,7 @@ module BitexBot
       notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
 
     def active_closing_flows?
       [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)

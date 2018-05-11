@@ -18,7 +18,7 @@ module BitexBot
     # @return [Decimal] Returns the price that we're more likely to get when executing an order for the given amount or
     #   quantity.
     #
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def self.run(volatility, transactions, order_book, amount_target, quantity_target)
       to_skip = estimate_quantity_to_skip(volatility, transactions)
       Robot.log(:debug, "Skipping #{to_skip} BTC")
@@ -48,7 +48,7 @@ module BitexBot
       end
       order_book.last.price
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     private_class_method
 

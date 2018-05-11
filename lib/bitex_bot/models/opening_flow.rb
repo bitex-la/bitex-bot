@@ -30,12 +30,12 @@ module BitexBot
     #   #safest_price
     #   #value_to_use
     # rubocop:disable Metrics/AbcSize
-    def self.create_for_market(remote_balance, order_book, transactions, bitex_fee, other_fee, store)
+    def self.create_for_market(remote_balance, orderbook, transactions, maker_fee, taker_fee, store)
       self.store = store
 
-      remote_value, safest_price = calc_remote_value(bitex_fee, other_fee, order_book, transactions)
+      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, orderbook, transactions)
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
-         enough_remote_funds?(remote_balance, remote_value)
+        enough_remote_funds?(remote_balance, remote_value)
 
       bitex_price = maker_price(remote_value) * fx_rate
       order = create_order!(bitex_price)
@@ -44,7 +44,8 @@ module BitexBot
 
       Robot.log(
         :info,
-        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{Robot.quote_currency} #{bitex_price} (#{remote_value})"
+        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{Robot.quote_currency} #{bitex_price}"\
+        " (#{remote_value})"
       )
 
       create!(
