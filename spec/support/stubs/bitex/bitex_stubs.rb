@@ -59,5 +59,3 @@ module BitexStubs
     Bitex::Trade.stub(all: extra_transactions + [build(:bitex_buy), build(:bitex_sell)])
   end
 end
-
-RSpec.configuration.include BitexStubs
