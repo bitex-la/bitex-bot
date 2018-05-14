@@ -29,5 +29,3 @@ module BitstampApiWrapperStubs
     5.times.map { |i| ApiWrapper::Transaction.new(i, price, amount, (i+1).seconds.ago.to_i) }
   end
 end
-
-RSpec.configuration.include BitstampApiWrapperStubs
