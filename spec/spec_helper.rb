@@ -31,6 +31,7 @@ RSpec.configure do |config|
   config.include(BitfinexStubs)
   config.include(BitstampStubs)
   config.include(KrakenStubs)
+  config.include(ItbitStubs)
 
   config.include(BitstampApiWrapperStubs)
 
