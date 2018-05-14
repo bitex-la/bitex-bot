@@ -11,14 +11,14 @@ module BitstampStubs
   end
 
   # [<Bitstamp::Transactions @date="1380648951", @tid=14, @price="1.9", @amount="1.1">]
-  def stub_transactions(price = 0.2, amount = 1)
+  def stub_bitstamp_transactions(price = 0.2, amount = 1)
     Bitstamp.stub(:transactions) do
       5.times.map { |i| double(tid: i, date: (i+1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s) }
     end
   end
 
   # ApiWrapper stubs
-  def stub_balance(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
+  def stub_bitstamp_balance(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
     Bitstamp.stub(:balance) do
       {
         'btc_balance' => balance,
@@ -33,7 +33,7 @@ module BitstampStubs
   end
 
   # [<Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>]
-  def stub_orders(count: 1, price: 1.5, amount: 2.5)
+  def stub_bitstamp_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
       count.times.map do |i|
         double(
@@ -47,7 +47,7 @@ module BitstampStubs
     end
   end
 
-  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
+  def stub_bitstamp_order_book(count: 3, price: 1.5, amount: 2.5)
     Bitstamp.stub(:order_book) do
       {
         'timestamp' => Time.now.to_i.to_s,
@@ -58,7 +58,7 @@ module BitstampStubs
   end
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
-  def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
+  def stub_bitstamp_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
     Bitstamp.user_transactions.stub(:all) do
       count.times.map do |i|
         double(

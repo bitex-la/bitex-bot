@@ -17,7 +17,7 @@ describe BitstampApiWrapper do
   end
 
   it '#balance' do
-    stub_balance
+    stub_bitstamp_balance
 
     balance = BitstampApiWrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -38,7 +38,7 @@ describe BitstampApiWrapper do
   end
 
   it '#cancel' do
-    stub_orders
+    stub_bitstamp_orders
     Bitstamp::Order.any_instance.stub(:cancel!) do
       Bitstamp.orders.stub(all: [])
     end
@@ -52,7 +52,7 @@ describe BitstampApiWrapper do
   end
 
   it '#order_book' do
-    stub_order_book
+    stub_bitstamp_order_book
 
     order_book = BitstampApiWrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -70,7 +70,7 @@ describe BitstampApiWrapper do
   end
 
   it '#orders' do
-    stub_orders
+    stub_bitstamp_orders
 
     BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -97,7 +97,7 @@ describe BitstampApiWrapper do
   end
 
   it '#transactions' do
-    stub_transactions
+    stub_bitstamp_transactions
 
     BitstampApiWrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -109,7 +109,7 @@ describe BitstampApiWrapper do
   end
 
   it '#user_transaction' do
-    stub_user_transactions
+    stub_bitstamp_user_transactions
     BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
     user_transaction = BitstampApiWrapper.user_transactions.sample
