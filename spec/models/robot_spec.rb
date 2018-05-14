@@ -32,8 +32,8 @@ describe BitexBot::Robot do
     )
 
     stub_bitex_orders
-    stub_bitstamp_sell
-    stub_bitstamp_buy
+    stub_bitstamp_trade(:sell)
+    stub_bitstamp_trade(:buy)
     stub_bitstamp_api_wrapper_balance
     stub_bitstamp_api_wrapper_order_book
     stub_bitstamp_transactions
