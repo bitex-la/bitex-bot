@@ -28,6 +28,7 @@ RSpec.configure do |config|
   config.include(Shoulda::Matchers::ActiveRecord)
 
   config.include(BitexStubs)
+  config.include(BitfinexStubs)
   config.include(BitstampStubs)
   config.include(KrakenStubs)
 
