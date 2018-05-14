@@ -29,6 +29,7 @@ RSpec.configure do |config|
 
   config.include(BitexStubs)
   config.include(BitstampStubs)
+  config.include(KrakenStubs)
 
   config.include(BitstampApiWrapperStubs)
 
