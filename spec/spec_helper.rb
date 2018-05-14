@@ -27,6 +27,8 @@ RSpec.configure do |config|
   config.include(Shoulda::Matchers::ActiveModel)
   config.include(Shoulda::Matchers::ActiveRecord)
 
+  config.include(BitstampStubs)
+
   config.mock_with(:rspec) do |mocks|
     mocks.yield_receiver_to_any_instance_implementation_blocks = true
     mocks.syntax = %i[expect should]
