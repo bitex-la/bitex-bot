@@ -84,7 +84,7 @@ describe BitstampApiWrapper do
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
-    order.raw_order.should be_a(Bitstamp::Order)
+    order.raw_order.should be_present
   end
 
   context '#place_order' do

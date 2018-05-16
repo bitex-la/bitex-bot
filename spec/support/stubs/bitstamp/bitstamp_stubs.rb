@@ -36,7 +36,7 @@ module BitstampStubs
   def stub_bitstamp_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
       count.times.map do |i|
-        Bitstamp::Order.new(
+        double(
           id: i + 1,
           type: i % 2,
           price: (price + 1).to_s,
