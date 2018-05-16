@@ -6,7 +6,7 @@ module BitfinexStubs
   # ]
   def stub_bitfinex_balance(count: 2, amount: 1.5, available: 2.5, fee: 1.0)
     stub_bitfinex_account_info
-    api_client.any_instance.stub(:balances).with(hash_including(type: 'exchange')) do
+    Bitfinex::Client.any_instance.stub(:balances).with(hash_including(type: 'exchange')) do
       count.times.map do |i|
         {
           type: 'exchange',
@@ -26,10 +26,10 @@ module BitfinexStubs
   #   }
   # ]
   def stub_bitfinex_orders(count: 1)
-    api_client.any_instance.stub(:orders) do
+    Bitfinex::Client.any_instance.stub(:orders) do
       count.times.map do |i|
         {
-          id: i,
+          id: i + 1,
           symbol: 'btcusd',
           exchange: 'bitfinex',
           price: '0.02',
@@ -54,7 +54,7 @@ module BitfinexStubs
   #   asks: [{ price: '574.62', amount: '19.1334', timestamp: '1472506126.0 '}]
   # }
   def stub_bitfinex_order_book(count: 3, amount: 1.5, price: 2.5)
-    api_client.any_instance.stub(:orderbook) do
+    Bitfinex::Client.any_instance.stub(:orderbook) do
       {
         bids: count.times.map { |i| { price: (price + i).to_s, amount: (amount + i).to_s, timestamp: 1.seconds.ago.to_f.to_s } },
         asks: count.times.map { |i| { price: (price + i).to_s, amount: (amount + i).to_s, timestamp: 1.seconds.ago.to_f.to_s } }
@@ -64,7 +64,7 @@ module BitfinexStubs
 
   # { tid: 15627111, price: 404.01, amount: '2.45116479', exchange: 'bitfinex', type: 'sell', timestamp: 1455526974 }
   def stub_bitfinex_transactions(count: 1, price: 1.5, amount: 2.5)
-    api_client.any_instance.stub(:trades) do
+    Bitfinex::Client.any_instance.stub(:trades) do
       count.times.map do |i|
         {
           tid: i,
@@ -81,7 +81,7 @@ module BitfinexStubs
   private
 
   def stub_bitfinex_account_info
-    api_client.any_instance.stub(:account_info) do
+    Bitfinex::Client.any_instance.stub(:account_info) do
       [
         {
           maker_fees: '0.1',
