@@ -1,70 +1,74 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
+  let(:api_wrapper) { subject.class }
+
   before(:each) do
-    BitexBot::Robot.stub(taker: BitstampApiWrapper)
+    BitexBot::Robot.stub(taker: api_wrapper)
     BitexBot::Robot.setup
   end
 
   it 'Sends User-Agent header' do
-    url = 'https://www.bitstamp.net/api/v2/balance/btcusd/'
-    stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff =
+      stub_request(:post, 'https://www.bitstamp.net/api/v2/balance/btcusd/')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
-    BitstampApiWrapper.balance rescue nil
+    api_wrapper.balance rescue nil
 
-    expect(stub_stuff).to have_been_requested
+    stub_stuff.should have_been_requested
   end
 
   it '#balance' do
     stub_bitstamp_balance
 
-    balance = BitstampApiWrapper.balance
+    balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    balance.members.should contain_exactly(*%i[btc usd fee])
+
+    balance.fee.should be_a(BigDecimal)
 
     btc = balance.btc
+    btc.should be_a(ApiWrapper::Balance)
+    btc.members.should contain_exactly(*%i[total reserved available])
     btc.total.should be_a(BigDecimal)
     btc.reserved.should be_a(BigDecimal)
     btc.available.should be_a(BigDecimal)
 
     usd = balance.usd
+    usd.should be_a(ApiWrapper::Balance)
+    usd.members.should contain_exactly(*%i[total reserved available])
     usd.total.should be_a(BigDecimal)
     usd.reserved.should be_a(BigDecimal)
     usd.available.should be_a(BigDecimal)
-
-    balance.fee.should be_a(BigDecimal)
   end
 
   it '#cancel' do
     stub_bitstamp_orders
-    Bitstamp::Order.any_instance.stub(:cancel!) do
-      Bitstamp.orders.stub(all: [])
-    end
+    Bitstamp::Order.any_instance.stub(cancel!: nil)
 
-    order = BitstampApiWrapper.orders.sample
-
-    BitstampApiWrapper.orders.map(&:id).should include(order.id)
-    expect(order).to respond_to(:cancel!)
-    BitstampApiWrapper.cancel(order)
-    BitstampApiWrapper.orders.map(&:id).should_not include(order.id)
+    api_wrapper.orders.sample.should respond_to(:cancel!)
   end
 
   it '#order_book' do
     stub_bitstamp_order_book
 
-    order_book = BitstampApiWrapper.order_book
+    order_book = api_wrapper.order_book
+
     order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.members.should contain_exactly(*%i[timestamp asks bids])
+
     order_book.timestamp.should be_a(Integer)
 
     bid = order_book.bids.sample
+    bid.should be_a(ApiWrapper::OrderSummary)
+    bid.members.should contain_exactly(*%i[price quantity])
     bid.price.should be_a(BigDecimal)
     bid.quantity.should be_a(BigDecimal)
 
     ask = order_book.asks.sample
+    ask.should be_a(ApiWrapper::OrderSummary)
+    ask.members.should contain_exactly(*%i[price quantity])
     ask.price.should be_a(BigDecimal)
     ask.quantity.should be_a(BigDecimal)
   end
@@ -72,26 +76,23 @@ describe BitstampApiWrapper do
   it '#orders' do
     stub_bitstamp_orders
 
-    BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
-
-    order = BitstampApiWrapper.orders.sample
+    order = api_wrapper.orders.sample
+    order.should be_a(ApiWrapper::Order)
+    order.members.should contain_exactly(*%i[id type price amount timestamp raw_order])
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
-
-    expect(order).to respond_to(:cancel!)
+    order.raw_order.should be_a(Bitstamp::Order)
   end
 
   context '#place_order' do
     it 'raises OrderNotFound error on bitstamp errors' do
-      Bitstamp.orders.stub(:buy) do
-        raise OrderNotFound
-      end
+      Bitstamp.orders.stub(:buy) { raise OrderNotFound }
 
       expect do
-        BitstampApiWrapper.place_order(:buy, 10, 100)
+        api_wrapper.place_order(:buy, 10, 100)
       end.to raise_exception(OrderNotFound)
     end
   end
@@ -99,9 +100,9 @@ describe BitstampApiWrapper do
   it '#transactions' do
     stub_bitstamp_transactions
 
-    BitstampApiWrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
-    transaction = BitstampApiWrapper.transactions.sample
+    transaction = api_wrapper.transactions.sample
+    transaction.should be_a(ApiWrapper::Transaction)
+    transaction.members.should contain_exactly(*%i[id price amount timestamp])
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
@@ -110,9 +111,10 @@ describe BitstampApiWrapper do
 
   it '#user_transaction' do
     stub_bitstamp_user_transactions
-    BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
-    user_transaction = BitstampApiWrapper.user_transactions.sample
+    user_transaction = api_wrapper.user_transactions.sample
+    user_transaction.should be_a(ApiWrapper::UserTransaction)
+    user_transaction.members.should contain_exactly(*%i[order_id usd btc btc_usd fee type timestamp])
     user_transaction.usd.should be_a(BigDecimal)
     user_transaction.btc.should be_a(BigDecimal)
     user_transaction.btc_usd.should be_a(BigDecimal)

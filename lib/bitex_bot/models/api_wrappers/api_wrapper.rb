@@ -17,10 +17,10 @@ class ApiWrapper
     :price, # Decimal
     :amount, # Decimal
     :timestamp, # Integer
-    :order # Actual order object
+    :raw_order # Actual order object
   ) do
     def method_missing(method_name, *args, &block)
-      order.send(method_name, *args, &block) || super
+      raw_order.send(method_name, *args, &block) || super
     end
 
     def respond_to_missing?(method_name, include_private = false)
@@ -83,11 +83,6 @@ class ApiWrapper
 
     # @return [BalanceSummary]
     def balance
-      raise 'self subclass responsibility'
-    end
-
-    # @return [nil]
-    def cancel
       raise 'self subclass responsibility'
     end
 
