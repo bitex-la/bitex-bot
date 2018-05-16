@@ -30,9 +30,10 @@ module ItbitStubs
   def stub_itbit_orders(count: 1, amount: 1.5, price: 2.5)
     Itbit::Order.stub(:all).with(hash_including(status: :open)) do
       count.times.map do |i|
+        index = i + 1
         double(
-          id: "id-#{i.to_s.rjust(3, '0')}",
-          wallet_id: "wallet-#{i.to_s.rjust(3, '0')}",
+          id: "id-#{index.to_s.rjust(3, '0')}",
+          wallet_id: "wallet-#{index.to_s.rjust(3, '0')}",
           side: :buy,
           instrument: :xbtusd,
           type: :limit,

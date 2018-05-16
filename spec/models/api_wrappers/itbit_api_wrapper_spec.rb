@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { ItbitApiWrapper }
+  let(:api_wrapper) { subject.class }
 
   before(:each) do
     BitexBot::Robot.stub(taker: api_wrapper)
@@ -9,13 +9,14 @@ describe ItbitApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
-    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff =
+      stub_request(:get, 'https://api.itbit.com/v1/markets/XBTUSD/order_book')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
-    ItbitApiWrapper.order_book rescue nil
+    api_wrapper.order_book rescue nil
 
-    expect(stub_stuff).to have_been_requested
+    stub_stuff.should have_been_requested
   end
 
   it '#balance' do
@@ -23,42 +24,50 @@ describe ItbitApiWrapper do
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    balance.members.should contain_exactly(*%i[btc usd fee])
+
+    balance.fee.should be_a(BigDecimal)
 
     btc = balance.btc
+    btc.should be_a(ApiWrapper::Balance)
+    btc.members.should contain_exactly(*%i[total reserved available])
     btc.total.should be_a(BigDecimal)
     btc.reserved.should be_a(BigDecimal)
     btc.available.should be_a(BigDecimal)
 
     usd = balance.usd
+    usd.should be_a(ApiWrapper::Balance)
+    usd.members.should contain_exactly(*%i[total reserved available])
     usd.total.should be_a(BigDecimal)
     usd.reserved.should be_a(BigDecimal)
     usd.available.should be_a(BigDecimal)
-
-    balance.fee.should be_a(BigDecimal)
   end
 
   it '#cancel' do
     stub_itbit_orders
 
-    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+    api_wrapper.orders.sample.should respond_to(:cancel!)
   end
 
   it '#order_book' do
     stub_itbit_order_book
 
     order_book = api_wrapper.order_book
+
     order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.members.should contain_exactly(*%i[timestamp asks bids])
+
     order_book.timestamp.should be_a(Integer)
 
     bid = order_book.bids.sample
+    bid.should be_a(ApiWrapper::OrderSummary)
+    bid.members.should contain_exactly(*%i[price quantity])
     bid.price.should be_a(BigDecimal)
     bid.quantity.should be_a(BigDecimal)
 
     ask = order_book.asks.sample
+    ask.should be_a(ApiWrapper::OrderSummary)
+    ask.members.should contain_exactly(*%i[price quantity])
     ask.price.should be_a(BigDecimal)
     ask.quantity.should be_a(BigDecimal)
   end
@@ -74,14 +83,15 @@ describe ItbitApiWrapper do
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
+    order.raw_order.should be_present
   end
 
   it '#transactions' do
     stub_itbit_transactions
 
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
     transaction = api_wrapper.transactions.sample
+    transaction.should be_a(ApiWrapper::Transaction)
+    transaction.members.should contain_exactly(*%i[id price amount timestamp])
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
