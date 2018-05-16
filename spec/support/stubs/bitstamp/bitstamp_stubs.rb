@@ -36,9 +36,9 @@ module BitstampStubs
   def stub_bitstamp_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
       count.times.map do |i|
-        double(
-          id: i,
-          type: (i % 2),
+        Bitstamp::Order.new(
+          id: i + 1,
+          type: i % 2,
           price: (price + 1).to_s,
           amount: (amount + i).to_s,
           datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
