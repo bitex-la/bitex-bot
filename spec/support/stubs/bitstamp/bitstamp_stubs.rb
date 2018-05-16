@@ -13,7 +13,7 @@ module BitstampStubs
   # [<Bitstamp::Transactions @date="1380648951", @tid=14, @price="1.9", @amount="1.1">]
   def stub_bitstamp_transactions(price = 0.2, amount = 1)
     Bitstamp.stub(:transactions) do
-      5.times.map { |i| double(tid: i, date: (i+1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s) }
+      5.times.map { |i| double(tid: i + 1, date: (i + 1).seconds.ago.to_i.to_s, price: price.to_s, amount: amount.to_s) }
     end
   end
 
@@ -62,8 +62,8 @@ module BitstampStubs
     Bitstamp.user_transactions.stub(:all) do
       count.times.map do |i|
         double(
-          id: i,
-          order_id: i,
+          id: i + 1,
+          order_id: i + 1,
           type: (i % 2),
           usd: (usd + i).to_s,
           btc: (btc + i).to_s,
