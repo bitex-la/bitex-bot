@@ -45,7 +45,7 @@ class BitfinexApiWrapper < ApiWrapper
   def self.place_order(type, price, quantity)
     with_retry "place order #{type} #{price} #{quantity}" do
       order_data = client.new_order('btcusd', quantity.round(4), 'exchange limit', type.to_s, price.round(2))
-      BitfinexOrder.new(order_data)
+      BitfinexOrder.new(order_data.symbolize_keys)
     end
   end
 
@@ -65,12 +65,12 @@ class BitfinexApiWrapper < ApiWrapper
   def self.with_retry(action, retries = 0)
     yield
   rescue StandardError, Bitfinex::ClientError
-    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
+    BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Retrying in 5 seconds.")
     BitexBot::Robot.sleep_for 5
     if retries < max_retries
       with_retry(action, retries + 1, &block)
     else
-      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+      BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Gave up.")
       raise
     end
   end
@@ -103,8 +103,14 @@ class BitfinexApiWrapper < ApiWrapper
   #   was_forced: false, original_amount: '0.02', remaining_amount: '0.02', executed_amount: '0.0'
   # }
   def self.order_parser(order)
-    Order
-      .new(order[:id].to_s, order[:side].to_sym, order[:price].to_d, order[:original_amount].to_d, order[:timestamp].to_i)
+    Order.new(
+      order[:id].to_s,
+      order[:side].to_sym,
+      order[:price].to_d,
+      order[:original_amount].to_d,
+      order[:timestamp].to_i,
+      BitfinexOrder.new(order)
+    )
   end
 
   # {

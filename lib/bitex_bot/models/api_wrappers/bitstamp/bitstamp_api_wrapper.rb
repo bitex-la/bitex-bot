@@ -24,12 +24,6 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end
 
-  def self.cancel(order)
-    Bitstamp::Order.new(id: order.id).cancel!
-  rescue StandardError => e
-    raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
-  end
-
   def self.find_lost(type, price)
     orders.find do |o|
       o.order_method == type &&
@@ -44,11 +38,11 @@ class BitstampApiWrapper < ApiWrapper
     age = Time.now.to_i - book[:timestamp].to_i
 
     return order_book_parser(book) if age <= 300
-    BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
+    BitexBot::Robot.log(:info, "Refusing to continue as orderbook is #{age} seconds old")
     order_book(retries)
   rescue StandardError
     raise if retries.zero?
-    BitexBot::Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
+    BitexBot::Robot.log(:info, "Bitstamp orderbook failed, retrying #{retries} more times")
     BitexBot::Robot.sleep_for 1
     order_book(retries - 1)
   end
@@ -111,7 +105,7 @@ class BitstampApiWrapper < ApiWrapper
   # <Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
   def self.order_parser(order)
     type = order.type.zero? ? :buy : :sell
-    Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i)
+    Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i, order)
   end
 
   def self.order_summary_parser(orders)

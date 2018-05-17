@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe BitexBot::SellClosingFlow do
   it 'closes a single open position completely' do
-    stub_bitstamp_buy
+    stub_bitstamp_trade(:buy)
     open = create :open_sell
     BitexBot::SellClosingFlow.close_open_positions
     flow = BitexBot::SellClosingFlow.last
@@ -23,7 +23,7 @@ describe BitexBot::SellClosingFlow do
   end
 
   it 'closes an aggregate of several open positions' do
-    stub_bitstamp_buy
+    stub_bitstamp_trade(:buy)
     open_one = create :tiny_open_sell
     open_two = create :open_sell
     BitexBot::SellClosingFlow.close_open_positions
@@ -107,7 +107,7 @@ describe BitexBot::SellClosingFlow do
 
   describe 'when syncinc executed orders' do
     before(:each) do
-      stub_bitstamp_buy
+      stub_bitstamp_trade(:buy)
       stub_bitstamp_empty_user_transactions
       create :tiny_open_sell
       create :open_sell

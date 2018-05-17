@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { ItbitApiWrapper }
+  let(:api_wrapper) { subject.class }
 
   before(:each) do
     BitexBot::Robot.stub(taker: api_wrapper)
@@ -9,147 +9,89 @@ describe ItbitApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
-    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    stub_stuff =
+      stub_request(:get, 'https://api.itbit.com/v1/markets/XBTUSD/order_book')
+      .with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
-    ItbitApiWrapper.order_book rescue nil
+    api_wrapper.order_book rescue nil
 
-    expect(stub_stuff).to have_been_requested
-  end
-
-  def stub_default_wallet_id
-    Itbit.stub(:default_wallet_id) { 'wallet-000' }
-  end
-
-  def stub_balance(count: 1, total: 1.5, available: 2.5)
-    stub_default_wallet_id
-    Itbit::Wallet.stub(:all) do
-      count.times.map do |i|
-        {
-          id: "wallet-#{i.to_s.rjust(3, '0')}",
-          name: 'primary',
-          user_id: '326a3369-78fc-44e7-ad52-03e97371ca72',
-          account_identifier: 'PRIVATEBETA55-2285-2HN',
-          balances: [
-            { total_balance: (total + i).to_d, currency: :usd, available_balance: (available + i).to_d },
-            { total_balance: (total + i).to_d, currency: :xbt, available_balance: (available + i).to_d },
-            { total_balance: (total + i).to_d, currency: :eur, available_balance: (available + i).to_d }
-          ]
-        }
-      end
-    end
+    stub_stuff.should have_been_requested
   end
 
   it '#balance' do
-    stub_balance
+    stub_itbit_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    balance.members.should contain_exactly(*%i[btc usd fee])
+
+    balance.fee.should be_a(BigDecimal)
 
     btc = balance.btc
+    btc.should be_a(ApiWrapper::Balance)
+    btc.members.should contain_exactly(*%i[total reserved available])
     btc.total.should be_a(BigDecimal)
     btc.reserved.should be_a(BigDecimal)
     btc.available.should be_a(BigDecimal)
 
     usd = balance.usd
+    usd.should be_a(ApiWrapper::Balance)
+    usd.members.should contain_exactly(*%i[total reserved available])
     usd.total.should be_a(BigDecimal)
     usd.reserved.should be_a(BigDecimal)
     usd.available.should be_a(BigDecimal)
-
-    balance.fee.should be_a(BigDecimal)
   end
 
   it '#cancel' do
-    stub_orders
+    stub_itbit_orders
 
-    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
-  end
-
-  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
-    Itbit::XBTUSDMarketData.stub(:orders) do
-      {
-        bids: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] },
-        asks: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] }
-      }
-    end
+    api_wrapper.orders.sample.should respond_to(:cancel!)
   end
 
   it '#order_book' do
-    stub_order_book
+    stub_itbit_order_book
 
     order_book = api_wrapper.order_book
+
     order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.members.should contain_exactly(*%i[timestamp asks bids])
+
     order_book.timestamp.should be_a(Integer)
 
     bid = order_book.bids.sample
+    bid.should be_a(ApiWrapper::OrderSummary)
+    bid.members.should contain_exactly(*%i[price quantity])
     bid.price.should be_a(BigDecimal)
     bid.quantity.should be_a(BigDecimal)
 
     ask = order_book.asks.sample
+    ask.should be_a(ApiWrapper::OrderSummary)
+    ask.members.should contain_exactly(*%i[price quantity])
     ask.price.should be_a(BigDecimal)
     ask.quantity.should be_a(BigDecimal)
   end
 
-  def stub_orders(count: 1, amount: 1.5, price: 2.5)
-    Itbit::Order.stub(:all).with(hash_including(status: :open)) do
-      count.times.map do |i|
-        double(
-          id: "id-#{i.to_s.rjust(3, '0')}",
-          wallet_id: "wallet-#{i.to_s.rjust(3, '0')}",
-          side: :buy,
-          instrument: :xbtusd,
-          type: :limit,
-          amount: (amount + i).to_d,
-          display_amount: (amount + i).to_d,
-          amount_filled: (amount + i).to_d,
-          price: (price + i).to_d,
-          volume_weighted_average_price: (price + i).to_d,
-          status: :open,
-          client_order_identifier: 'o',
-          metadata: { foo: 'bar' },
-          created_time: 1.seconds.ago.to_i
-        )
-      end
-    end
-  end
-
   it '#orders' do
-    stub_orders
-
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    stub_itbit_orders
 
     order = api_wrapper.orders.sample
+    order.should be_a(ApiWrapper::Order)
+    order.members.should contain_exactly(*%i[id type price amount timestamp raw_order])
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
-  end
-
-  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
-    Itbit::XBTUSDMarketData.stub(:trades) do
-      count.times.map do |i|
-        {
-          tid: i,
-          price: (price + i).to_d,
-          amount: (amount + i).to_d,
-          date: 1.seconds.ago.to_i
-        }
-      end
-    end
+    order.raw_order.should be_present
   end
 
   it '#transactions' do
-    stub_transactions
-
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    stub_itbit_transactions
 
     transaction = api_wrapper.transactions.sample
+    transaction.should be_a(ApiWrapper::Transaction)
+    transaction.members.should contain_exactly(*%i[id price amount timestamp])
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)

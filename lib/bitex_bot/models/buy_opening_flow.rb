@@ -13,8 +13,8 @@ module BitexBot
   #
   class BuyOpeningFlow < OpeningFlow
     # Start a workflow for buying bitcoin on bitex and selling on the other exchange. The amount to be spent on bitex is
-    # retrieved from Settings, if there is not enough USD on bitex or BTC on the other exchange then no order will be placed
-    # and an exception will be raised instead.
+    # retrieved from Settings, if there is not enough on USD bitex or BTC on the other exchange then no
+    # order will be placed and an exception will be raised instead.
     #
     # The amount a BuyOpeningFlow will try to buy and the price it will try to buy at are derived from these parameters:
     #
@@ -27,8 +27,8 @@ module BitexBot
     # @param store [Store] An updated config for this robot, mainly to use for profit.
     #
     # @return [BuyOpeningFlow] The newly created flow.
-    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of USD on bitex or out
-    #   of BTC on the other exchange.
+    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of USD on
+    #   bitex or out of BTC on the other exchange.
     def self.create_for_market(btc_balance, order_book, transactions, bitex_fee, other_fee, store)
       super
     end
@@ -50,8 +50,8 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.bitex_price(usd_to_spend, bitcoin_to_resell)
-      (usd_to_spend / bitcoin_to_resell) * (1 - profit / 100.0)
+    def self.maker_price(bitcoin_to_resell)
+      (value_to_use / bitcoin_to_resell) * (1 - profit / 100.to_d)
     end
 
     def self.order_class

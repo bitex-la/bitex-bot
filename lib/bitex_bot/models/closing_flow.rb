@@ -46,10 +46,8 @@ module BitexBot
     private
 
     # sync_closed_positions helpers
-    # rubocop:disable Metrics/AbcSize
-    # Metrics/AbcSize: Assignment Branch Condition size for create_or_cancel! is too high. [17.23/16]
     def create_or_cancel!(orders, transactions)
-      order_id = latest_close.order_id.to_s
+      order_id = latest_close.order_id
       order = orders.find { |o| o.id.to_s == order_id }
 
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
@@ -57,23 +55,26 @@ module BitexBot
       if order.nil?
         sync_position(order_id, transactions)
         create_next_position!
-      elsif latest_close.created_at < close_time_to_live.seconds.ago
+      elsif expired?
         cancel!(order)
       end
     end
-    # rubocop:enable Metrics/AbcSize
 
     def latest_close
       close_positions.last
+    end
+
+    def expired?
+      latest_close.created_at < close_time_to_live.seconds.ago
     end
     # end: sync_closed_positions helpers
 
     # create_or_cancel! helpers
     def cancel!(order)
       Robot.with_cooldown do
-        Robot.logger.debug("Finalising #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalising #{order.class}##{order.id}")
         order.cancel!
-        Robot.logger.debug("Finalised #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalised #{order.class}##{order.id}")
       end
     rescue StandardError
       nil # just pass, we'll keep on trying until it's not in orders anymore.
@@ -85,19 +86,21 @@ module BitexBot
     #   next_price_and_quantity
     def create_next_position!
       next_price, next_quantity = next_price_and_quantity
-      if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
-        create_order_and_close_position(next_quantity, next_price)
-      else
-        update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
-        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
-        save!
-      end
+      return create_order_and_close_position(next_quantity, next_price) if enough_order_size?(next_quantity, next_price)
+
+      update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
+      Robot.log(:info, "Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
+      save!
+    end
+
+    def enough_order_size?(quantity, price)
+      BitexBot::Robot.taker.enough_order_size?(quantity, price)
     end
 
     def sync_position(order_id, transactions)
-      latest = latest_close
-      latest.amount, latest.quantity = BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
-      latest.save!
+      latest_close.tap do |latest|
+        latest.amount, latest.quantity = BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
+      end.save!
     end
     # end: create_or_cancel! helpers
 
@@ -111,10 +114,8 @@ module BitexBot
     #   order_method
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
-      Robot
-        .logger
-        .info("Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
-      order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
+      Robot.log(:info, "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
+      order = Robot.taker.place_order(order_method, price, quantity)
       close_positions.create!(order_id: order.id)
     end
   end

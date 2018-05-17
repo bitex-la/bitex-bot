@@ -102,6 +102,7 @@ module BitexBot
           t.decimal    :selling_profit,                     precision: 20,   scale: 8
           t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
           t.decimal    :selling_quantity_to_sell_per_order, precision: 20,   scale: 8
+          t.decimal    :fx_rate,                            precision: 20,   scale: 8
           t.timestamps
         end
       end

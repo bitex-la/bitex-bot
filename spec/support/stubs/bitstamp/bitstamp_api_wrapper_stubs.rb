@@ -6,10 +6,10 @@ module BitstampApiWrapperStubs
   def bitstamp_api_wrapper_order_book
     ApiWrapper::OrderBook.new(
       Time.now.to_i,
-      [['30', '3'], ['25', '2'], ['20', '1.5'], ['15', '4'], ['10', '5']].map do |price, quantity|
+      [%w[30 3], %w[25 2], %w[20 1.5], %w[15 4], %w[10 5]].map do |price, quantity|
         ApiWrapper::OrderSummary.new(price.to_d, quantity.to_d)
       end,
-      [['10', '2'], ['15', '3'], ['20', '1.5'], ['25', '3'], ['30', '3']].map do |price, quantity|
+      [%w[10 2], %w[15 3], %w[20 1.5], %w[25 3], %w[30 3]].map do |price, quantity|
         ApiWrapper::OrderSummary.new(price.to_d, quantity.to_d)
       end
     )
@@ -26,10 +26,6 @@ module BitstampApiWrapperStubs
   end
 
   def bitstamp_api_wrapper_transactions_stub(price = 30.to_d, amount = 1.to_d)
-    transactions = 5.times.collect do |i|
-      ApiWrapper::Transaction.new(i, price, amount, (i+1).seconds.ago.to_i)
-    end
+    5.times.map { |i| ApiWrapper::Transaction.new(i, price, amount, (i+1).seconds.ago.to_i) }
   end
 end
-
-RSpec.configuration.include BitstampApiWrapperStubs

@@ -26,11 +26,21 @@ RSpec.configure do |config|
   config.include(FactoryBot::Syntax::Methods)
   config.include(Shoulda::Matchers::ActiveModel)
   config.include(Shoulda::Matchers::ActiveRecord)
-  config.mock_with :rspec do |mocks|
+
+  config.include(BitexStubs)
+  config.include(BitfinexStubs)
+  config.include(BitstampStubs)
+  config.include(KrakenStubs)
+  config.include(ItbitStubs)
+
+  config.include(BitstampApiWrapperStubs)
+
+  config.mock_with(:rspec) do |mocks|
     mocks.yield_receiver_to_any_instance_implementation_blocks = true
     mocks.syntax = %i[expect should]
   end
-  config.expect_with :rspec do |c|
+
+  config.expect_with(:rspec) do |c|
     c.syntax = %i[expect should]
   end
 
