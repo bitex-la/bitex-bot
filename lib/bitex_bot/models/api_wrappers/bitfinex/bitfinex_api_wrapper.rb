@@ -9,10 +9,12 @@ class BitfinexApiWrapper < ApiWrapper
     @client ||= Bitfinex::Client.new
   end
 
-  def self.setup(settings)
+  def self.setup
     Bitfinex::Client.configure do |conf|
-      conf.api_key = settings.bitfinex.api_key
-      conf.secret = settings.bitfinex.api_secret
+      BitexBot::Settings.bitfinex do |settings|
+        conf.api_key = settings.api_key
+        conf.secret = settings.api_secret
+      end
     end
   end
 
