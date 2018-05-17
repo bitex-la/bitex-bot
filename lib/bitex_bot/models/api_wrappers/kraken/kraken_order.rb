@@ -105,11 +105,8 @@ class KrakenOrder
   end
 
   def ==(other)
-    if other.is_a?(self.class)
-      other.id == id
-    elsif other.is_a?(Array)
-      other == [type, price, amount]
-    end
+    return other.id == id if other.is_a?(self.class)
+    return other == [type, price, amount] if other.is_a?(Array)
   end
 end
 
