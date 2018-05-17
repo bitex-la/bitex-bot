@@ -45,7 +45,6 @@ describe BitstampApiWrapper do
 
   it '#cancel' do
     stub_bitstamp_orders
-    Bitstamp::Order.any_instance.stub(cancel!: nil)
 
     api_wrapper.orders.sample.should respond_to(:cancel!)
   end

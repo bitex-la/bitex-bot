@@ -75,9 +75,9 @@ describe ItbitApiWrapper do
   it '#orders' do
     stub_itbit_orders
 
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
-
     order = api_wrapper.orders.sample
+    order.should be_a(ApiWrapper::Order)
+    order.members.should contain_exactly(*%i[id type price amount timestamp raw_order])
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)

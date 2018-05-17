@@ -50,21 +50,6 @@ describe BitfinexApiWrapper do
     api_wrapper.orders.sample.should respond_to(:cancel!)
   end
 
-  it '#orders' do
-    stub_bitfinex_orders
-    order = api_wrapper.orders.sample
-
-    order.should be_a(ApiWrapper::Order)
-    order.members.should contain_exactly(*%i[id type price amount timestamp raw_order])
-    order.id.should be_a(String)
-    order.type.should be_a(Symbol)
-    order.price.should be_a(BigDecimal)
-    order.amount.should be_a(BigDecimal)
-    order.timestamp.should be_a(Integer)
-
-    order.should respond_to(:cancel!)
-  end
-
   it '#order_book' do
     stub_bitfinex_order_book
 
@@ -86,6 +71,20 @@ describe BitfinexApiWrapper do
     ask.members.should contain_exactly(*%i[price quantity])
     ask.price.should be_a(BigDecimal)
     ask.quantity.should be_a(BigDecimal)
+  end
+
+  it '#orders' do
+    stub_bitfinex_orders
+
+    order = api_wrapper.orders.sample
+    order.should be_a(ApiWrapper::Order)
+    order.members.should contain_exactly(*%i[id type price amount timestamp raw_order])
+    order.id.should be_a(String)
+    order.type.should be_a(Symbol)
+    order.price.should be_a(BigDecimal)
+    order.amount.should be_a(BigDecimal)
+    order.timestamp.should be_a(Integer)
+    order.raw_order.should be_present
   end
 
   it '#transactions' do
