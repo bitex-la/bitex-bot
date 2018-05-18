@@ -3,6 +3,7 @@ require 'spec_helper'
 describe BitexBot::Robot do
   before(:each) do
     Bitex.api_key = 'valid_key'
+
     BitexBot::Settings.stub(
       time_to_live: 10,
       buying: double(amount_to_spend_per_order: 50, profit: 0),
@@ -14,18 +15,22 @@ describe BitexBot::Robot do
         options: {}
       )
     )
-    Bitex::Profile.stub(get: {
-      fee: 0.5,
-      usd_balance:       10000.00,   # Total USD balance
-      usd_reserved:       2000.00,   # USD reserved in open orders
-      usd_available:      8000.00,   # USD available for trading
-      btc_balance:    20.00000000,   # Total BTC balance
-      btc_reserved:    5.00000000,   # BTC reserved in open orders
-      btc_available:  15.00000000,   # BTC available for trading
-      ltc_balance:   250.00000000,   # Total LTC balance
-      ltc_reserved:  100.00000000,   # LTC reserved in open orders
-      ltc_available: 150.00000000
-    })
+
+    Bitex::Profile.stub(
+      get: {
+        fee: 0.5,
+        usd_balance: 10000.0,  # Total USD balance
+        usd_reserved: 2000.0,  # USD reserved in open orders
+        usd_available: 8000.0, # USD available for trading
+        btc_balance: 20.0,     # Total BTC balance
+        btc_reserved: 5.0,     # BTC reserved in open orders
+        btc_available: 15.0,   # BTC available for trading
+        ltc_balance: 250.0,    # Total LTC balance
+        ltc_reserved: 100.0,   # LTC reserved in open orders
+        ltc_available: 150.0   # Total LTC balance
+      }
+    )
+
     stub_bitex_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
@@ -37,11 +42,28 @@ describe BitexBot::Robot do
 
   let(:bot) { BitexBot::Robot.new }
 
+  it 'orderbook formed from your base currency and another quote currency' do
+    BitexBot::Settings.bitex.orderbook do |orderbook|
+      bot.base_currency.should eq orderbook.to_s.split('_')[0].upcase
+      bot.base_currency.should be_a String
+
+      bot.quote_currency.should eq orderbook.to_s.split('_')[1].upcase
+      bot.quote_currency.should be_a String
+    end
+  end
+
+  it 'fx rate be a BigDecimal' do
+    bot.class.fx_rate.should be BitexBot::Settings.fx_rate
+    bot.class.fx_rate.should be_a BigDecimal
+  end
+
   it 'Starts out by creating opening flows that timeout' do
     stub_bitex_orders
     stub_bitstamp_api_wrapper_order_book
+
     bot.trade!
     stub_bitex_transactions
+
     buying = BitexBot::BuyOpeningFlow.last
     selling = BitexBot::SellOpeningFlow.last
 
@@ -59,26 +81,29 @@ describe BitexBot::Robot do
   it 'creates alternating opening flows' do
     Bitex::Trade.stub(all: [])
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 2.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 5.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 2
 
-    # When transactions appear, all opening flows
-    # should get old and die.
-    # We stub our finder to make it so all orders
-    # have been successfully cancelled.
+    # When transactions appear, all opening flows should get old and die.
+    # We stub our finder to make it so all orders have been successfully cancelled.
     stub_bitex_transactions
 
     Timecop.travel 5.seconds.from_now
     bot.trade!
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 1
     Timecop.travel 5.seconds.from_now
     bot.trade!
+
     BitexBot::BuyOpeningFlow.active.count.should == 0
   end
 
@@ -159,13 +184,13 @@ describe BitexBot::Robot do
       bot.trade!
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
 
-    Timecop.travel 1.minute.from_now
+    Timecop.travel(1.minute.from_now)
     stub_bitstamp_order_book # Re-stub so orderbook does not get old
     expect do
       bot.trade!
     end.not_to change { Mail::TestMailer.deliveries.count }
 
-    Timecop.travel 31.minutes.from_now
+    Timecop.travel(31.minutes.from_now)
     stub_bitstamp_order_book # Re-stub so orderbook does not get old
 
     expect do

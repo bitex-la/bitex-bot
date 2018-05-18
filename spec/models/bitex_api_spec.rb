@@ -1,9 +1,7 @@
 require 'spec_helper'
 
 describe 'BitexApi' do
-  before(:each) do
-    BitexBot::Robot.setup
-  end
+  before(:each) { BitexBot::Robot.setup }
 
   it 'Sends User-Agent header' do
     stub_request(:get, 'https://bitex.la/api-v1/rest/private/profile?api_key=your_bitex_api_key_which_should_be_kept_safe')

@@ -1,8 +1,10 @@
 module BitexBot
+  #  QUOTE_CURRENCY = Settings.bitex.orderbook.quote
+  #
   # Simulates hitting an order-book to find a price at which an order can be assumed to get executed completely.
   # It essentially drops the start of the order book, to account for price volatility (assuming those orders may be taken by
-  # someone else), and then digs until the given USD amount or BTC quantity are reached, finally returning the last price seen,
-  # which is the 'safest' price at which we can expect this order to get executed quickly.
+  # someone else), and then digs until the given QUOTE_CURRENCY amount or BTC quantity are reached, finally returning
+  # the last price seen, which is the 'safest' price at which we can expect this order to get executed quickly.
   #
   class OrderBookSimulator
     # @param volatility [Integer] How many seconds of recent volume we need to skip from the start of the order book to be more
@@ -16,10 +18,10 @@ module BitexBot
     # @return [Decimal] Returns the price that we're more likely to get when executing an order for the given amount or
     #   quantity.
     #
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def self.run(volatility, transactions, order_book, amount_target, quantity_target)
       to_skip = estimate_quantity_to_skip(volatility, transactions)
-      BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
+      Robot.log(:debug, "Skipping #{to_skip} BTC")
       seen = 0
 
       order_book.each do |order_summary|
@@ -31,7 +33,7 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
+          Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
           next if quantity.zero?
         end
 
@@ -46,9 +48,9 @@ module BitexBot
       end
       order_book.last.price
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
-    # private class methods
+    private_class_method
 
     def self.estimate_quantity_to_skip(volatility, transactions)
       threshold = transactions.first.timestamp - volatility
@@ -63,10 +65,8 @@ module BitexBot
     end
 
     def self.best_price(currency, target, price)
-      BitexBot::Robot.logger.debug("Best price to get #{currency} #{target} is $#{price}")
+      Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}")
       price
     end
-
-    # end: private class methods
   end
 end
