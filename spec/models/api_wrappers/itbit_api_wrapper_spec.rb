@@ -98,7 +98,7 @@ describe ItbitApiWrapper do
   def stub_orders(count: 1, amount: 1.5, price: 2.5)
     Itbit::Order.stub(:all).with(hash_including(status: :open)) do
       count.times.map do |i|
-        double(
+        Itbit::Order.new({
           id: "id-#{i.to_s.rjust(3, '0')}",
           wallet_id: "wallet-#{i.to_s.rjust(3, '0')}",
           side: :buy,
@@ -113,7 +113,7 @@ describe ItbitApiWrapper do
           client_order_identifier: 'o',
           metadata: { foo: 'bar' },
           created_time: 1.seconds.ago.to_i
-        )
+        }.stringify_keys)
       end
     end
   end
