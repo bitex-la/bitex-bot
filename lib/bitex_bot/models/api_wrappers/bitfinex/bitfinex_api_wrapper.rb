@@ -104,7 +104,7 @@ class BitfinexApiWrapper < ApiWrapper
   # }
   def self.order_parser(order)
     Order
-      .new(order[:id].to_s, order[:side].to_sym, order[:price].to_d, order[:original_amount].to_d, order[:timestamp].to_i)
+      .new(order[:id].to_s, order[:side].to_sym, order[:price].to_d, order[:original_amount].to_d, order[:timestamp].to_i, order)
   end
 
   # {
