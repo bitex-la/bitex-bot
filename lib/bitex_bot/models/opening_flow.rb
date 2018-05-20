@@ -24,19 +24,19 @@ module BitexBot
     # @!endgroup
 
     # This use hooks methods, these must be defined in the subclass:
-    #   #bitex_price
+    #   #maker_price
     #   #order_class
     #   #remote_value_to_use
     #   #safest_price
     #   #value_to_use
     # rubocop:disable Metrics/AbcSize
-    def self.create_for_market(remote_balance, order_book, transactions, bitex_fee, other_fee, store)
+    def self.create_for_market(remote_balance, order_book, transactions, maker_fee, taker_fee, store)
       self.store = store
 
-      remote_value, safest_price = calc_remote_value(bitex_fee, other_fee, order_book, transactions)
+      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, order_book, transactions)
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" if remote_value > remote_balance
 
-      bitex_price = bitex_price(value_to_use, remote_value)
+      bitex_price = maker_price(remote_value) * fx_rate
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
@@ -58,10 +58,12 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     # create_for_market helpers
-    def self.calc_remote_value(bitex_fee, other_fee, order_book, transactions)
-      value_to_use_needed = plus_bitex(bitex_fee) / (1 - other_fee / 100.0)
+    def self.calc_remote_value(maker_fee, taker_fee, order_book, transactions)
+      value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
       safest_price = safest_price(transactions, order_book, value_to_use_needed)
-      [remote_value_to_use(value_to_use_needed, safest_price), safest_price]
+      remote_value = remote_value_to_use(value_to_use_needed, safest_price)
+
+      [remote_value, safest_price]
     end
 
     def self.create_order!(bitex_price)
@@ -74,8 +76,12 @@ module BitexBot
       !order.reason.to_s.inquiry.not_enough_funds?
     end
 
-    def self.plus_bitex(fee)
-      value_to_use + (value_to_use * fee / 100.0)
+    def self.maker_plus(fee)
+      value_to_use * fee / 100
+    end
+
+    def self.fx_rate
+      store.fx_rate || Settings.fx_rate
     end
     # end: create_for_market helpers
 
