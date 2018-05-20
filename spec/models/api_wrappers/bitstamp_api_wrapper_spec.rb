@@ -54,16 +54,8 @@ describe BitstampApiWrapper do
 
   it '#cancel' do
     stub_orders
-    Bitstamp::Order.any_instance.stub(:cancel!) do
-      Bitstamp.orders.stub(all: [])
-    end
 
-    order = BitstampApiWrapper.orders.sample
-
-    BitstampApiWrapper.orders.map(&:id).should include(order.id)
-    expect(order).to respond_to(:cancel!)
-    BitstampApiWrapper.cancel(order)
-    BitstampApiWrapper.orders.map(&:id).should_not include(order.id)
+    expect(BitstampApiWrapper.orders.sample).to respond_to(:cancel!)
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)
@@ -98,7 +90,7 @@ describe BitstampApiWrapper do
   def stub_orders(count: 1, price: 1.5, amount: 2.5)
     Bitstamp.orders.stub(:all) do
       count.times.map do |i|
-        double(
+        Bitstamp::Order.new(
           id: i,
           type: (i % 2),
           price: (price + 1).to_s,

@@ -10,7 +10,7 @@ class KrakenOrder
   # rubocop:disable Metrics/AbcSize
   def self.create!(type, price, quantity)
     self.last_closed_order = closed.first.try(:id) || Time.now.to_i
-    find(order_info_by(type, price.truncate(1), quantity.trucante(8))['txid'].first)
+    find(order_info_by(type, price.truncate(1), quantity.truncate(8))['txid'].first)
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed
     if e.message == 'EService:Unavailable'

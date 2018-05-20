@@ -20,15 +20,11 @@ class ApiWrapper
     :order # Actual order object
   ) do
     def method_missing(method_name, *args, &block)
-      order.send(method_name, *args, &block) || super
+      order.respond_to?(method_name) ? order.send(method_name, *args, &block) : super
     end
 
     def respond_to_missing?(method_name, include_private = false)
-      respond_to_custom_methods?(method_name) || super
-    end
-
-    def respond_to_custom_methods?(method_name)
-      %i[cancel!].include?(method_name)
+      order.respond_to?(method_name) || super
     end
   end
 
