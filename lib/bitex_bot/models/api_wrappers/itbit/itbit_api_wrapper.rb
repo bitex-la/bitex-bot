@@ -5,9 +5,8 @@
 class ItbitApiWrapper < ApiWrapper
   def self.setup
     Itbit.tap do |conf|
-      BitexBot::Settings.tap do |settings|
-        conf.sandbox = settings.sandbox
-      end.itbit do |settings|
+      conf.sandbox = BitexBot::Settings.sandbox
+      BitexBot::Settings.itbit do |settings|
         conf.client_key = settings.client_key
         conf.secret = settings.secret
         conf.user_id = settings.user_id
