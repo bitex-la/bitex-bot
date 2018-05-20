@@ -168,8 +168,8 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown { BitexBot::Robot.taker.orders }
-      transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
+      orders = with_cooldown { Robot.taker.orders }
+      transactions = with_cooldown { Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
         kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
@@ -185,7 +185,7 @@ module BitexBot
       recent_buying, recent_selling = recent_operations
       return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
-      balance = with_cooldown { BitexBot::Robot.taker.balance }
+      balance = with_cooldown { Robot.taker.balance }
       profile = Bitex::Profile.get
       total_usd = balance.usd.total + profile[:usd_balance]
       total_btc = balance.btc.total + profile[:btc_balance]
@@ -195,8 +195,8 @@ module BitexBot
       return log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
       return log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
 
-      order_book = with_cooldown { BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown { BitexBot::Robot.taker.transactions }
+      order_book = with_cooldown { Robot.taker.order_book }
+      transactions = with_cooldown { Robot.taker.transactions }
 
       create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
       create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling

@@ -17,7 +17,7 @@ module BitexBot
       price = suggested_amount(open_positions) / quantity
 
       # Don't even bother trying to close a position that's too small.
-      return unless BitexBot::Robot.taker.enough_order_size?(quantity, price)
+      return unless Robot.taker.enough_order_size?(quantity, price)
       create_closing_flow!(price, quantity, amount, open_positions)
     end
 
@@ -86,7 +86,7 @@ module BitexBot
     #   next_price_and_quantity
     def create_next_position!
       next_price, next_quantity = next_price_and_quantity
-      if BitexBot::Robot.taker.enough_order_size?(next_quantity, next_price)
+      if Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
         update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
@@ -97,7 +97,7 @@ module BitexBot
 
     def sync_position(order_id, transactions)
       latest = latest_close
-      latest.amount, latest.quantity = BitexBot::Robot.taker.amount_and_quantity(order_id, transactions)
+      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id, transactions)
       latest.save!
     end
     # end: create_or_cancel! helpers
@@ -113,7 +113,7 @@ module BitexBot
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
       Robot.log(:info, "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
-      order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
+      order = Robot.taker.place_order(order_method, price, quantity)
       close_positions.create!(order_id: order.id)
     end
   end
