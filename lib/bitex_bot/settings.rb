@@ -7,12 +7,14 @@ module BitexBot
   # Documentation here!
   #
   class FileSettings < ::Hashie::Clash
-    # rubocop:disable Style/MethodMissing
-    def method_missing(name, *args)
+    def method_missing(name, *args, &block)
       return super unless args.size == 1 && args.none?
       self[name] = args.first
     end
-    # rubocop:enable Style/MethodMissing
+
+    def respond_to_missing?(method_name, include_private = false)
+      respond_to?(method_name) || super
+    end
   end
 
   ##
