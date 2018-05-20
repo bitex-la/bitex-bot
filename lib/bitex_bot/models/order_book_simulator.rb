@@ -19,7 +19,7 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
     def self.run(volatility, transactions, order_book, amount_target, quantity_target)
       to_skip = estimate_quantity_to_skip(volatility, transactions)
-      BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
+      Robot.log(:debug, "Skipping #{to_skip} BTC")
       seen = 0
 
       order_book.each do |order_summary|
@@ -31,7 +31,7 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
+          Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
           next if quantity.zero?
         end
 
@@ -63,7 +63,7 @@ module BitexBot
     end
 
     def self.best_price(currency, target, price)
-      BitexBot::Robot.logger.debug("Best price to get #{currency} #{target} is $#{price}")
+      Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}")
       price
     end
 

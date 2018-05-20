@@ -103,7 +103,7 @@ class ApiWrapper
     def place_order(type, price, quantity)
       order = send_order(type, price, quantity)
       return order unless order.nil? || order.id.nil?
-      BitexBot::Robot.logger.debug("Captured error when placing order on #{self.class.name}")
+      BitexBot::Robot.log(:debug, "Captured error when placing order on #{self.class.name}")
 
       # Order may have gone through and be stuck somewhere in Wrapper's piipeline.
       # We just sleep for a bit and then look for the order.

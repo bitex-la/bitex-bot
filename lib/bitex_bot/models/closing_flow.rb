@@ -71,12 +71,12 @@ module BitexBot
     # create_or_cancel! helpers
     def cancel!(order)
       Robot.with_cooldown do
-        Robot.logger.debug("Finalising #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalising #{order.class}##{order.id}")
         order.cancel!
-        Robot.logger.debug("Finalised #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalised #{order.class}##{order.id}")
       end
     rescue StandardError => error
-      Robot.logger.debug(error)
+      Robot.log(:debug, error)
       nil # just pass, we'll keep on trying until it's not in orders anymore.
     end
 
@@ -90,7 +90,7 @@ module BitexBot
         create_order_and_close_position(next_quantity, next_price)
       else
         update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
-        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
+        Robot.log(:info, "Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
         save!
       end
     end
@@ -112,9 +112,7 @@ module BitexBot
     #   order_method
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
-      Robot
-        .logger
-        .info("Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
+      Robot.log(:info, "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
       order = BitexBot::Robot.taker.place_order(order_method, price, quantity)
       close_positions.create!(order_id: order.id)
     end
