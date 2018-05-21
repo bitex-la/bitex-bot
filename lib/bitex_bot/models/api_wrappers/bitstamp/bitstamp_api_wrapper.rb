@@ -46,11 +46,11 @@ class BitstampApiWrapper < ApiWrapper
     age = Time.now.to_i - book[:timestamp].to_i
 
     return order_book_parser(book) if age <= 300
-    BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
+    BitexBot::Robot.logger.info("Refusing to continue as order book is #{age} seconds old")
     order_book(retries)
   rescue StandardError
     raise if retries.zero?
-    BitexBot::Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
+    BitexBot::Robot.logger.info("Bitstamp order book failed, retrying #{retries} more times")
     BitexBot::Robot.sleep_for 1
     order_book(retries - 1)
   end
