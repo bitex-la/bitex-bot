@@ -5,9 +5,9 @@
 class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
-  def self.setup(settings)
+  def self.setup
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
-    @settings = settings.kraken
+    @settings = BitexBot::Settings.kraken
   end
 
   def self.client
