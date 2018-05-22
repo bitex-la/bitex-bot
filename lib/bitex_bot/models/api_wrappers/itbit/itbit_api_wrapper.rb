@@ -3,13 +3,15 @@
 # https://api.itbit.com/docs
 #
 class ItbitApiWrapper < ApiWrapper
-  def self.setup(settings)
+  def self.setup
     Itbit.tap do |conf|
-      conf.client_key = settings.itbit.client_key
-      conf.secret = settings.itbit.secret
-      conf.user_id = settings.itbit.user_id
-      conf.default_wallet_id = settings.itbit.default_wallet_id
-      conf.sandbox = settings.sandbox
+      conf.sandbox = BitexBot::Settings.sandbox
+      BitexBot::Settings.itbit do |settings|
+        conf.client_key = settings.client_key
+        conf.secret = settings.secret
+        conf.user_id = settings.user_id
+        conf.default_wallet_id = settings.default_wallet_id
+      end
     end
   end
 

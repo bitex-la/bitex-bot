@@ -1,6 +1,6 @@
 module BitexBot
   # A workflow for selling bitcoin in Bitex and buying on another exchange. The SellOpeningFlow factory function estimates how
-  # much you could buy on the other exchange and calculates a reasonable price taking into account the remote orderbook and the
+  # much you could buy on the other exchange and calculates a reasonable price taking into account the remote order book and the
   # recent operated volume.
   #
   # When created, a SellOpeningFlow places an Ask on Bitex for the calculated quantity and price, when the Ask is matched on
