@@ -138,12 +138,12 @@ describe BitexBot::Robot do
       bot.trade!
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
     Timecop.travel 1.minute.from_now
-    stub_bitstamp_order_book # Re-stub so orderbook does not get old
+    stub_bitstamp_order_book # Re-stub so order book does not get old
     expect do
       bot.trade!
     end.not_to change { Mail::TestMailer.deliveries.count }
     Timecop.travel 31.minutes.from_now
-    stub_bitstamp_order_book # Re-stub so orderbook does not get old
+    stub_bitstamp_order_book # Re-stub so order book does not get old
     expect do
       bot.trade!
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
@@ -160,13 +160,13 @@ describe BitexBot::Robot do
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
 
     Timecop.travel 1.minute.from_now
-    stub_bitstamp_order_book # Re-stub so orderbook does not get old
+    stub_bitstamp_order_book # Re-stub so order book does not get old
     expect do
       bot.trade!
     end.not_to change { Mail::TestMailer.deliveries.count }
 
     Timecop.travel 31.minutes.from_now
-    stub_bitstamp_order_book # Re-stub so orderbook does not get old
+    stub_bitstamp_order_book # Re-stub so order book does not get old
 
     expect do
       bot.trade!
