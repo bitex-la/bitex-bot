@@ -67,12 +67,12 @@ class BitfinexApiWrapper < ApiWrapper
   def self.with_retry(action, retries = 0)
     yield
   rescue StandardError, Bitfinex::ClientError
-    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
+    BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Retrying in 5 seconds.")
     BitexBot::Robot.sleep_for 5
     if retries < max_retries
       with_retry(action, retries + 1, &block)
     else
-      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+      BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Gave up.")
       raise
     end
   end
