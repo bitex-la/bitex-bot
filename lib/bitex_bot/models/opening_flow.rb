@@ -41,9 +41,10 @@ module BitexBot
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
 
-      Robot
-        .logger
-        .info("Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{bitex_price} (#{remote_value})")
+      Robot.logger.info(
+        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{Robot.quote_currency} #{bitex_price}"\
+        " (#{remote_value})"
+      )
 
       create!(
         price: bitex_price,
@@ -96,7 +97,10 @@ module BitexBot
 
     # sync_open_positions helpers
     def self.create_open_position!(transaction, flow)
-      Robot.logger.info("Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ $#{transaction.price}")
+      Robot.logger.info(
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @"\
+        " $#{transaction.price}"
+      )
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
