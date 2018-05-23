@@ -35,7 +35,7 @@ module BitexBot
     # class methods
 
     def self.setup
-      Bitex.api_key = Settings.bitex
+      Bitex.api_key = Settings.bitex.api_key
       Bitex.sandbox = Settings.sandbox
       taker.setup
     end
