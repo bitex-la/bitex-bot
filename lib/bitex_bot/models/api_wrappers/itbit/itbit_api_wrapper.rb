@@ -47,11 +47,11 @@ class ItbitApiWrapper < ApiWrapper
     # On timeout errors, we still look for the latest active closing order that may be available.
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
-    BitexBot::Robot.logger.error('Captured Timeout on itbit')
+    BitexBot::Robot.log(:error, 'Captured Timeout on itbit')
     latest = last_order_by(price)
 
     return latest if latest.present?
-    BitexBot::Robot.logger.error('Could not find my order')
+    BitexBot::Robot.log(:error, 'Could not find my order')
     raise e
   end
 
