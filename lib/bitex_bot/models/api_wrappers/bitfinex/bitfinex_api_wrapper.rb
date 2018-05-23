@@ -9,10 +9,12 @@ class BitfinexApiWrapper < ApiWrapper
     @client ||= Bitfinex::Client.new
   end
 
-  def self.setup(settings)
+  def self.setup
     Bitfinex::Client.configure do |conf|
-      conf.api_key = settings.bitfinex.api_key
-      conf.secret = settings.bitfinex.api_secret
+      BitexBot::Settings.bitfinex do |settings|
+        conf.api_key = settings.api_key
+        conf.secret = settings.api_secret
+      end
     end
   end
 
@@ -65,12 +67,12 @@ class BitfinexApiWrapper < ApiWrapper
   def self.with_retry(action, retries = 0)
     yield
   rescue StandardError, Bitfinex::ClientError
-    BitexBot::Robot.logger.info("Bitfinex #{action} failed. Retrying in 5 seconds.")
+    BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Retrying in 5 seconds.")
     BitexBot::Robot.sleep_for 5
     if retries < max_retries
       with_retry(action, retries + 1, &block)
     else
-      BitexBot::Robot.logger.info("Bitfinex #{action} failed. Gave up.")
+      BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Gave up.")
       raise
     end
   end

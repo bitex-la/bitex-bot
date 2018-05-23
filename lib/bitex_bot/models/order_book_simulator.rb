@@ -16,10 +16,10 @@ module BitexBot
     # @return [Decimal] Returns the price that we're more likely to get when executing an order for the given amount or
     #   quantity.
     #
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def self.run(volatility, transactions, order_book, amount_target, quantity_target)
       to_skip = estimate_quantity_to_skip(volatility, transactions)
-      BitexBot::Robot.logger.debug("Skipping #{to_skip} BTC")
+      Robot.log(:debug, "Skipping #{to_skip} BTC")
       seen = 0
 
       order_book.each do |order_summary|
@@ -31,7 +31,7 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          BitexBot::Robot.logger.debug("Skipped #{dropped} BTC @ $#{price}")
+          Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
           next if quantity.zero?
         end
 
@@ -46,7 +46,7 @@ module BitexBot
       end
       order_book.last.price
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     # private class methods
 
@@ -63,7 +63,7 @@ module BitexBot
     end
 
     def self.best_price(currency, target, price)
-      BitexBot::Robot.logger.debug("Best price to get #{currency} #{target} is $#{price}")
+      Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}")
       price
     end
 

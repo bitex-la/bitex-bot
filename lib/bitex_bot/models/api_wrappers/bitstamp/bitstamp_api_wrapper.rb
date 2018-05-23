@@ -3,11 +3,13 @@
 # https://www.bitstamp.net/api/
 #
 class BitstampApiWrapper < ApiWrapper
-  def self.setup(settings)
+  def self.setup
     Bitstamp.setup do |config|
-      config.key = settings.bitstamp.api_key
-      config.secret = settings.bitstamp.secret
-      config.client_id = settings.bitstamp.client_id.to_s
+      BitexBot::Settings.bitstamp do |settings|
+        config.key = settings.api_key
+        config.secret = settings.secret
+        config.client_id = settings.client_id
+      end
     end
   end
 
@@ -44,11 +46,11 @@ class BitstampApiWrapper < ApiWrapper
     age = Time.now.to_i - book[:timestamp].to_i
 
     return order_book_parser(book) if age <= 300
-    BitexBot::Robot.logger.info("Refusing to continue as orderbook is #{age} seconds old")
+    BitexBot::Robot.log(:info, "Refusing to continue as orderbook is #{age} seconds old")
     order_book(retries)
   rescue StandardError
     raise if retries.zero?
-    BitexBot::Robot.logger.info("Bitstamp order_book failed, retrying #{retries} more times")
+    BitexBot::Robot.log(:info, "Bitstamp order_book failed, retrying #{retries} more times")
     BitexBot::Robot.sleep_for 1
     order_book(retries - 1)
   end

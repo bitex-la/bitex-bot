@@ -3,13 +3,15 @@
 # https://api.itbit.com/docs
 #
 class ItbitApiWrapper < ApiWrapper
-  def self.setup(settings)
+  def self.setup
     Itbit.tap do |conf|
-      conf.client_key = settings.itbit.client_key
-      conf.secret = settings.itbit.secret
-      conf.user_id = settings.itbit.user_id
-      conf.default_wallet_id = settings.itbit.default_wallet_id
-      conf.sandbox = settings.sandbox
+      conf.sandbox = BitexBot::Settings.sandbox
+      BitexBot::Settings.itbit do |settings|
+        conf.client_key = settings.client_key
+        conf.secret = settings.secret
+        conf.user_id = settings.user_id
+        conf.default_wallet_id = settings.default_wallet_id
+      end
     end
   end
 
@@ -45,11 +47,11 @@ class ItbitApiWrapper < ApiWrapper
     # On timeout errors, we still look for the latest active closing order that may be available.
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
     # TODO: Maybe we can identify the order using metadata instead of price.
-    BitexBot::Robot.logger.error('Captured Timeout on itbit')
+    BitexBot::Robot.log(:error, 'Captured Timeout on itbit')
     latest = last_order_by(price)
 
     return latest if latest.present?
-    BitexBot::Robot.logger.error('Could not find my order')
+    BitexBot::Robot.log(:error, 'Could not find my order')
     raise e
   end
 

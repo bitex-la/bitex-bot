@@ -1,11 +1,11 @@
 trap 'INT' do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
-    BitexBot::Robot.logger.info("Ok, ok, I'm out.")
+    BitexBot::Robot.log(:info, "Ok, ok, I'm out.")
     exit 1
   end
   BitexBot::Robot.graceful_shutdown = true
-  BitexBot::Robot.logger.info("Shutting down as soon as I've cleaned up.")
+  BitexBot::Robot.log(:info, "Shutting down as soon as I've cleaned up.")
 end
 
 module BitexBot
@@ -14,6 +14,8 @@ module BitexBot
   #
   # rubocop:disable Metrics/ClassLength
   class Robot
+    extend Forwardable
+
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
@@ -37,7 +39,7 @@ module BitexBot
     def self.setup
       Bitex.api_key = Settings.bitex
       Bitex.sandbox = Settings.sandbox
-      taker.setup(Settings)
+      taker.setup
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
@@ -59,6 +61,12 @@ module BitexBot
     def self.sleep_for(seconds)
       sleep(seconds)
     end
+    def_delegator self, :sleep_for
+
+    def self.log(level, message)
+      logger.send(level, message)
+    end
+    def_delegator self, :log
 
     def self.with_cooldown
       result = yield
@@ -71,13 +79,13 @@ module BitexBot
 
     def self.start_robot
       setup
-      logger.info('Loading trading robot, ctrl+c *once* to exit gracefully.')
+      log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
       new
     end
 
     # end: private class methods
 
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
@@ -89,7 +97,7 @@ module BitexBot
       notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 3)
     rescue Curl::Err::TimeoutError => e
-      self.class.logger.error("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      log(:error, "#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
     rescue OrderNotFound => e
       notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
@@ -101,7 +109,7 @@ module BitexBot
       notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
 
     def active_closing_flows?
       [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
@@ -131,7 +139,7 @@ module BitexBot
     end
 
     def shutdown!
-      simple_log(:info, 'Shutdown completed')
+      log(:info, 'Shutdown completed')
       exit
     end
 
@@ -160,8 +168,8 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown { BitexBot::Robot.taker.orders }
-      transactions = with_cooldown { BitexBot::Robot.taker.user_transactions }
+      orders = with_cooldown { Robot.taker.orders }
+      transactions = with_cooldown { Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
         kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
@@ -170,34 +178,30 @@ module BitexBot
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def start_opening_flows_if_needed
-      return simple_log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
-      return simple_log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
-      return simple_log(:debug, 'Not placing new orders, shutting down.') if turn_off?
+      return log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
+      return log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
+      return log(:debug, 'Not placing new orders, shutting down.') if turn_off?
 
       recent_buying, recent_selling = recent_operations
-      return simple_log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
+      return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
-      balance = with_cooldown { BitexBot::Robot.taker.balance }
+      balance = with_cooldown { Robot.taker.balance }
       profile = Bitex::Profile.get
       total_usd = balance.usd.total + profile[:usd_balance]
       total_btc = balance.btc.total + profile[:btc_balance]
 
       sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return simple_log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
-      return simple_log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
+      return log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
+      return log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
 
-      order_book = with_cooldown { BitexBot::Robot.taker.order_book }
-      transactions = with_cooldown { BitexBot::Robot.taker.transactions }
+      order_book = with_cooldown { Robot.taker.order_book }
+      transactions = with_cooldown { Robot.taker.transactions }
 
       create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
       create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-
-    def simple_log(level, message)
-      BitexBot::Robot.logger.send(level, message)
-    end
 
     def recent_operations
       [BuyOpeningFlow, SellOpeningFlow].map do |kind|
@@ -243,7 +247,7 @@ module BitexBot
     end
 
     def notify(message, subj = 'Notice from your robot trader')
-      self.class.logger.error(message)
+      log(:error, message)
       return unless Settings.mailer.present?
       mail = new_mail(subj, message)
       mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
@@ -266,10 +270,6 @@ module BitexBot
     def create_sell_opening_flow(balance, order_book, transactions, profile)
       SellOpeningFlow.create_for_market(balance.usd.available, order_book.asks, transactions, profile[:fee], balance.fee, store)
     end
-
-    def sleep_for(seconds)
-      self.class.sleep_for(seconds)
-    end
+    # rubocop:enable Metrics/ClassLength
   end
-  # rubocop:enable Metrics/ClassLength
 end
