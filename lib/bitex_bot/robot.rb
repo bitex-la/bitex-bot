@@ -31,6 +31,8 @@ module BitexBot
         # rubocop:enable Lint/UnusedBlockArgument
       end
     end
+    cattr_accessor(:base_currency) { Settings.bitex.order_book.to_s.split('_')[0].upcase }
+    cattr_accessor(:quote_currency) { Settings.bitex.order_book.to_s.split('_')[1].upcase }
 
     # class methods
 
