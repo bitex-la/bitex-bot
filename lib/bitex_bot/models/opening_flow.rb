@@ -29,7 +29,7 @@ module BitexBot
     #   #remote_value_to_use
     #   #safest_price
     #   #value_to_use
-    # rubocop:disable Metrics/AbcSize
+    # rubocop: disable Metrics/AbcSize
     def self.create_for_market(remote_balance, order_book, transactions, bitex_fee, other_fee, store)
       self.store = store
 
@@ -57,7 +57,7 @@ module BitexBot
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
-    # rubocop:enable Metrics/AbcSize
+    # rubocop: enable Metrics/AbcSize
 
     # create_for_market helpers
     def self.calc_remote_value(bitex_fee, other_fee, order_book, transactions)
@@ -102,6 +102,7 @@ module BitexBot
         :info,
         "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @ $#{transaction.price}"
       )
+
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
