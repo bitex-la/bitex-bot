@@ -141,8 +141,8 @@ describe BitexBot::SellOpeningFlow do
       end.to change { BitexBot::OpenSell.count }.by(1)
     end
 
-    it 'does not register litecoin buys' do
-      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
+    it 'does not register buys from another order book' do
+      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, order_book: :btc_ars)])
 
       flow.order_id.should == 12345
       expect do
