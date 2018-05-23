@@ -34,7 +34,8 @@ module BitexBot
       self.store = store
 
       remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, order_book, transactions)
-      raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" if remote_value > remote_balance
+      raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
+        enough_remote_funds?(remote_balance, remote_value)
 
       bitex_price = maker_price(remote_value) * fx_rate
       order = create_order!(bitex_price)
@@ -74,6 +75,10 @@ module BitexBot
 
     def self.enough_funds?(order)
       !order.reason.to_s.inquiry.not_enough_funds?
+    end
+
+    def self.enough_remote_funds?(remote_balance, remote_value)
+      remote_balance >= remote_value
     end
 
     def self.maker_plus(fee)

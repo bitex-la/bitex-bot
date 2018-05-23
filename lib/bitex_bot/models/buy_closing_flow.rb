@@ -21,7 +21,7 @@ module BitexBot
     end
 
     # The amount received when selling initially, minus the amount spent re-buying the sold coins.
-    def estimate_usd_profit
+    def estimate_amount_positions_balance
       close_positions.sum(:amount) - open_positions.sum(:amount)
     end
 
@@ -29,6 +29,7 @@ module BitexBot
       closes = close_positions
       next_price = desired_price - price_variation(closes.count)
       next_quantity = quantity - closes.sum(:quantity)
+
       [next_price, next_quantity]
     end
     # end: create_or_cancel! hookers

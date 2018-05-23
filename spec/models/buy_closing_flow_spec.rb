@@ -14,7 +14,7 @@ describe BitexBot::BuyClosingFlow do
     flow.quantity.should == 2
     flow.amount.should == 600
     flow.btc_profit.should be_nil
-    flow.usd_profit.should be_nil
+    flow.fiat_profit.should be_nil
 
     close = flow.close_positions.first
     close.order_id.should == '1'
@@ -39,7 +39,7 @@ describe BitexBot::BuyClosingFlow do
     flow.quantity.should == 2.01
     flow.amount.should == 604
     flow.btc_profit.should be_nil
-    flow.usd_profit.should be_nil
+    flow.fiat_profit.should be_nil
 
     close.order_id.should == '1'
     close.amount.should be_nil
@@ -80,7 +80,27 @@ describe BitexBot::BuyClosingFlow do
 
       flow.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == '20.105'.to_d
+      flow.fiat_profit.should == '20.105'.to_d
+    end
+
+    context 'with other fx rate and closed open positions' do
+      let(:fx_rate) { 10.to_d }
+      let(:flow) { subject.class.last }
+      let(:estimate_amount_positions_balance) { flow.close_positions.sum(:amount) - flow.open_positions.sum(:amount) }
+
+      before(:each) do
+        BitexBot::Settings.stub(fx_rate: fx_rate)
+        subject.class.close_open_positions
+
+        stub_bitstamp_orders_into_transactions
+        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+      end
+
+      it 'syncs the executed orders, calculates profit with other fx rate' do
+        flow.should be_done
+        flow.btc_profit.should be_zero
+        flow.fiat_profit.should eq estimate_amount_positions_balance / fx_rate
+      end
     end
 
     it 'retries closing at a lower price every minute' do
@@ -128,7 +148,7 @@ describe BitexBot::BuyClosingFlow do
       end
       flow.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == '20.07485'.to_d
+      flow.fiat_profit.should == '20.07485'.to_d
     end
 
     it 'does not retry for an amount less than minimum_for_closing' do
@@ -143,7 +163,7 @@ describe BitexBot::BuyClosingFlow do
 
       flow.should be_done
       flow.btc_profit.should == 0.00201
-      flow.usd_profit.should == '19.480895'.to_d
+      flow.fiat_profit.should == '19.480895'.to_d
     end
 
     it 'can lose USD if price had to be dropped dramatically' do
@@ -162,7 +182,7 @@ describe BitexBot::BuyClosingFlow do
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       flow.reload.should be_done
       flow.btc_profit.should == 0
-      flow.usd_profit.should == '-34.165'.to_d
+      flow.fiat_profit.should == '-34.165'.to_d
     end
   end
 
@@ -183,7 +203,7 @@ describe BitexBot::BuyClosingFlow do
       flow.desired_price.should == 310
       flow.quantity.should == 2
       flow.btc_profit.should be_nil
-      flow.usd_profit.should be_nil
+      flow.fiat_profit.should be_nil
       flow.close_positions.should be_empty
     end
 

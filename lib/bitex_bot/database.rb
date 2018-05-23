@@ -54,7 +54,7 @@ module BitexBot
           t.decimal    :amount,        precision: 30, scale: 15
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
-          t.decimal    :usd_profit,    precision: 30, scale: 15
+          t.decimal    :fiat_profit,   precision: 30, scale: 15
           t.timestamps
         end
 
@@ -64,7 +64,7 @@ module BitexBot
           t.decimal    :amount,        precision: 30, scale: 15
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
-          t.decimal    :usd_profit,    precision: 30, scale: 15
+          t.decimal    :fiat_profit,   precision: 30, scale: 15
           t.timestamps
         end
 
