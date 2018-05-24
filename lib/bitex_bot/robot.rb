@@ -9,9 +9,7 @@ trap 'INT' do
 end
 
 module BitexBot
-  ##
   # Documentation here!
-  #
   # rubocop:disable Metrics/ClassLength
   class Robot
     extend Forwardable
@@ -20,21 +18,17 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
     cattr_accessor(:current_cooldowns) { 0 }
-    cattr_accessor :logger do
+    cattr_accessor(:logger) do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
       Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
         log.level = Logger.const_get(Settings.log.level.upcase)
-        # rubocop:disable Lint/UnusedBlockArgument
-        log.formatter = proc do |severity, datetime, progname, msg|
+        log.formatter = proc do |severity, datetime, _progname, msg|
           date = datetime.strftime('%m/%d %H:%M:%S.%L')
           "#{format('%-6s', severity)} #{date}: #{msg}\n"
         end
-        # rubocop:enable Lint/UnusedBlockArgument
       end
     end
-
-    # class methods
 
     def self.setup
       Bitex.api_key = Settings.bitex
@@ -49,12 +43,13 @@ module BitexBot
       loop do
         start_time = Time.now
         next if start_time < cooldown_until
+
         self.current_cooldowns = 0
         bot.trade!
+        self.cooldown_until = start_time + current_cooldowns.seconds
 
         # This global sleep is so that we don't stress bitex too much.
         sleep_for(0.3)
-        self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end
 
@@ -75,15 +70,13 @@ module BitexBot
       result
     end
 
-    # private class methods
+    private_class_method
 
     def self.start_robot
       setup
       log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
       new
     end
-
-    # end: private class methods
 
     # rubocop:disable Metrics/AbcSize
     def trade!
@@ -112,11 +105,11 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     def active_closing_flows?
-      [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
+      [BuyClosingFlow, SellClosingFlow].map(&:active).any?(&:exists?)
     end
 
     def active_opening_flows?
-      [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
+      [BuyOpeningFlow, SellOpeningFlow].map(&:active).any?(&:exists?)
     end
 
     # The trader has a Store
@@ -192,8 +185,8 @@ module BitexBot
 
       sync_log(balance)
       check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return log(:debug, 'Not placing new orders, USD target not met') if usd_target_met?(total_usd)
-      return log(:debug, 'Not placing new orders, BTC target not met') if btc_target_met?(total_btc)
+      return log(:debug, 'Not placing new orders, USD target not met') if target_met?(:usd, total_usd)
+      return log(:debug, 'Not placing new orders, BTC target not met') if target_met?(:btc, total_btc)
 
       order_book = with_cooldown { Robot.taker.order_book }
       transactions = with_cooldown { Robot.taker.transactions }
@@ -221,24 +214,16 @@ module BitexBot
     end
 
     def check_balance_warning(total_usd, total_btc)
-      notify_balance_warning(:usd, total_usd, store.usd_warning) if usd_balance_warning_notify?(total_usd)
-      notify_balance_warning(:btc, total_btc, store.btc_warning) if btc_balance_warning_notify?(total_btc)
+      notify_balance_warning(:usd, total_usd, store.usd_warning) if balance_warning_notify?(:usd, total_usd)
+      notify_balance_warning(:btc, total_btc, store.btc_warning) if balance_warning_notify?(:btc, total_btc)
     end
 
-    def usd_balance_warning_notify?(total)
-      store.usd_warning.present? && total <= store.usd_warning
+    def target_met?(currency, total)
+      store.send("#{currency}_stop").present? && total <= store.send("#{currency}_stop")
     end
 
-    def btc_balance_warning_notify?(total)
-      store.btc_warning.present? && total <= store.btc_warning
-    end
-
-    def usd_target_met?(total)
-      store.usd_stop.present? && total <= store.usd_stop
-    end
-
-    def btc_target_met?(total)
-      store.btc_stop.present? && total <= store.btc_stop
+    def balance_warning_notify?(currency, total)
+      store.send("#{currency}_warning").present? && total <= store.send("#{currency}_warning")
     end
 
     def notify_balance_warning(currency, total, currency_warning)
@@ -249,9 +234,10 @@ module BitexBot
     def notify(message, subj = 'Notice from your robot trader')
       log(:error, message)
       return unless Settings.mailer.present?
-      mail = new_mail(subj, message)
-      mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
-      mail.deliver!
+
+      new_mail(subj, message).tap do |mail|
+        mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
+      end.deliver!
     end
 
     def new_mail(subj, message)
