@@ -132,7 +132,7 @@ describe BitexBot::SellClosingFlow do
     context 'with other fx rate and closed open positions' do
       let(:fx_rate) { 10.to_d }
       let(:flow) { subject.class.last }
-      let(:estimate_amount_positions_balance) { flow.open_positions.sum(:amount) - flow.close_positions.sum(:amount) }
+      let(:positions_balance_amount) { flow.open_positions.sum(:amount) - flow.positions_balance_amount }
 
       before(:each) do
         BitexBot::Settings.stub(fx_rate: fx_rate)
@@ -145,7 +145,7 @@ describe BitexBot::SellClosingFlow do
       it 'syncs the executed orders, calculates profit with other fx rate' do
         flow.should be_done
         flow.btc_profit.should be_zero
-        flow.fiat_profit.should eq estimate_amount_positions_balance / fx_rate
+        flow.fiat_profit.should eq positions_balance_amount
       end
     end
 

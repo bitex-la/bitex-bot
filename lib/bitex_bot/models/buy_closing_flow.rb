@@ -1,7 +1,5 @@
 module BitexBot
-  ##
   # It sold at Bitex and needs to close (buy) in the other market.
-  #
   class BuyClosingFlow < ClosingFlow
     has_many :open_positions, class_name: 'OpenBuy', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseBuy', foreign_key: :closing_flow_id
@@ -21,8 +19,8 @@ module BitexBot
     end
 
     # The amount received when selling initially, minus the amount spent re-buying the sold coins.
-    def estimate_amount_positions_balance
-      close_positions.sum(:amount) - open_positions.sum(:amount)
+    def estimate_fiat_profit
+      positions_balance_amount - open_positions.sum(:amount)
     end
 
     def next_price_and_quantity
