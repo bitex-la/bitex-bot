@@ -11,7 +11,7 @@ module BitexBot
           t.integer    :order_id
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :buy_opening_flows, :order_id
 
@@ -22,7 +22,7 @@ module BitexBot
           t.integer    :order_id
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :sell_opening_flows, :order_id
 
@@ -33,7 +33,7 @@ module BitexBot
           t.decimal    :amount,        precision: 30, scale: 15
           t.decimal    :quantity,      precision: 30, scale: 15
           t.integer    :transaction_id
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :open_buys, :transaction_id
 
@@ -44,7 +44,7 @@ module BitexBot
           t.decimal    :quantity,      precision: 30, scale: 15
           t.decimal    :amount,        precision: 30, scale: 15
           t.integer    :transaction_id
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :open_sells, :transaction_id
 
@@ -55,7 +55,7 @@ module BitexBot
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
           t.decimal    :usd_profit,    precision: 30, scale: 15
-          t.timestamps
+          t.timestamps null: true
         end
 
         create_table :sell_closing_flows do |t|
@@ -65,7 +65,7 @@ module BitexBot
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
           t.decimal    :usd_profit,    precision: 30, scale: 15
-          t.timestamps
+          t.timestamps null: true
         end
 
         create_table :close_buys do |t|
@@ -73,7 +73,7 @@ module BitexBot
           t.decimal    :amount,      precision: 30, scale: 15
           t.decimal    :quantity,    precision: 30, scale: 15
           t.string     :order_id
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :close_buys, :order_id
 
@@ -82,7 +82,7 @@ module BitexBot
           t.decimal    :amount,   precision: 30, scale: 15
           t.decimal    :quantity, precision: 30, scale: 15
           t.string     :order_id
-          t.timestamps
+          t.timestamps null: true
         end
         add_index :close_sells, :order_id
       end
@@ -102,7 +102,7 @@ module BitexBot
           t.decimal    :selling_profit,                     precision: 20,   scale: 8
           t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
           t.decimal    :selling_quantity_to_sell_per_order, precision: 20,   scale: 8
-          t.timestamps
+          t.timestamps null: true
         end
       end
     end
