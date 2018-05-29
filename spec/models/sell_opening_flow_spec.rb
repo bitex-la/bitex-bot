@@ -92,7 +92,7 @@ describe BitexBot::SellOpeningFlow do
     it 'raises the price to charge on bitex to take a profit' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
-        selling: double(quantity_to_sell_per_order: 4, profit: 50))
+        selling: double(quantity_to_sell_per_order: 4, profit: 50.to_d))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,

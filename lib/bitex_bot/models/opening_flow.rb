@@ -2,7 +2,6 @@ module BitexBot
   # Any arbitrage workflow has 2 stages, opening positions and then closing them.
   # The OpeningFlow stage places an order on bitex, detecting and storing all transactions spawn from that order as
   # Open positions.
-  #
   class OpeningFlow < ActiveRecord::Base
     self.abstract_class = true
 
@@ -15,11 +14,11 @@ module BitexBot
     cattr_accessor(:statuses) { %w[executing settling finalised] }
 
     def self.active
-      where('status != "finalised"')
+      where.not(status: :finalised)
     end
 
     def self.old_active
-      where('status != "finalised" AND created_at < ?', Settings.time_to_live.seconds.ago)
+      active.where('created_at < ?', Settings.time_to_live.seconds.ago)
     end
     # @!endgroup
 
@@ -96,6 +95,7 @@ module BitexBot
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
       Bitex::Trade.all.map do |transaction|
         next if sought_transaction?(threshold, transaction)
+
         flow = find_by_order_id(transaction_order_id(transaction))
         next unless flow.present?
 
@@ -149,6 +149,7 @@ module BitexBot
     #   finalised: Successfully settled or finished executing.
     statuses.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
+      define_method("#{status_name}!") { update!(status: status_name) }
     end
 
     def finalise!
@@ -160,18 +161,18 @@ module BitexBot
 
     # finalise! helpers
     def canceled_or_completed?(order)
-      order.status == :cancelled || order.status == :completed
+      %i[cancelled completed].any? { |status| order.status == status }
     end
 
     def do_finalize
       Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} finalised.")
-      update!(status: 'finalised')
+      finalised!
     end
 
     def do_cancel(order)
       Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} canceled.")
       order.cancel!
-      update!(status: 'settling') unless settling?
+      settling! unless settling?
     end
     # end: finalise! helpers
   end

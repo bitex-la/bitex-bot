@@ -92,7 +92,7 @@ describe BitexBot::BuyOpeningFlow do
     it 'lowers the price to pay on bitex to take a profit' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
-        buying: double(amount_to_spend_per_order: 100, profit: 50))
+        buying: double(amount_to_spend_per_order: 100, profit: 50.to_d))
 
       flow = BitexBot::BuyOpeningFlow.create_for_market(100000,
         bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
