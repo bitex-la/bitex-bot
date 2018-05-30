@@ -66,7 +66,6 @@ module BitexBot
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
           t.decimal    :fiat_profit,   precision: 30, scale: 15
-          t.decimal    :fiat_profit,   precision: 30, scale: 15
           t.decimal    :fx_rate,       precision: 20, scale: 8
           t.timestamps null: true
         end
