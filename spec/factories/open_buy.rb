@@ -14,6 +14,6 @@ FactoryBot.define do
     transaction_id 23456789
     price          400
     amount         4
-    quantity       0
+    quantity       0.01
   end
 end
