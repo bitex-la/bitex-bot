@@ -1,9 +1,9 @@
 require 'hashie'
+require 'bigdecimal'
+require 'bigdecimal/util'
 
 module BitexBot
-  ##
   # Documentation here!
-  #
   class FileSettings < ::Hashie::Clash
     def method_missing(name, *args, &block)
       return super unless args.none? && args.size == 1
@@ -15,9 +15,7 @@ module BitexBot
     end
   end
 
-  ##
   # This class load settings file, else write a sample file.
-  #
   class SettingsClass < ::Hashie::Mash
     include ::Hashie::Extensions::Mash::SymbolizeKeys
 
