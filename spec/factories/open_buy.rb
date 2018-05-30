@@ -3,17 +3,17 @@ FactoryBot.define do
     association :opening_flow, factory: :buy_opening_flow 
 
     transaction_id 12345678
-    price          300.to_d
-    amount         600.to_d
-    quantity       2.to_d
+    price          300
+    amount         600
+    quantity       2
   end
 
   factory :tiny_open_buy, class: BitexBot::OpenBuy do
     association :opening_flow, factory: :other_buy_opening_flow 
 
     transaction_id 23456789
-    price          400.to_d
-    amount         4.to_d
-    quantity       0.to_d
+    price          400
+    amount         4
+    quantity       0.01
   end
 end
