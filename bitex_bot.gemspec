@@ -24,7 +24,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'sqlite3'
 
   spec.add_dependency 'bitex', '0.3'
-  spec.add_dependency 'bitfinex-rb', '0.0.6'
   spec.add_dependency 'bitstamp'
   spec.add_dependency 'itbit', '0.0.6'
   spec.add_dependency 'kraken_client', '~> 1.2.1'

@@ -13,7 +13,6 @@ require 'mail'
 require 'bitex'
 require 'bitstamp'
 require 'itbit'
-require 'bitfinex'
 
 # BitexBot Models
 require 'bitex_bot/settings'
