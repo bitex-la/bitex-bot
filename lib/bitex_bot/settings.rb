@@ -1,6 +1,4 @@
 require 'hashie'
-require 'bigdecimal'
-require 'bigdecimal/util'
 
 module BitexBot
   # Documentation here!

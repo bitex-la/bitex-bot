@@ -10,6 +10,7 @@ module BitexBot
   # created from its OpenSell's
   #
   # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on Bitex, this is its unique id.
+  #
   class SellOpeningFlow < OpeningFlow
     # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
     # retrieved from Settings, if there is not enough BTC on bitex or USD on the other exchange then no order will be placed and
@@ -20,14 +21,14 @@ module BitexBot
     # @param order_book [[price, quantity]] a list of lists representing an ask order book in the other exchange.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
     #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BTC transacted.
-    # @param maker_fee [BigDecimal] the transaction fee to pay on our maker exchange.
-    # @param taker_fee [BigDecimal] the transaction fee to pay on the taker exchange.
+    # @param bitex_fee [BigDecimal] the transaction fee to pay on bitex.
+    # @param other_fee [BigDecimal] the transaction fee to pay on the other exchange.
     # @param store [Store] An updated config for this robot, mainly to use for profit.
     #
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
     # of USD on the other exchange.
-    def self.create_for_market(usd_balance, order_book, transactions, maker_fee, taker_fee, store)
+    def self.create_for_market(usd_balance, order_book, transactions, bitex_fee, other_fee, store)
       super
     end
 
@@ -48,8 +49,8 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.maker_price(usd_to_spend_re_buying)
-      usd_to_spend_re_buying / value_to_use * (1 + profit / 100)
+    def self.bitex_price(btc_to_sell, usd_to_spend_re_buying)
+      (usd_to_spend_re_buying / btc_to_sell) * (1 + profit / 100.0)
     end
 
     def self.order_class

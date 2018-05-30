@@ -2,6 +2,7 @@ module BitexBot
   # Any arbitrage workflow has 2 stages, opening positions and then closing them.
   # The OpeningFlow stage places an order on bitex, detecting and storing all transactions spawn from that order as
   # Open positions.
+  #
   class OpeningFlow < ActiveRecord::Base
     self.abstract_class = true
 
@@ -13,44 +14,34 @@ module BitexBot
     # @return [Array<String>]
     cattr_accessor(:statuses) { %w[executing settling finalised] }
 
-    # Base currency for maker.
-    # @return <String>
-    cattr_accessor(:base_currency) { Settings.bitex.order_book.to_s.split('_')[0].upcase }
-    cattr_accessor(:quote_currency) { Settings.bitex.order_book.to_s.split('_')[1].upcase }
-
     def self.active
-      where.not(status: :finalised)
+      where('status != "finalised"')
     end
 
     def self.old_active
-      active.where('created_at < ?', Settings.time_to_live.seconds.ago)
+      where('status != "finalised" AND created_at < ?', Settings.time_to_live.seconds.ago)
     end
     # @!endgroup
 
     # This use hooks methods, these must be defined in the subclass:
-    #   #maker_price
+    #   #bitex_price
     #   #order_class
     #   #remote_value_to_use
     #   #safest_price
     #   #value_to_use
     # rubocop:disable Metrics/AbcSize
-    def self.create_for_market(remote_balance, order_book, transactions, maker_fee, taker_fee, store)
+    def self.create_for_market(remote_balance, order_book, transactions, bitex_fee, other_fee, store)
       self.store = store
 
-      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, order_book, transactions)
-      raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
-        enough_remote_funds?(remote_balance, remote_value)
+      remote_value, safest_price = calc_remote_value(bitex_fee, other_fee, order_book, transactions)
+      raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" if remote_value > remote_balance
 
-      bitex_price = maker_price(remote_value) * fx_rate
+      bitex_price = bitex_price(value_to_use, remote_value)
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
 
-      Robot.log(
-        :info,
-        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{quote_currency} #{bitex_price}"\
-        " (#{remote_value})"
-      )
+      Robot.log(:info, "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ $#{bitex_price} (#{remote_value})")
 
       create!(
         price: bitex_price,
@@ -65,16 +56,14 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     # create_for_market helpers
-    def self.calc_remote_value(maker_fee, taker_fee, order_book, transactions)
-      value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
+    def self.calc_remote_value(bitex_fee, other_fee, order_book, transactions)
+      value_to_use_needed = plus_bitex(bitex_fee) / (1 - other_fee / 100.0)
       safest_price = safest_price(transactions, order_book, value_to_use_needed)
-      remote_value = remote_value_to_use(value_to_use_needed, safest_price)
-
-      [remote_value, safest_price]
+      [remote_value_to_use(value_to_use_needed, safest_price), safest_price]
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(Settings.bitex.order_book, value_to_use, bitex_price, true)
+      order_class.create!(:btc, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -83,16 +72,8 @@ module BitexBot
       !order.reason.to_s.inquiry.not_enough_funds?
     end
 
-    def self.enough_remote_funds?(remote_balance, remote_value)
-      remote_balance >= remote_value
-    end
-
-    def self.maker_plus(fee)
-      value_to_use * fee / 100
-    end
-
-    def self.fx_rate
-      store.fx_rate || Settings.fx_rate
+    def self.plus_bitex(fee)
+      value_to_use + (value_to_use * fee / 100.0)
     end
     # end: create_for_market helpers
 
@@ -104,7 +85,6 @@ module BitexBot
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
       Bitex::Trade.all.map do |transaction|
         next if sought_transaction?(threshold, transaction)
-
         flow = find_by_order_id(transaction_order_id(transaction))
         next unless flow.present?
 
@@ -114,11 +94,7 @@ module BitexBot
 
     # sync_open_positions helpers
     def self.create_open_position!(transaction, flow)
-      Robot.log(
-        :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @ #{transaction.price}"
-      )
-
+      Robot.log(:info, "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ $#{transaction.price}")
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
@@ -134,7 +110,7 @@ module BitexBot
       !transaction.is_a?(transaction_class) ||
         active_transaction?(transaction, threshold) ||
         open_position?(transaction) ||
-        !expected_order_book?(transaction)
+        !btc_specie?(transaction)
     end
     # end: sync_open_positions helpers
 
@@ -147,8 +123,8 @@ module BitexBot
       open_position_class.find_by_transaction_id(transaction.id)
     end
 
-    def self.expected_order_book?(transaction)
-      transaction.order_book == Settings.bitex.order_book
+    def self.btc_specie?(transaction)
+      transaction.specie == :btc
     end
     # end: sought_transaction helpers
 
@@ -162,7 +138,6 @@ module BitexBot
     #   finalised: Successfully settled or finished executing.
     statuses.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
-      define_method("#{status_name}!") { update!(status: status_name) }
     end
 
     def finalise!
@@ -174,18 +149,18 @@ module BitexBot
 
     # finalise! helpers
     def canceled_or_completed?(order)
-      %i[cancelled completed].any? { |status| order.status == status }
+      order.status == :cancelled || order.status == :completed
     end
 
     def do_finalize
       Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} finalised.")
-      finalised!
+      update!(status: 'finalised')
     end
 
     def do_cancel(order)
       Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} canceled.")
       order.cancel!
-      settling! unless settling?
+      update!(status: 'settling') unless settling?
     end
     # end: finalise! helpers
   end

@@ -24,75 +24,30 @@ describe BitexBot::SellOpeningFlow do
       flow.order_id.should == 12345
       flow.value_to_use.should == 2
       flow.price.should >= flow.suggested_closing_price
-      flow.price.truncate(14).should == '20.15037593984962'.to_d
+      flow.price.should == '20.15037593984962'.to_d
       flow.suggested_closing_price.should == 20
     end
 
-    let(:order_id) { 12_345 }
-    let(:usd_price) { '25.18_796_992_481_203'.to_d }
-    let(:suggested_closing_price) { 25.to_d }
-    let(:amount_to_sell) { 4.to_d }
-    let(:btc_balance) { 100_000.to_d }
-    let(:maker_fee) { 0.5.to_d }
-    let(:taker_fee) { 0.25.to_d }
-    let(:orderbook) { bitstamp_api_wrapper_order_book.asks }
-    let(:transactions) { bitstamp_api_wrapper_transactions_stub }
-
     it 'sells 4 bitcoin' do
-      BitexBot::Settings.stub(
-        time_to_live: 3,
-        selling: double(quantity_to_sell_per_order: amount_to_sell, profit: 0)
-      )
       stub_bitex_orders
+      BitexBot::Settings.stub(time_to_live: 3,
+        selling: double(quantity_to_sell_per_order: 4, profit: 0))
 
-      flow =
-        BitexBot::SellOpeningFlow.create_for_market(
-          btc_balance,
-          orderbook,
-          transactions,
-          maker_fee,
-          taker_fee,
-          store
-        )
+      flow = BitexBot::SellOpeningFlow.create_for_market(1000,
+        bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+        store)
 
-      flow.order_id.should eq order_id
-      flow.value_to_use.should eq amount_to_sell
+      flow.order_id.should == 12345
+      flow.value_to_use.should == 4
       flow.price.should >= flow.suggested_closing_price
-      flow.price.should eq usd_price
-      flow.suggested_closing_price.should eq suggested_closing_price
-    end
-
-    let(:other_fx_rate) { 10.to_d }
-
-    it 'sells 4 bitcoin' do
-      BitexBot::Settings.stub(
-        fx_rate: other_fx_rate,
-        time_to_live: 3,
-        selling: double(quantity_to_sell_per_order: amount_to_sell, profit: 0)
-      )
-      stub_bitex_orders
-
-      flow =
-        BitexBot::SellOpeningFlow.create_for_market(
-          btc_balance,
-          orderbook,
-          transactions,
-          maker_fee,
-          taker_fee,
-          store
-        )
-
-      flow.order_id.should eq order_id
-      flow.value_to_use.should eq amount_to_sell
-      flow.price.should >= flow.suggested_closing_price * other_fx_rate
-      flow.price.truncate(13).should eq usd_price * other_fx_rate
-      flow.suggested_closing_price.should eq suggested_closing_price
+      flow.price.round(14).should == '25.18796992481203'.to_d
+      flow.suggested_closing_price.should == 25
     end
 
     it 'raises the price to charge on bitex to take a profit' do
       stub_bitex_orders
       BitexBot::Settings.stub(time_to_live: 3,
-        selling: double(quantity_to_sell_per_order: 4, profit: 50.to_d))
+        selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
       flow = BitexBot::SellOpeningFlow.create_for_market(1000,
         bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
@@ -186,8 +141,8 @@ describe BitexBot::SellOpeningFlow do
       end.to change { BitexBot::OpenSell.count }.by(1)
     end
 
-    it 'does not register buys from another order book' do
-      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, order_book: :btc_ars)])
+    it 'does not register litecoin buys' do
+      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, specie: :ltc)])
 
       flow.order_id.should == 12345
       expect do
@@ -218,28 +173,5 @@ describe BitexBot::SellOpeningFlow do
     flow.should be_settling
     flow.finalise!
     flow.should be_finalised
-  end
-
-  it 'order book formed from your base currency and another quote currency' do
-    BitexBot::Settings.bitex.order_book do |order_book|
-      subject.class.base_currency.should eq order_book.to_s.split('_')[0].upcase
-      subject.class.base_currency.should be_a String
-
-      subject.class.quote_currency.should eq order_book.to_s.split('_')[1].upcase
-      subject.class.quote_currency.should be_a String
-    end
-  end
-
-  it 'order has expected order book' do
-    stub_bitex_orders
-    BitexBot::Settings.stub(time_to_live: 3,
-      selling: double(quantity_to_sell_per_order: 2, profit: 0))
-
-    flow = subject.class.create_for_market(1000,
-      bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
-      store)
-
-    order = subject.class.order_class.find(flow.order_id)
-    order.order_book.should eq BitexBot::Settings.bitex.order_book
   end
 end

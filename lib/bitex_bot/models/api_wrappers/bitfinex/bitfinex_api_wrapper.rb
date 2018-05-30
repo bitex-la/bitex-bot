@@ -1,5 +1,7 @@
+##
 # Wrapper implementation for Bitfinex API.
 # https://docs.bitfinex.com/docs
+#
 class BitfinexApiWrapper < ApiWrapper
   cattr_accessor(:max_retries) { 1000 }
 
@@ -19,28 +21,25 @@ class BitfinexApiWrapper < ApiWrapper
   def self.amount_and_quantity(order_id, _transactions)
     with_retry "find order #{order_id}" do
       order = Bitfinex::Client.new.order_status(order_id)
-      amount = order['avg_execution_price'].to_d * order['executed_amount'].to_d
-      quantity = order['executed_amount'].to_d
-
-      [amount, quantity]
+      [order['avg_execution_price'].to_d * order['executed_amount'].to_d, order['executed_amount'].to_d]
     end
   end
 
   def self.balance
-    with_retry(:balance) do
+    with_retry :balance do
       balances = client.balances(type: 'exchange').map(&:symbolize_keys)
       balance_summary_parser(balances)
     end
   end
 
   def self.orders
-    with_retry(:orders) do
+    with_retry :orders do
       client.orders.map { |o| order_parser(BitfinexOrder.new(o.stringify_keys)) }
     end
   end
 
   def self.order_book
-    with_retry(:order_book) do
+    with_retry :order_book do
       order_book_parser(client.orderbook.deep_symbolize_keys)
     end
   end
@@ -70,10 +69,12 @@ class BitfinexApiWrapper < ApiWrapper
   rescue StandardError, Bitfinex::ClientError
     BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Retrying in 5 seconds.")
     BitexBot::Robot.sleep_for 5
-    return with_retry(action, retries + 1, &block) if retries < max_retries
-
-    BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Gave up.")
-    raise
+    if retries < max_retries
+      with_retry(action, retries + 1, &block)
+    else
+      BitexBot::Robot.log(:info, "Bitfinex #{action} failed. Gave up.")
+      raise
+    end
   end
 
   # [

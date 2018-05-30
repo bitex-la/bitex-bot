@@ -1,5 +1,7 @@
+##
 # Wrapper implementation for Kraken API.
 # https://www.kraken.com/en-us/help/api
+#
 class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 

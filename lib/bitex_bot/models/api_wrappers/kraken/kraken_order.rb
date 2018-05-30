@@ -1,6 +1,8 @@
 require 'kraken_client'
 
+##
 # Wrapper for Kraken orders.
+#
 class KrakenOrder
   cattr_accessor :last_closed_order
   attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime
@@ -35,10 +37,7 @@ class KrakenOrder
 
   def self.amount_and_quantity(order_id)
     order = find(order_id)
-    amount = order.avg_price * order.executed_amount
-    quantity = order.executed_amount
-
-    [amount, quantity]
+    [order.avg_price * order.executed_amount, order.executed_amount]
   end
 
   def self.open

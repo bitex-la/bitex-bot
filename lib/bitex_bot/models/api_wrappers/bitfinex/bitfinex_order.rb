@@ -1,4 +1,6 @@
+##
 # Wrapper for bitfinex orders
+#
 class BitfinexOrder
   attr_accessor :id, :amount, :price, :type, :datetime
 
@@ -11,6 +13,6 @@ class BitfinexOrder
   end
 
   def cancel!
-    BitfinexApiWrapper.client.cancel_orders(id)
+    Bitfinex::Client.new.cancel_orders(id)
   end
 end
