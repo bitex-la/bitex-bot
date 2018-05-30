@@ -174,4 +174,27 @@ describe BitexBot::SellOpeningFlow do
     flow.finalise!
     flow.should be_finalised
   end
+
+  it 'order book formed from your base currency and another quote currency' do
+    BitexBot::Settings.bitex.order_book do |order_book|
+      subject.class.base_currency.should eq order_book.to_s.split('_')[0].upcase
+      subject.class.base_currency.should be_a String
+
+      subject.class.quote_currency.should eq order_book.to_s.split('_')[1].upcase
+      subject.class.quote_currency.should be_a String
+    end
+  end
+
+  it 'order has expected order book' do
+    stub_bitex_orders
+    BitexBot::Settings.stub(time_to_live: 3,
+      selling: double(quantity_to_sell_per_order: 2, profit: 0))
+
+    flow = subject.class.create_for_market(1000,
+      bitstamp_api_wrapper_order_book.asks, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+      store)
+
+    order = subject.class.order_class.find(flow.order_id)
+    order.order_book.should eq BitexBot::Settings.bitex.order_book
+  end
 end

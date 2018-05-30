@@ -186,14 +186,4 @@ describe BitexBot::Robot do
       bot.trade!
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
   end
-
-  it 'order book formed from your base currency and another quote currency' do
-    BitexBot::Settings.bitex.order_book do |order_book|
-      bot.base_currency.should eq order_book.to_s.split('_')[0].upcase
-      bot.base_currency.should be_a String
-
-      bot.quote_currency.should eq order_book.to_s.split('_')[1].upcase
-      bot.quote_currency.should be_a String
-    end
-  end
 end
