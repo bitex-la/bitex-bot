@@ -14,10 +14,13 @@ module BitexBot
   class Robot
     extend Forwardable
 
-    cattr_accessor :graceful_shutdown
-    cattr_accessor :cooldown_until
     cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
+
+    cattr_accessor :graceful_shutdown
+
+    cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
+
     cattr_accessor(:logger) do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
@@ -31,7 +34,7 @@ module BitexBot
     end
 
     def self.setup
-      Bitex.api_key = Settings.bitex
+      Bitex.api_key = Settings.bitex.api_key
       Bitex.sandbox = Settings.sandbox
       taker.setup
     end
@@ -47,9 +50,6 @@ module BitexBot
         self.current_cooldowns = 0
         bot.trade!
         self.cooldown_until = start_time + current_cooldowns.seconds
-
-        # This global sleep is so that we don't stress bitex too much.
-        sleep_for(0.3)
       end
     end
 

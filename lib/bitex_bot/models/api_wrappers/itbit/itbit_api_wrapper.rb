@@ -1,7 +1,5 @@
-##
 # Wrapper implementation for Itbit API.
 # https://api.itbit.com/docs
-#
 class ItbitApiWrapper < ApiWrapper
   def self.setup
     Itbit.tap do |conf|
@@ -17,11 +15,13 @@ class ItbitApiWrapper < ApiWrapper
 
   def self.amount_and_quantity(order_id, _transactions)
     order = Itbit::Order.find(order_id)
-    [order.volume_weighted_average_price * order.amount_filled, order.amount_filled]
+    amount = order.volume_weighted_average_price * order.amount_filled
+    quantity = order.amount_filled
+
+    [amount, quantity]
   end
 
   def self.balance
-    wallet = Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }
     balance_summary_parser(wallet[:balances])
   end
 
@@ -49,8 +49,8 @@ class ItbitApiWrapper < ApiWrapper
     # TODO: Maybe we can identify the order using metadata instead of price.
     BitexBot::Robot.log(:error, 'Captured Timeout on itbit')
     latest = last_order_by(price)
-
     return latest if latest.present?
+
     BitexBot::Robot.log(:error, 'Could not find my order')
     raise e
   end
@@ -74,6 +74,10 @@ class ItbitApiWrapper < ApiWrapper
   # ]
   def self.balance_summary_parser(balances)
     BalanceSummary.new(balance_parser(balances, :xbt), balance_parser(balances, :usd), 0.5.to_d)
+  end
+
+  def self.wallet
+    Itbit::Wallet.all.find { |w| w[:id] == Itbit.default_wallet_id }
   end
 
   def self.balance_parser(balances, currency)
