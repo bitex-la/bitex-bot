@@ -14,10 +14,12 @@ module BitexBot
   class Robot
     extend Forwardable
 
+    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
+
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
-    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
     cattr_accessor(:current_cooldowns) { 0 }
+
     cattr_accessor(:logger) do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
@@ -157,7 +159,7 @@ module BitexBot
     end
 
     def open_positions?
-      [OpenBuy.open, OpenSell.open].any?(&:exists?)
+      [OpenBuy, OpenSell].map(&:open).any?(&:exists?)
     end
 
     def sync_closing_flows
