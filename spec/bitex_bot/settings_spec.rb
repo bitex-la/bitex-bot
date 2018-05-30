@@ -5,7 +5,6 @@ describe BitexBot::Settings do
     it 'returns a symbolized hash' do
       expect(BitexBot::Settings.to_hash).to eq({
         bitex: 'your_bitex_api_key_which_should_be_kept_safe',
-        bitfinex: { api_key: 'your_api_key', api_secret: 'your_api_secret' },
         bitstamp: {
           api_key: 'YOUR_API_KEY',
           secret: 'YOUR_API_SECRET',
