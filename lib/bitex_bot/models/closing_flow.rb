@@ -1,7 +1,5 @@
 module BitexBot
-  ##
   # Close buy/sell positions.
-  #
   class ClosingFlow < ActiveRecord::Base
     self.abstract_class = true
 
@@ -43,6 +41,18 @@ module BitexBot
       latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders, transactions)
     end
 
+    def estimate_fiat_profit
+      raise 'self subclass responsibility'
+    end
+
+    def positions_balance_amount
+      close_positions.sum(:amount) * fx_rate
+    end
+
+    def fx_rate
+      Store.first.try(:fx_rate) || Settings.fx_rate
+    end
+
     private
 
     # sync_closed_positions helpers
@@ -82,16 +92,15 @@ module BitexBot
 
     # This use hooks methods, these must be defined in the subclass:
     #   estimate_btc_profit
-    #   estimate_usd_profit
+    #   amount_positions_balance
     #   next_price_and_quantity
     def create_next_position!
       next_price, next_quantity = next_price_and_quantity
       if Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
-        update!(btc_profit: estimate_btc_profit, usd_profit: estimate_usd_profit, done: true)
-        Robot.log(:info, "Closing: Finished #{self.class.name} ##{id} earned $#{usd_profit} and #{btc_profit} BTC.")
-        save!
+        update!(btc_profit: estimate_btc_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
+        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{btc_profit} BTC.")
       end
     end
 
