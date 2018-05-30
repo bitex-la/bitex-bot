@@ -15,7 +15,7 @@ time_to_live 20
 sandbox false
 
 # Which market to use for taking (we're always makers on bitex)
-# 'itbit', 'bitstamp', 'bitfinex' or 'kraken'
+# 'itbit', 'bitstamp', or 'kraken'
 taker 'bitstamp'
 
 # Settings for buying on bitex and selling on bitstamp.
@@ -70,11 +70,6 @@ itbit client_key: 'the-client-key',
   secret: 'the-secret',
   user_id: 'the-user-id',
   default_wallet_id: 'wallet-000'
-
-# These are passed in to the bitfinex gem:
-# see https://github.com/bitfinexcom/bitfinex-api-rb for more info.
-bitfinex api_key: 'your_api_key',
-  api_secret: 'your_api_secret'
 
 # These are passed in to the kraken gem:
 # see https://github.com/shideneyu/kraken_client for more info.
