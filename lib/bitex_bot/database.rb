@@ -95,6 +95,8 @@ module BitexBot
           t.decimal    :taker_btc,                          precision: 20,   scale: 8
           t.boolean    :hold,                               default:   false
           t.text       :log
+          t.decimal    :fiat_stop,                          precision: 20,   scale: 8
+          t.decimal    :fiat_warning,                       precision: 20,   scale: 8
           t.decimal    :usd_stop,                           precision: 20,   scale: 8
           t.decimal    :usd_warning,                        precision: 20,   scale: 8
           t.decimal    :btc_stop,                           precision: 20,   scale: 8
