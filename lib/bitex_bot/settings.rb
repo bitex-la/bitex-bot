@@ -30,7 +30,7 @@ module BitexBot
     end
 
     def fx_rate
-      Store.first.try(:fx_rate) || self[:foreign_exchange_rate]
+      Store.first.try(:fx_rate) || foreign_exchange_rate
     end
 
     def base
@@ -61,12 +61,7 @@ module BitexBot
     end
 
     def order_book_currencies
-      {}.tap do |currencies|
-        bitex.order_book.to_s.split('_') do |base, quote|
-          currencies[:base] = base
-          currencies[:quote] = quote
-        end
-      end
+      {}.tap { |currencies| currencies[:base], currencies[:quote] = bitex.order_book.to_s.split('_') }
     end
   end
 
