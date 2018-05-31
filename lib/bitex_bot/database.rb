@@ -54,7 +54,8 @@ module BitexBot
           t.decimal    :amount,        precision: 30, scale: 15
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
-          t.decimal    :usd_profit,    precision: 30, scale: 15
+          t.decimal    :fiat_profit,   precision: 30, scale: 15
+          t.decimal    :fx_rate,       precision: 20, scale: 8
           t.timestamps null: true
         end
 
@@ -64,7 +65,8 @@ module BitexBot
           t.decimal    :amount,        precision: 30, scale: 15
           t.boolean    :done,          null: false,   default: false
           t.decimal    :btc_profit,    precision: 30, scale: 15
-          t.decimal    :usd_profit,    precision: 30, scale: 15
+          t.decimal    :fiat_profit,   precision: 30, scale: 15
+          t.decimal    :fx_rate,       precision: 20, scale: 8
           t.timestamps null: true
         end
 
@@ -89,12 +91,12 @@ module BitexBot
 
       unless ActiveRecord::Base.connection.table_exists?('stores')
         create_table   :stores, force: true do |t|
-          t.decimal    :taker_usd,                          precision: 20,   scale: 8
+          t.decimal    :taker_fiat,                         precision: 20,   scale: 8
           t.decimal    :taker_btc,                          precision: 20,   scale: 8
           t.boolean    :hold,                               default:   false
           t.text       :log
-          t.decimal    :usd_stop,                           precision: 20,   scale: 8
-          t.decimal    :usd_warning,                        precision: 20,   scale: 8
+          t.decimal    :fiat_stop,                          precision: 20,   scale: 8
+          t.decimal    :fiat_warning,                       precision: 20,   scale: 8
           t.decimal    :btc_stop,                           precision: 20,   scale: 8
           t.decimal    :btc_warning,                        precision: 20,   scale: 8
           t.datetime   :last_warning
@@ -102,6 +104,7 @@ module BitexBot
           t.decimal    :selling_profit,                     precision: 20,   scale: 8
           t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
           t.decimal    :selling_quantity_to_sell_per_order, precision: 20,   scale: 8
+          t.decimal    :fx_rate,                            precision: 20,   scale: 8
           t.timestamps null: true
         end
       end

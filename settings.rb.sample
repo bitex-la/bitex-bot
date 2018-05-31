@@ -53,7 +53,10 @@ selling quantity_to_sell_per_order: 0.1, profit: 0.5
 
 # This is your bitex api key, it's passed in to the
 # bitex gem: https://github.com/bitex-la/bitex-ruby
-bitex 'your_bitex_api_key_which_should_be_kept_safe'
+bitex api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd
+
+# Quote fx rate for maker orde book
+foreign_exchange_rate 1.to_d
 
 # These are passed in to the bitstamp gem:
 # see https://github.com/kojnapp/bitstamp for more info.
