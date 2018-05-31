@@ -187,7 +187,7 @@ module BitexBot
 
       taker_balance = with_cooldown { Robot.taker.balance }
       profile = Bitex::Profile.get
-      total_fiat, total_btc = balances(taker_balance, profile.slice(:"#{Settings.quote}_balance", :btc_balance))
+      total_fiat, total_btc = balances(taker_balance, profile)
 
       sync_log(taker_balance)
       check_balance_warning(total_fiat, total_btc) if expired_last_warning?
