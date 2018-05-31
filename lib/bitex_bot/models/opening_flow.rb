@@ -13,11 +13,6 @@ module BitexBot
     # @return [Array<String>]
     cattr_accessor(:statuses) { %w[executing settling finalised] }
 
-    # Base currency for maker.
-    # @return <String>
-    cattr_accessor(:base_currency) { Settings.bitex.order_book.to_s.split('_')[0].upcase }
-    cattr_accessor(:quote_currency) { Settings.bitex.order_book.to_s.split('_')[1].upcase }
-
     def self.active
       where.not(status: :finalised)
     end
@@ -41,14 +36,14 @@ module BitexBot
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
         enough_remote_funds?(remote_balance, remote_value)
 
-      bitex_price = maker_price(remote_value) * fx_rate
+      bitex_price = maker_price(remote_value) * Settings.fx_rate
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)
 
       Robot.log(
         :info,
-        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{quote_currency} #{bitex_price}"\
+        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{Settings.quote.upcase} #{bitex_price}"\
         " (#{remote_value})"
       )
 
@@ -90,10 +85,6 @@ module BitexBot
     def self.maker_plus(fee)
       value_to_use * fee / 100
     end
-
-    def self.fx_rate
-      store.fx_rate || Settings.fx_rate
-    end
     # end: create_for_market helpers
 
     # Buys on bitex represent open positions, we mirror them locally so that we can plan on how to close them.
@@ -116,9 +107,9 @@ module BitexBot
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{transaction.base_currency} @ #{transaction.price}"
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{Settings.base.upcase} @ #{Settings.quote.upcase}"\
+        " #{transaction.price}"
       )
-
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
