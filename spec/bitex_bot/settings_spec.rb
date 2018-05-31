@@ -4,8 +4,8 @@ describe BitexBot::Settings do
   describe '#to_hash' do
     it 'returns a symbolized hash' do
       expect(BitexBot::Settings.to_hash).to eq(
-        bitex: 'your_bitex_api_key_which_should_be_kept_safe',
-        fx_rate: 1.to_d,
+        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd },
+        foreign_exchange_rate: 1.to_d,
         bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
         buying: { amount_to_spend_per_order: 10.to_d, profit: 0.5.to_d },
         database: { adapter: :sqlite3, database: 'bitex_bot.db' },
