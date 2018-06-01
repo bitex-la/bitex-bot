@@ -49,9 +49,6 @@ module BitexBot
         self.current_cooldowns = 0
         bot.trade!
         self.cooldown_until = start_time + current_cooldowns.seconds
-
-        # This global sleep is so that we don't stress bitex too much.
-        sleep_for(0.3)
       end
     end
 
@@ -66,10 +63,10 @@ module BitexBot
     def_delegator self, :log
 
     def self.with_cooldown
-      result = yield
-      self.current_cooldowns += 1
-      sleep_for(0.1)
-      result
+      yield.tap do |result|
+        self.current_cooldowns += 1
+        sleep_for(0.1)
+      end
     end
 
     private_class_method
@@ -180,21 +177,20 @@ module BitexBot
       recent_buying, recent_selling = recent_operations
       return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
-      balance = with_cooldown { Robot.taker.balance }
+      taker_balance = with_cooldown { Robot.taker.balance }
       profile = Bitex::Profile.get
-      total_usd = balance.usd.total + profile[:usd_balance]
-      total_btc = balance.btc.total + profile[:btc_balance]
+      total_fiat, total_btc = balances(taker_balance, profile)
 
-      sync_log(balance)
-      check_balance_warning(total_usd, total_btc) if expired_last_warning?
-      return log(:debug, 'Not placing new orders, USD target not met') if target_met?(:usd, total_usd)
+      sync_log(taker_balance)
+      check_balance_warning(total_fiat, total_btc) if expired_last_warning?
+      return log(:debug, "Not placing new orders, #{Settings.quote} target not met") if target_met?(:fiat, total_fiat)
       return log(:debug, 'Not placing new orders, BTC target not met') if target_met?(:btc, total_btc)
 
       order_book = with_cooldown { Robot.taker.order_book }
       transactions = with_cooldown { Robot.taker.transactions }
 
-      create_buy_opening_flow(balance, order_book, transactions, profile) unless recent_buying
-      create_sell_opening_flow(balance, order_book, transactions, profile) unless recent_selling
+      create_buy_opening_flow(taker_balance, order_book, transactions, profile) unless recent_buying
+      create_sell_opening_flow(taker_balance, order_book, transactions, profile) unless recent_selling
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
@@ -205,31 +201,38 @@ module BitexBot
       end
     end
 
-    def sync_log(balance)
+    def balances(taker_balance, maker_balance)
+      total_fiat = maker_balance[:"#{Settings.quote}_balance"] + taker_balance.usd.total * Settings.fx_rate
+      total_btc = maker_balance[:btc_balance] + taker_balance.btc.total
+
+      [total_fiat, total_btc]
+    end
+
+    def sync_log(taker_balance)
       file = Settings.log.try(:file)
       last_log = `tail -c 61440 #{file}` if file.present?
-      store.update(taker_usd: balance.usd.total, taker_btc: balance.btc.total, log: last_log)
+      store.update(taker_fiat: taker_balance.usd.total * Settings.fx_rate, taker_btc: taker_balance.btc.total, log: last_log)
     end
 
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
-    def check_balance_warning(total_usd, total_btc)
-      notify_balance_warning(:usd, total_usd, store.usd_warning) if balance_warning_notify?(:usd, total_usd)
+    def check_balance_warning(total_fiat, total_btc)
+      notify_balance_warning(Settings.quote, total_fiat, store.fiat_warning) if balance_warning_notify?(:fiat, total_fiat)
       notify_balance_warning(:btc, total_btc, store.btc_warning) if balance_warning_notify?(:btc, total_btc)
-    end
-
-    def target_met?(currency, total)
-      store.send("#{currency}_stop").present? && total <= store.send("#{currency}_stop")
     end
 
     def balance_warning_notify?(currency, total)
       store.send("#{currency}_warning").present? && total <= store.send("#{currency}_warning")
     end
 
-    def notify_balance_warning(currency, total, currency_warning)
-      notify("#{currency.upcase} balance is too low, it's #{total}, make it #{currency_warning} to stop this warning.")
+    def target_met?(currency, total)
+      store.send("#{currency}_stop").present? && total <= store.send("#{currency}_stop")
+    end
+
+    def notify_balance_warning(currency, total, warning_amount)
+      notify("#{currency.upcase} balance is too low, it's #{total}, make it #{warning_amount} to stop this warning.")
       store.update(last_warning: Time.now)
     end
 

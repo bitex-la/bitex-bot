@@ -15,7 +15,7 @@ time_to_live 20
 sandbox false
 
 # Which market to use for taking (we're always makers on bitex)
-# 'itbit', 'bitstamp', 'bitfinex' or 'kraken'
+# 'itbit', 'bitstamp', or 'kraken'
 taker 'bitstamp'
 
 # Settings for buying on bitex and selling on bitstamp.
@@ -52,34 +52,23 @@ buying amount_to_spend_per_order: 10.0, profit: 0.5
 selling quantity_to_sell_per_order: 0.1, profit: 0.5
 
 # This is your bitex api key, it's passed in to the
-# bitex gem: https://github.com/bitex-la/bitex-ruby-
-bitex  api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd
+# bitex gem: https://github.com/bitex-la/bitex-ruby
+bitex api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd
 
 # Quote fx rate for maker orde book
-fx_rate 1.to_d
+foreign_exchange_rate 1.to_d
 
 # These are passed in to the bitstamp gem:
 # see https://github.com/kojnapp/bitstamp for more info.
-bitstamp api_key: 'YOUR_API_KEY',
-  secret: 'YOUR_API_SECRET',
-  client_id: 'YOUR_BITSTAMP_USERNAME'
+bitstamp api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
 
 # These are passed in to the itbit gem:
 # see https://github.com/bitex-la/itbit for more info.
-itbit client_key: 'the-client-key',
-  secret: 'the-secret',
-  user_id: 'the-user-id',
-  default_wallet_id: 'wallet-000'
-
-# These are passed in to the bitfinex gem:
-# see https://github.com/bitfinexcom/bitfinex-api-rb for more info.
-bitfinex api_key: 'your_api_key',
-  api_secret: 'your_api_secret'
+itbit client_key: 'the-client-key', secret: 'the-secret', user_id: 'the-user-id', default_wallet_id: 'wallet-000'
 
 # These are passed in to the kraken gem:
 # see https://github.com/shideneyu/kraken_client for more info.
-kraken api_key: 'your_api_key',
-  api_secret: 'your_api_secret'
+kraken api_key: 'your_api_key', api_secret: 'your_api_secret'
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:

@@ -220,16 +220,6 @@ describe BitexBot::SellOpeningFlow do
     flow.should be_finalised
   end
 
-  it 'order book formed from your base currency and another quote currency' do
-    BitexBot::Settings.bitex.order_book do |order_book|
-      subject.class.base_currency.should eq order_book.to_s.split('_')[0].upcase
-      subject.class.base_currency.should be_a String
-
-      subject.class.quote_currency.should eq order_book.to_s.split('_')[1].upcase
-      subject.class.quote_currency.should be_a String
-    end
-  end
-
   it 'order has expected order book' do
     stub_bitex_orders
     BitexBot::Settings.stub(time_to_live: 3,

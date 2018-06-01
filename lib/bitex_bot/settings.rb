@@ -29,6 +29,18 @@ module BitexBot
       load_settings(sample_path)
     end
 
+    def fx_rate
+      Store.first.try(:fx_rate) || foreign_exchange_rate
+    end
+
+    def base
+      order_book_currencies[:base]
+    end
+
+    def quote
+      order_book_currencies[:quote]
+    end
+
     private
 
     def load_settings(path)
@@ -46,6 +58,10 @@ module BitexBot
       puts "No settings found, I've created a new one with sample values at #{path}. "\
         'Please go ahead and edit it before running this again.'
       exit 1
+    end
+
+    def order_book_currencies
+      {}.tap { |currencies| currencies[:base], currencies[:quote] = bitex.order_book.to_s.split('_') }
     end
   end
 

@@ -5,8 +5,7 @@ describe BitexBot::Settings do
     it 'returns a symbolized hash' do
       BitexBot::Settings.to_hash.should eq({
         bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd },
-        fx_rate: 1.to_d,
-        bitfinex: { api_key: 'your_api_key', api_secret: 'your_api_secret' },
+        foreign_exchange_rate: 1.to_d,
         bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
         buying: { amount_to_spend_per_order: 10.to_d, profit: 0.5.to_d },
         database: { adapter: :sqlite3, database: 'bitex_bot.db' },
@@ -31,6 +30,16 @@ describe BitexBot::Settings do
         taker: 'bitstamp',
         time_to_live: 20
       })
+    end
+
+    it 'order book formed from your base currency and another quote currency' do
+      BitexBot::Settings.bitex.order_book do |order_book|
+        subject.base.should eq order_book.to_s.split('_')[0]
+        subject.base.should be_a String
+
+        subject.quote.should eq order_book.to_s.split('_')[1]
+        subject.quote.should be_a String
+      end
     end
   end
 end

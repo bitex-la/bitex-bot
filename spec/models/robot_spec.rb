@@ -24,7 +24,7 @@ describe BitexBot::Robot do
       btc_available:  15.00000000,   # BTC available for trading
       ltc_balance:   250.00000000,   # Total LTC balance
       ltc_reserved:  100.00000000,   # LTC reserved in open orders
-      ltc_available: 150.00000000
+      ltc_available: 150.00000000    # LTC available for trading
     })
     stub_bitex_orders
     stub_bitstamp_sell
@@ -111,9 +111,9 @@ describe BitexBot::Robot do
     end.not_to change { BitexBot::BuyOpeningFlow.count }
   end
 
-  it 'stops trading when btc stop is reached' do
+  it 'stops trading when fiat stop is reached' do
     other_bot = BitexBot::Robot.new
-    other_bot.store.usd_stop = 11000
+    other_bot.store.btc_stop = 30
     other_bot.store.save!
     expect do
       bot.trade!
@@ -129,10 +129,19 @@ describe BitexBot::Robot do
     end.not_to change { BitexBot::BuyOpeningFlow.count }
   end
 
+  it 'stops trading when btc stop is reached' do
+    other_bot = BitexBot::Robot.new
+    other_bot.store.fiat_stop = 11000
+    other_bot.store.save!
+    expect do
+      bot.trade!
+    end.not_to change { BitexBot::BuyOpeningFlow.count }
+  end
+
   it 'warns every 30 minutes when usd warn is reached' do
     Bitex::Trade.stub(all: [])
     other_bot = BitexBot::Robot.new
-    other_bot.store.usd_warning = 11000
+    other_bot.store.fiat_warning = 11000
     other_bot.store.save!
     expect do
       bot.trade!
@@ -173,9 +182,9 @@ describe BitexBot::Robot do
     end.to change { Mail::TestMailer.deliveries.count }.by(1)
   end
 
-  it 'updates taker_usd and taker_btc' do
+  it 'updates taker_fiat and taker_btc' do
     bot.trade!
-    bot.store.taker_usd.should_not be_nil
+    bot.store.taker_fiat.should_not be_nil
     bot.store.taker_btc.should_not be_nil
   end
 
