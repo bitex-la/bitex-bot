@@ -63,7 +63,7 @@ module BitexBot
     def_delegator self, :log
 
     def self.with_cooldown
-      yield.tap do |result|
+      yield.tap do
         self.current_cooldowns += 1
         sleep_for(0.1)
       end
