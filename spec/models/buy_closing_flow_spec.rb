@@ -227,9 +227,13 @@ describe BitexBot::BuyClosingFlow do
       BitexBot::Robot.setup
 
       BitstampApiWrapper.stub(send_order: nil)
+      counter = 0
+      stub_orders
 
-      Bitstamp.orders.stub(:all) do
-        [Bitstamp::Order.new(id: 1, type: 1, price: 310.to_s, amount: 2.5.to_s, datetime: 10.minutes.ago.strftime('%Y-%m-%d %H:%m:%S'))]
+      BitstampApiWrapper.stub(:find_lost) do |type, price, quantity|
+        counter += 1
+        next if counter < 3
+        BitstampApiWrapper.orders.first
       end
 
       open = create :open_buy
