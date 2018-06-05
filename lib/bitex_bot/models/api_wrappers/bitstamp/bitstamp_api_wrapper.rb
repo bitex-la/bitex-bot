@@ -31,8 +31,8 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
   end
 
-  def self.find_lost(type, price)
-    orders.find { |o| o.order_method == type && o.price == price && o.datetime.to_datetime >= 5.minutes.ago.to_datetime }
+  def self.find_lost(type, price, _quantity)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
   # rubocop:disable Metrics/AbcSize

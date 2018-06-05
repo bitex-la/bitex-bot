@@ -208,14 +208,32 @@ describe BitexBot::BuyClosingFlow do
       flow.close_positions.should be_empty
     end
 
+    def stub_orders(count: 1, price: 1.5, amount: 2.5)
+      Bitstamp.orders.stub(:all) do
+        count.times.map do |i|
+          Bitstamp::Order.new(
+            id: i,
+            type: (i % 2),
+            price: (price + 1).to_s,
+            amount: (amount + i).to_s,
+            datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
+          )
+        end
+      end
+    end
+
     it 'retries until it finds the lost order in the bitstamp' do
+      BitexBot::Robot.stub(taker: BitstampApiWrapper)
+      BitexBot::Robot.setup
+
       BitstampApiWrapper.stub(send_order: nil)
       counter = 0
+      stub_orders
 
-      BitstampApiWrapper.stub(:find_lost) do
+      BitstampApiWrapper.stub(:find_lost) do |type, price, quantity|
         counter += 1
         next if counter < 3
-        double(amount: 1000, price: 2000, type: 1, id: 1234, datetime: DateTime.now.to_s)
+        BitstampApiWrapper.orders.first
       end
 
       open = create :open_buy
