@@ -185,4 +185,10 @@ describe BitstampApiWrapper do
     user_transaction.type.should be_a(Integer)
     user_transaction.timestamp.should be_a(Integer)
   end
+
+  it '#find_lost' do
+    stub_orders
+
+    described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
+  end
 end
