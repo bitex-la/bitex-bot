@@ -161,4 +161,10 @@ describe ItbitApiWrapper do
     api_wrapper.user_transactions.should be_a(Array)
     api_wrapper.user_transactions.empty?.should be_truthy
   end
+
+  it '#find_lost' do
+    stub_orders
+
+    described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
+  end
 end
