@@ -72,7 +72,7 @@ describe BitexBot::SellClosingFlow do
       BitexBot::Robot.setup
       BitstampApiWrapper.stub(send_order: nil)
       BitstampApiWrapper.stub(:orders) do
-        [BitstampApiWrapper::Order.new(1, :buy, 290, 2, 1.minute.ago.utc.to_i)]
+        [BitstampApiWrapper::Order.new(1, :buy, 290, 2, 1.minute.ago.to_i)]
       end
 
       open = create(:open_sell)
