@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
-  let(:api_wrapper) { KrakenApiWrapper }
+  let(:api_wrapper) { described_class }
 
   before(:each) do
     BitexBot::Settings.stub(taker: :bitstamp)
