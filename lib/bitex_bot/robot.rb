@@ -37,9 +37,10 @@ module BitexBot
     # class methods
 
     def self.setup
-      Bitex.api_key = Settings.bitex.api_key
-      Bitex.sandbox = Settings.sandbox
-      taker.setup
+      Bitex.api_key = Settings.maker_settings.api_key
+      Bitex.sandbox = Settings.maker_settings.sandbox
+
+      taker.setup(Settings.taker_settings)
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.

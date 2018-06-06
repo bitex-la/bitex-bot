@@ -41,6 +41,14 @@ module BitexBot
       order_book_currencies[:quote]
     end
 
+    def maker_settings
+      makers.send(maker)
+    end
+
+    def taker_settings
+      takers.send(taker)
+    end
+
     private
 
     def load_settings(path)
@@ -61,7 +69,7 @@ module BitexBot
     end
 
     def order_book_currencies
-      {}.tap { |currencies| currencies[:base], currencies[:quote] = bitex.order_book.to_s.split('_') }
+      {}.tap { |currencies| currencies[:base], currencies[:quote] = maker_settings.order_book.to_s.split('_') }
     end
   end
 

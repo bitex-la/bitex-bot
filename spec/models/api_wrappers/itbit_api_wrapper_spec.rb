@@ -1,9 +1,10 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { ItbitApiWrapper }
+  let(:api_wrapper) { described_class }
 
   before(:each) do
+    BitexBot::Settings.stub(taker: :itbit)
     BitexBot::Robot.stub(taker: api_wrapper)
     BitexBot::Robot.setup
   end

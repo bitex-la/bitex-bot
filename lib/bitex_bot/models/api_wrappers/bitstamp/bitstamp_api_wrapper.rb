@@ -1,13 +1,11 @@
 # Wrapper implementation for Bitstamp API.
 # https://www.bitstamp.net/api/
 class BitstampApiWrapper < ApiWrapper
-  def self.setup
+  def self.setup(settings)
     Bitstamp.setup do |config|
-      BitexBot::Settings.bitstamp do |settings|
-        config.key = settings.api_key
-        config.secret = settings.secret
-        config.client_id = settings.client_id
-      end
+      config.key = settings.api_key
+      config.secret = settings.secret
+      config.client_id = settings.client_id
     end
   end
 
