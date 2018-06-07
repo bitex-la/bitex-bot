@@ -16,10 +16,12 @@ module BitexBot
   class Robot
     extend Forwardable
 
+    cattr_accessor :taker
+
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
-    cattr_accessor(:taker) { "#{Settings.taker.capitalize}ApiWrapper".constantize }
     cattr_accessor(:current_cooldowns) { 0 }
+
     cattr_accessor :logger do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
@@ -39,8 +41,7 @@ module BitexBot
     def self.setup
       Bitex.api_key = Settings.maker_settings.api_key
       Bitex.sandbox = Settings.maker_settings.sandbox
-
-      taker.setup(Settings.taker_settings)
+      self.taker = Settings.taker_class.tap { |klass| klass.setup(Settings.taker_settings) }
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.

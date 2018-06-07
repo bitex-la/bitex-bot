@@ -1,6 +1,19 @@
 require 'spec_helper'
 
 describe BitexBot::SellClosingFlow do
+  let(:taker_settings) do
+    BitexBot::SettingsClass.new(
+      bitstamp: {
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+      }
+    )
+  end
+
+  before(:each) do
+    BitexBot::Settings.stub(taker: taker_settings)
+    BitexBot::Robot.setup
+  end
+
   it 'closes a single open position completely' do
     stub_bitstamp_buy
     open = create :open_sell
@@ -68,8 +81,6 @@ describe BitexBot::SellClosingFlow do
     end
 
     it 'retries until it finds the lost order' do
-      BitexBot::Robot.stub(taker: BitstampApiWrapper)
-      BitexBot::Robot.setup
       BitstampApiWrapper.stub(send_order: nil)
       BitstampApiWrapper.stub(:orders) do
         [BitstampApiWrapper::Order.new(1, :buy, 290, 2, 1.minute.ago.to_i)]
