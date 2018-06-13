@@ -59,48 +59,44 @@ class ApiWrapper
     :timestamp # Epoch Integer
   )
 
-  # @return [Void]
-  def self.setup(_settings)
-    raise 'self subclass responsibility'
-  end
-
   # @return [Array<Transaction>]
-  def self.transactions
+  def transactions
     raise 'self subclass responsibility'
   end
 
   # @return [OrderBook]
-  def self.order_book(_retries = 20)
+  def order_book(_retries = 20)
     raise 'self subclass responsibility'
   end
 
   # @return [BalanceSummary]
-  def self.balance
+  def balance
     raise 'self subclass responsibility'
   end
 
   # @return [nil]
-  def self.cancel
+  def cancel
     raise 'self subclass responsibility'
   end
 
   # @return [Array<Order>]
-  def self.orders
+  def orders
     raise 'self subclass responsibility'
   end
 
   # @return [UserTransaction]
-  def self.user_transacitions
+  def user_transactions
     raise 'self subclass responsibility'
   end
 
   # @param type
   # @param price
   # @param quantity
-  def self.place_order(type, price, quantity)
+  def place_order(type, price, quantity)
     order = send_order(type, price, quantity)
     return order unless order.nil? || order.id.nil?
 
+    debugger # ver como llamar al nombre de la clase
     BitexBot::Robot.log(:debug, "Captured error when placing order on #{self.class.name}")
     # Order may have gone through and be stuck somewhere in Wrapper's pipeline.
     # We just sleep for a bit and then look for the order.
@@ -113,7 +109,7 @@ class ApiWrapper
   end
 
   # Hook Method - arguments could not be used in their entirety by the subclasses
-  def self.send_order(_type, _price, _quantity)
+  def send_order(_type, _price, _quantity)
     raise 'self subclass responsibility'
   end
 
@@ -121,7 +117,7 @@ class ApiWrapper
   # @param price [Decimal]
   #
   # Hook Method - arguments could not be used in their entirety by the subclasses
-  def self.find_lost(_type, _price, _quantity)
+  def find_lost(_type, _price, _quantity)
     raise 'self subclass responsibility'
   end
 
@@ -129,11 +125,11 @@ class ApiWrapper
   # @param transactions
   #
   # @return [Array<Decimal, Decimal>]
-  def self.amount_and_quantity(_order_id, _transactions)
+  def amount_and_quantity(_order_id, _transactions)
     raise 'self subclass responsibility'
   end
 
-  def self.enough_order_size?(quantity, price)
+  def enough_order_size?(quantity, price)
     (quantity * price) > MIN_AMOUNT
   end
 end

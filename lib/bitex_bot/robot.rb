@@ -17,6 +17,7 @@ module BitexBot
     extend Forwardable
 
     cattr_accessor :taker
+    cattr_accessor :maker
 
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
@@ -41,7 +42,9 @@ module BitexBot
     def self.setup
       Bitex.api_key = Settings.maker_settings.api_key
       Bitex.sandbox = Settings.maker_settings.sandbox
-      self.taker = Settings.taker_class.tap { |klass| klass.setup(Settings.taker_settings) }
+      # self.taker = Settings.taker_class.tap { |klass| klass.setup(Settings.taker_settings) }
+      self.maker = Settings.maker_class.new(Settings.maker_settings)
+      self.taker = Settings.taker_class.new(Settings.taker_settings)
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
