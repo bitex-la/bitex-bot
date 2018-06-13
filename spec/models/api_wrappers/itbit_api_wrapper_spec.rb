@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { described_class }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       itbit: {
@@ -15,12 +14,14 @@ describe ItbitApiWrapper do
     BitexBot::Robot.setup
   end
 
+  let(:api_wrapper) { BitexBot::Robot.taker }
+
   it 'Sends User-Agent header' do
     url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
     stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
-    ItbitApiWrapper.order_book rescue nil
+    api_wrapper.order_book rescue nil
 
     expect(stub_stuff).to have_been_requested
   end
@@ -171,6 +172,6 @@ describe ItbitApiWrapper do
   it '#find_lost' do
     stub_orders
 
-    described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
+    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 end
