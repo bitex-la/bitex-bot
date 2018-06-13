@@ -198,7 +198,7 @@ describe BitexBot::Robot do
   end
 
   it 'notifies exceptions and sleeps' do
-    BitstampApiWrapper.stub(:balance) { raise StandardError.new('oh moova') }
+    BitstampApiWrapper.any_instance.stub(:balance) { raise StandardError.new('oh moova') }
 
     expect do
       bot.trade!
