@@ -19,14 +19,14 @@ module BitexBot
   class SettingsClass < ::Hashie::Mash
     include ::Hashie::Extensions::Mash::SymbolizeKeys
 
+    def load_test
+      load_settings(sample_path)
+    end
+
     def load_default
       path = ARGV[0] || 'bitex_bot_settings.rb'
       show_sample(path) unless FileTest.exists?(path)
       load_settings(path)
-    end
-
-    def load_test
-      load_settings(sample_path)
     end
 
     def fx_rate
@@ -39,6 +39,22 @@ module BitexBot
 
     def quote
       order_book_currencies[:quote]
+    end
+
+    def maker_class
+      exchange_class(maker)
+    end
+
+    def taker_class
+      exchange_class(taker)
+    end
+
+    def maker_settings
+      exchange_settings(maker)
+    end
+
+    def taker_settings
+      exchange_settings(taker)
     end
 
     private
@@ -61,7 +77,19 @@ module BitexBot
     end
 
     def order_book_currencies
-      {}.tap { |currencies| currencies[:base], currencies[:quote] = bitex.order_book.to_s.split('_') }
+      {}.tap { |currencies| currencies[:base], currencies[:quote] = maker_settings.order_book.to_s.split('_') }
+    end
+
+    def exchange_name(exchange)
+      exchange.keys.pop
+    end
+
+    def exchange_class(exchange)
+      "#{exchange_name(exchange).capitalize}ApiWrapper".constantize
+    end
+
+    def exchange_settings(exchange)
+      exchange.send(exchange_name(exchange))
     end
   end
 

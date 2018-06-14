@@ -1,10 +1,17 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { ItbitApiWrapper }
+  let(:api_wrapper) { described_class }
+  let(:taker_settings) do
+    BitexBot::SettingsClass.new(
+      itbit: {
+        client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false
+      }
+    )
+  end
 
   before(:each) do
-    BitexBot::Robot.stub(taker: api_wrapper)
+    BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
 

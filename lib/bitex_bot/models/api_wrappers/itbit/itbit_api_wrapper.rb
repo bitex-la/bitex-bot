@@ -1,15 +1,13 @@
 # Wrapper implementation for Itbit API.
 # https://api.itbit.com/docs
 class ItbitApiWrapper < ApiWrapper
-  def self.setup
+  def self.setup(settings)
     Itbit.tap do |conf|
-      conf.sandbox = BitexBot::Settings.sandbox
-      BitexBot::Settings.itbit do |settings|
-        conf.client_key = settings.client_key
-        conf.secret = settings.secret
-        conf.user_id = settings.user_id
-        conf.default_wallet_id = settings.default_wallet_id
-      end
+      conf.client_key = settings.client_key
+      conf.secret = settings.secret
+      conf.user_id = settings.user_id
+      conf.default_wallet_id = settings.default_wallet_id
+      conf.sandbox = settings.sandbox
     end
   end
 

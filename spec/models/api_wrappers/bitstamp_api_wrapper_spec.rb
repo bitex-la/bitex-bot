@@ -1,9 +1,17 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
+  let(:api_wrapper) { described_class }
+  let(:taker_settings) do
+    BitexBot::SettingsClass.new(
+      bitstamp: {
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+      }
+    )
+  end
 
   before(:each) do
-    BitexBot::Robot.stub(taker: BitstampApiWrapper)
+    BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
 
