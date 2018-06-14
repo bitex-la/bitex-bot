@@ -185,9 +185,9 @@ describe BitexBot::BuyOpeningFlow do
       end.to change { BitexBot::OpenBuy.count }.by(1)
     end
 
-    it 'does not register litecoin buys' do
+    it 'does not register buys from another order book' do
       flow.order_id.should == 12345
-      Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, specie: :ltc)])
+      Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, order_book: :btc_ars)])
 
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty
@@ -217,5 +217,18 @@ describe BitexBot::BuyOpeningFlow do
     flow.should be_settling
     flow.finalise!
     flow.should be_finalised
+  end
+
+  it 'order has expected order book' do
+    stub_bitex_orders
+    BitexBot::Settings.stub(time_to_live: 3,
+      buying: double(amount_to_spend_per_order: 50, profit: 0))
+
+    flow = subject.class.create_for_market(100,
+      bitstamp_api_wrapper_order_book.bids, bitstamp_api_wrapper_transactions_stub, 0.5, 0.25,
+      store)
+
+    order = subject.class.order_class.find(flow.order_id)
+    order.order_book.should eq BitexBot::Settings.maker_settings.order_book
   end
 end
