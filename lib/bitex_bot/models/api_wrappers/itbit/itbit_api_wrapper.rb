@@ -1,15 +1,13 @@
 # Wrapper implementation for Itbit API.
 # https://api.itbit.com/docs
 class ItbitApiWrapper < ApiWrapper
-  def self.setup
+  def self.setup(settings)
     Itbit.tap do |conf|
-      conf.sandbox = BitexBot::Settings.sandbox
-      BitexBot::Settings.itbit do |settings|
-        conf.client_key = settings.client_key
-        conf.secret = settings.secret
-        conf.user_id = settings.user_id
-        conf.default_wallet_id = settings.default_wallet_id
-      end
+      conf.client_key = settings.client_key
+      conf.secret = settings.secret
+      conf.user_id = settings.user_id
+      conf.default_wallet_id = settings.default_wallet_id
+      conf.sandbox = settings.sandbox
     end
   end
 
@@ -25,12 +23,8 @@ class ItbitApiWrapper < ApiWrapper
     balance_summary_parser(wallet[:balances])
   end
 
-  def self.find_lost(order_method, price)
-    orders.find do |o|
-      o.order_method == order_method &&
-        o.price == price &&
-        Time.at(o.created_time).to_datetime >= 5.minutes.ago.to_datetime
-    end
+  def self.find_lost(type, price, _quantity)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
   def self.order_book

@@ -219,7 +219,6 @@ describe BitexBot::BuyOpeningFlow do
     flow.should be_finalised
   end
 
-
   it 'order has expected order book' do
     stub_bitex_orders
     BitexBot::Settings.stub(time_to_live: 3,
@@ -230,6 +229,6 @@ describe BitexBot::BuyOpeningFlow do
       store)
 
     order = subject.class.order_class.find(flow.order_id)
-    order.order_book.should eq BitexBot::Settings.bitex.order_book
+    order.order_book.should eq BitexBot::Settings.maker_settings.order_book
   end
 end

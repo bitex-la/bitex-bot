@@ -3,15 +3,18 @@ require 'spec_helper'
 describe BitexBot::Settings do
   describe '#to_hash' do
     it 'returns a symbolized hash' do
-      BitexBot::Settings.to_hash.should eq({
-        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd },
-        foreign_exchange_rate: 1.to_d,
-        bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
-        buying: { amount_to_spend_per_order: 10.to_d, profit: 0.5.to_d },
-        database: { adapter: :sqlite3, database: 'bitex_bot.db' },
-        itbit: { client_key: 'the-client-key', secret: 'the-secret', user_id: 'the-user-id', default_wallet_id: 'wallet-000' },
-        kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret' },
+      described_class.to_hash.should eq(
         log: { file: 'bitex_bot.log', level: :info },
+        time_to_live: 20,
+        buying: { amount_to_spend_per_order: 10, profit: 0.5 },
+        selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
+        foreign_exchange_rate: 1,
+
+        maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false } },
+        # By default Bitstamp is taker market.
+        taker: { bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' } },
+
+        database: { adapter: :sqlite3, database: 'bitex_bot.db' },
         mailer: {
           from: 'robot@example.com',
           to: 'you@example.com',
@@ -24,22 +27,69 @@ describe BitexBot::Settings do
             user_name: 'your_user_name',
             password: 'your_smtp_password'
           }
-        },
-        sandbox: false,
-        selling: { quantity_to_sell_per_order: 0.1.to_d, profit: 0.5.to_d },
-        taker: 'bitstamp',
-        time_to_live: 20
-      })
+        }
+      )
     end
 
-    it 'order book formed from your base currency and another quote currency' do
-      BitexBot::Settings.bitex.order_book do |order_book|
-        subject.base.should eq order_book.to_s.split('_')[0]
-        subject.base.should be_a String
-
-        subject.quote.should eq order_book.to_s.split('_')[1]
-        subject.quote.should be_a String
+    context 'fx_rate' do
+      context 'when Store isn´t loaded' do
+        it 'by default' do
+          described_class.fx_rate.should eq(1)
+        end
       end
+
+      context 'when Store is loaded' do
+        before(:each) do
+          BitexBot::Store.stub(first: BitexBot::Store.new )
+          BitexBot::Store.any_instance.stub(fx_rate: fx_rate)
+        end
+        let(:fx_rate) { rand(10) }
+
+        it 'take rate from it' do
+          described_class.fx_rate.should eq(fx_rate)
+        end
+      end
+    end
+
+    context 'maker' do
+      {
+        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false }
+      }.each do |market, market_settings|
+        before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
+
+        let(:taker_hash) { { market => market_settings } }
+
+        context "for #{market}" do
+          it { described_class.taker.to_hash.should eq(taker_hash) }
+        end
+      end
+    end
+
+    context 'taker' do
+      {
+        bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
+        itbit: { client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false },
+        kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret' }
+      }.each do |market, market_settings|
+        before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
+
+        let(:taker_hash) { { market => market_settings } }
+        let(:taker_class) { "#{market.capitalize}ApiWrapper".constantize }
+
+        context "for #{market}" do
+          it { described_class.taker.to_hash.should eq(taker_hash) }
+          it { described_class.taker_class.should eq(taker_class) }
+        end
+      end
+    end
+
+    context 'currencies by default' do
+      let(:order_book) { described_class.maker.bitex.order_book.to_s }
+      let(:base) { order_book.split('_')[0] }
+      let(:quote) { order_book.split('_')[1] }
+
+      it { described_class.base.should eq(base) }
+      it { described_class.quote.should eq(quote) }
     end
   end
 end

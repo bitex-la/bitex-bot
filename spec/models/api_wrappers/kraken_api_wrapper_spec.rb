@@ -1,11 +1,18 @@
 require 'spec_helper'
 
 describe KrakenApiWrapper do
-  let(:api_wrapper) { KrakenApiWrapper }
+  let(:api_wrapper) { described_class }
   let(:api_client) { api_wrapper.client }
+  let(:taker_settings) do
+    BitexBot::SettingsClass.new(
+      kraken: {
+        api_key: 'your_api_key', api_secret: 'your_api_secret'
+      }
+    )
+  end
 
   before(:each) do
-    BitexBot::Robot.stub(taker: api_wrapper)
+    BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
 
@@ -191,5 +198,12 @@ describe KrakenApiWrapper do
   it '#user_transaction' do
     api_wrapper.user_transactions.should be_a(Array)
     api_wrapper.user_transactions.empty?.should be_truthy
+  end
+
+  it '#find_lost' do
+    stub_private_client
+    stub_orders
+
+    described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
   end
 end

@@ -69,7 +69,7 @@ module BitexBot
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(Settings.bitex.order_book, value_to_use, bitex_price, true)
+      order_class.create!(Settings.maker_settings.order_book, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -139,7 +139,7 @@ module BitexBot
     end
 
     def self.expected_order_book?(transaction)
-      transaction.order_book == Settings.bitex.order_book
+      transaction.order_book == Settings.maker_settings.order_book
     end
     # end: sought_transaction helpers
 
