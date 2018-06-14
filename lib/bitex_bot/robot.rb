@@ -9,9 +9,7 @@ trap 'INT' do
 end
 
 module BitexBot
-  ##
   # Documentation here!
-  #
   # rubocop:disable Metrics/ClassLength
   class Robot
     extend Forwardable
@@ -23,21 +21,17 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
 
-    cattr_accessor :logger do
+    cattr_accessor(:logger) do
       logdev = Settings.log.try(:file)
       STDOUT.sync = true unless logdev.present?
       Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
         log.level = Logger.const_get(Settings.log.level.upcase)
-        # rubocop:disable Lint/UnusedBlockArgument
-        log.formatter = proc do |severity, datetime, progname, msg|
+        log.formatter = proc do |severity, datetime, _progname, msg|
           date = datetime.strftime('%m/%d %H:%M:%S.%L')
           "#{format('%-6s', severity)} #{date}: #{msg}\n"
         end
-        # rubocop:enable Lint/UnusedBlockArgument
       end
     end
-
-    # class methods
 
     def self.setup
       Bitex.api_key = Settings.maker_settings.api_key
@@ -54,11 +48,9 @@ module BitexBot
       loop do
         start_time = Time.now
         next if start_time < cooldown_until
+
         self.current_cooldowns = 0
         bot.trade!
-
-        # This global sleep is so that we don't stress bitex too much.
-        sleep_for(0.3)
         self.cooldown_until = start_time + current_cooldowns.seconds
       end
     end

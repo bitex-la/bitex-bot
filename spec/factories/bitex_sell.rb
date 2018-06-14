@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :bitex_sell, class: Bitex::Sell do
     id 12345678
     created_at { Time.now }
-    specie :btc
+    order_book :btc_usd
     quantity 2.0
     amount 600.0
     fee 0.05

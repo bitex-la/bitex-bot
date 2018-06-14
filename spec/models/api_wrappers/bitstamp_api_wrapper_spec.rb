@@ -131,9 +131,7 @@ describe BitstampApiWrapper do
         raise OrderNotFound
       end
 
-      expect do
-        api_wrapper.place_order(:buy, 10, 100)
-      end.to raise_exception(OrderNotFound)
+      expect { api_wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
     end
   end
 

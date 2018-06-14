@@ -69,7 +69,7 @@ module BitexBot
     end
 
     def self.create_order!(bitex_price)
-      order_class.create!(:btc, value_to_use, bitex_price, true)
+      order_class.create!(Settings.maker_settings.order_book, value_to_use, bitex_price, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -107,7 +107,8 @@ module BitexBot
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} BTC @ #{Settings.quote.upcase} #{transaction.price}"
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{Settings.base.upcase} @ #{Settings.quote.upcase}"\
+        " #{transaction.price}"
       )
       open_position_class.create!(
         transaction_id: transaction.id,
@@ -124,7 +125,7 @@ module BitexBot
       !transaction.is_a?(transaction_class) ||
         active_transaction?(transaction, threshold) ||
         open_position?(transaction) ||
-        !btc_specie?(transaction)
+        !expected_order_book?(transaction)
     end
     # end: sync_open_positions helpers
 
@@ -137,8 +138,8 @@ module BitexBot
       open_position_class.find_by_transaction_id(transaction.id)
     end
 
-    def self.btc_specie?(transaction)
-      transaction.specie == :btc
+    def self.expected_order_book?(transaction)
+      transaction.order_book == Settings.maker_settings.order_book
     end
     # end: sought_transaction helpers
 
