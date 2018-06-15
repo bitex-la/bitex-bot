@@ -36,7 +36,6 @@ class BitstampApiWrapper < ApiWrapper
     orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
-  # rubocop:disable Metrics/AbcSize
   def order_book(retries = 20)
     book = Bitstamp.order_book.deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
@@ -51,7 +50,6 @@ class BitstampApiWrapper < ApiWrapper
     BitexBot::Robot.sleep_for 1
     order_book(retries - 1)
   end
-  # rubocop:enable Metrics/AbcSize
 
   def orders
     Bitstamp.orders.all.map { |o| order_parser(o) }
