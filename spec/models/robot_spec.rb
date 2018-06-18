@@ -35,7 +35,7 @@ describe BitexBot::Robot do
       ltc_reserved:  100.00000000,   # LTC reserved in open orders
       ltc_available: 150.00000000    # LTC available for trading
     })
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
     stub_bitstamp_api_wrapper_balance
@@ -47,7 +47,7 @@ describe BitexBot::Robot do
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_api_wrapper_order_book
     bot.trade!
     stub_bitex_transactions
