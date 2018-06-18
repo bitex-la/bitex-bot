@@ -3,10 +3,11 @@ class ApiWrapper
   MIN_AMOUNT = 5
 
   Transaction = Struct.new(
-    :id,       # Integer
-    :price,    # Decimal
-    :amount,   # Decimal
-    :timestamp # Epoch Integer
+    :id,        # Integer
+    :price,     # Decimal
+    :amount,    # Decimal
+    :timestamp, # Epoch Integer
+    :raw        # Actual transaction
   )
 
   Order = Struct.new(
@@ -15,14 +16,14 @@ class ApiWrapper
     :price,     # Decimal
     :amount,    # Decimal
     :timestamp, # Integer
-    :raw_order  # Actual order object
+    :raw        # Actual order object
   ) do
     def method_missing(method_name, *args, &block)
-      raw_order.respond_to?(method_name) ? raw_order.send(method_name, *args, &block) : super
+      raw.respond_to?(method_name) ? raw.send(method_name, *args, &block) : super
     end
 
     def respond_to_missing?(method_name, include_private = false)
-      raw_order.respond_to?(method_name) || super
+      raw.respond_to?(method_name) || super
     end
   end
 
@@ -120,8 +121,9 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 
+  # From an order when you buy or sell, when you place an order and it matches, you can match more than one order.
   # @param order_id
-  # @param transactions
+  # @param transactions: all matches for a purchase or sale order.
   #
   # @return [Array<Decimal, Decimal>]
   def amount_and_quantity(_order_id, _transactions)
