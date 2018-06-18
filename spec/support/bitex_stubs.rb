@@ -18,41 +18,29 @@ module BitexStubs
     end
 
     Bitex::Bid.stub(:create!) do |order_book, to_spend, price|
-      bid = Bitex::Bid.new
-      bid.id = 12345
-      bid.created_at = Time.now
-      bid.price = price
-      bid.amount = to_spend
-      bid.remaining_amount = to_spend
-      bid.status = :executing
-      bid.order_book = order_book
-      bid.stub(:cancel!) do
-        bid.status = :cancelled
-        BitexStubs.active_bids.delete(bid.id)
-        bid
+      build(:bitex_bid, id: 12_345, order_book: order_book, status: :executing, amount: to_spend, remaining_amount: to_spend, price: price).tap do |bid|
+        bid.stub(:cancel!) do
+          bid.tap do
+            bid.status = :cancelled
+            BitexStubs.active_bids.delete(bid.id)
+          end
+        end
+        BitexStubs.bids[bid.id] = bid
+        BitexStubs.active_bids[bid.id] = bid
       end
-      BitexStubs.bids[bid.id] = bid
-      BitexStubs.active_bids[bid.id] = bid
-      bid
     end
 
     Bitex::Ask.stub(:create!) do |order_book, to_sell, price|
-      ask = Bitex::Ask.new
-      ask.id = 12345
-      ask.created_at = Time.now
-      ask.price = price
-      ask.quantity = to_sell
-      ask.remaining_quantity = to_sell
-      ask.status = :executing
-      ask.order_book = order_book
-      ask.stub(:cancel!) do
-        ask.status = :cancelled
-        BitexStubs.active_asks.delete(ask.id)
-        ask
+      build(:bitex_ask, id: 12_345, order_book: order_book, quantity: to_sell, remaining_quantity: to_sell, price: price, status: :executing).tap do |ask|
+        ask.stub(:cancel!) do
+          ask.tap do
+            ask.status = :cancelled
+            BitexStubs.active_asks.delete(ask.id)
+          end
+        end
+        BitexStubs.asks[ask.id] = ask
+        BitexStubs.active_asks[ask.id] = ask
       end
-      BitexStubs.asks[ask.id] = ask
-      BitexStubs.active_asks[ask.id] = ask
-      ask
     end
   end
 
@@ -110,7 +98,6 @@ module BitexStubs
   #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
   #   @price=0.3e3, @bid_id=123
   # >
-  #
   # <Bitex::Sell:0x007ff9a2978710
   #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
   #   @price=0.3e3, @ask_id=456i
