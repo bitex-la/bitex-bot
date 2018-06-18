@@ -108,7 +108,7 @@ describe BitexApiWrapper do
   end
 
   it '#user_transaction' do
-    stub_bitex_user_transactions
+    stub_bitex_trades
 
     api_wrapper.user_transactions.should be_a(Array)
     api_wrapper.user_transactions.all? { |o| o.should be_a(ApiWrapper::UserTransaction) }

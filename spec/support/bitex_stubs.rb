@@ -94,35 +94,7 @@ module BitexStubs
   #   @reason=:not_cancelled, @issuer="User#1", @quantity=0.1e3, @remaining_quantity=0.1e3, @produced_amount=0.1e2
   # >
   def stub_bitex_orders
-    Bitex::Order.stub(:all) do
-      [
-        Bitex::Bid.new.tap do |bid|
-          bid.id = 12_345_678
-          bid.created_at = Time.now
-          bid.order_book = BitexBot::Settings.maker.order_book
-          bid.price = 1_000.to_d
-          bid.status = :executing
-          bid.amount = 100.to_d
-          bid.remaining_amount = 100.to_d
-          bid.stub(:cancel!) do
-            bid.tap { bid.status = :cancelled }
-          end
-        end,
-
-        Bitex::Ask.new.tap do |ask|
-          ask.id = 12345679
-          ask.created_at = Time.now
-          ask.order_book = BitexBot::Settings.maker.order_book
-          ask.price = 1_000.to_d
-          ask.status = :executing
-          ask.quantity = 100.to_d
-          ask.remaining_quantity = 100.to_d
-          ask.stub(:cancel!) do
-            ask.tap { ask.status = :cancelled }
-          end
-        end
-      ]
-    end
+    Bitex::Order.stub(all: [build(:bitex_bid), build(:bitex_ask)])
   end
 
   def stub_bitex_order_book
@@ -143,7 +115,7 @@ module BitexStubs
   #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
   #   @price=0.3e3, @ask_id=456i
   # >
-  def stub_bitex_user_transactions
+  def stub_bitex_trades
     Bitex::Trade.stub(all: [build(:bitex_buy), build(:bitex_sell)])
   end
 end
