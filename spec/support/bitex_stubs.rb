@@ -5,17 +5,11 @@ module BitexStubs
   mattr_accessor(:active_asks) { {} }
 
   def stub_bitex_active_orders
-    Bitex::Order.stub(:all) do
-      BitexStubs.active_bids.merge(BitexStubs.active_asks)
-    end
+    Bitex::Order.stub(all: BitexStubs.active_bids.merge(BitexStubs.active_asks))
 
-    Bitex::Bid.stub(:find) do |id|
-      BitexStubs.bids[id]
-    end
+    Bitex::Bid.stub(:find) { |id| BitexStubs.bids[id] }
 
-    Bitex::Ask.stub(:find) do |id|
-      BitexStubs.asks[id]
-    end
+    Bitex::Ask.stub(:find) { |id| BitexStubs.asks[id] }
 
     Bitex::Bid.stub(:create!) do |order_book, to_spend, price|
       build(:bitex_bid, id: 12_345, order_book: order_book, status: :executing, amount: to_spend, remaining_amount: to_spend, price: price).tap do |bid|
