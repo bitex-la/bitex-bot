@@ -1,13 +1,11 @@
 # Wrapper implementation for Bitstamp API.
 # https://www.bitstamp.net/api/
 class BitstampApiWrapper < ApiWrapper
-  def self.setup
+  def self.setup(settings)
     Bitstamp.setup do |config|
-      BitexBot::Settings.bitstamp do |settings|
-        config.key = settings.api_key
-        config.secret = settings.secret
-        config.client_id = settings.client_id
-      end
+      config.key = settings.api_key
+      config.secret = settings.secret
+      config.client_id = settings.client_id
     end
   end
 
@@ -31,8 +29,8 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
   end
 
-  def self.find_lost(type, price)
-    orders.find { |o| o.order_method == type && o.price == price && o.datetime.to_datetime >= 5.minutes.ago.to_datetime }
+  def self.find_lost(type, price, _quantity)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
   # rubocop:disable Metrics/AbcSize
@@ -109,7 +107,7 @@ class BitstampApiWrapper < ApiWrapper
   # <Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
   def self.order_parser(order)
     type = order.type.zero? ? :buy : :sell
-    Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_time.to_i, order)
+    Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_datetime.to_i, order)
   end
 
   def self.order_summary_parser(orders)

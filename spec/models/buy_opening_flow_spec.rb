@@ -187,7 +187,7 @@ describe BitexBot::BuyOpeningFlow do
 
     it 'does not register buys from another order book' do
       flow.order_id.should == 12345
-      Bitex::Trade.stub(all: [build(:bitex_sell, id: 23456, order_book: :btc_ars)])
+      Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, order_book: :btc_ars)])
 
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty
@@ -219,7 +219,6 @@ describe BitexBot::BuyOpeningFlow do
     flow.should be_finalised
   end
 
-
   it 'order has expected order book' do
     stub_bitex_orders
     BitexBot::Settings.stub(time_to_live: 3,
@@ -230,6 +229,6 @@ describe BitexBot::BuyOpeningFlow do
       store)
 
     order = subject.class.order_class.find(flow.order_id)
-    order.order_book.should eq BitexBot::Settings.bitex.order_book
+    order.order_book.should eq BitexBot::Settings.maker_settings.order_book
   end
 end

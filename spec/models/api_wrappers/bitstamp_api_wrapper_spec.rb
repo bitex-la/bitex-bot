@@ -1,9 +1,17 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
+  let(:api_wrapper) { described_class }
+  let(:taker_settings) do
+    BitexBot::SettingsClass.new(
+      bitstamp: {
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+      }
+    )
+  end
 
   before(:each) do
-    BitexBot::Robot.stub(taker: BitstampApiWrapper)
+    BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
 
@@ -12,7 +20,7 @@ describe BitstampApiWrapper do
     stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
-    BitstampApiWrapper.balance rescue nil
+    api_wrapper.balance rescue nil
 
     expect(stub_stuff).to have_been_requested
   end
@@ -34,7 +42,7 @@ describe BitstampApiWrapper do
   it '#balance' do
     stub_balance
 
-    balance = BitstampApiWrapper.balance
+    balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
     balance.btc.should be_a(ApiWrapper::Balance)
     balance.usd.should be_a(ApiWrapper::Balance)
@@ -55,7 +63,7 @@ describe BitstampApiWrapper do
   it '#cancel' do
     stub_orders
 
-    expect(BitstampApiWrapper.orders.sample).to respond_to(:cancel!)
+    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)
@@ -71,7 +79,7 @@ describe BitstampApiWrapper do
   it '#order_book' do
     stub_order_book
 
-    order_book = BitstampApiWrapper.order_book
+    order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
     order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
     order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
@@ -104,9 +112,9 @@ describe BitstampApiWrapper do
   it '#orders' do
     stub_orders
 
-    BitstampApiWrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
-    order = BitstampApiWrapper.orders.sample
+    order = api_wrapper.orders.sample
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
@@ -122,9 +130,7 @@ describe BitstampApiWrapper do
         raise OrderNotFound
       end
 
-      expect do
-        BitstampApiWrapper.place_order(:buy, 10, 100)
-      end.to raise_exception(OrderNotFound)
+      expect { api_wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
     end
   end
 
@@ -145,9 +151,9 @@ describe BitstampApiWrapper do
   it '#transactions' do
     stub_transactions
 
-    BitstampApiWrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
-    transaction = BitstampApiWrapper.transactions.sample
+    transaction = api_wrapper.transactions.sample
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
@@ -184,5 +190,11 @@ describe BitstampApiWrapper do
     user_transaction.fee.should be_a(BigDecimal)
     user_transaction.type.should be_a(Integer)
     user_transaction.timestamp.should be_a(Integer)
+  end
+
+  it '#find_lost' do
+    stub_orders
+
+    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 end

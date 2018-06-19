@@ -230,6 +230,6 @@ describe BitexBot::SellOpeningFlow do
       store)
 
     order = subject.class.order_class.find(flow.order_id)
-    order.order_book.should eq BitexBot::Settings.bitex.order_book
+    order.order_book.should eq BitexBot::Settings.maker_settings.order_book
   end
 end
