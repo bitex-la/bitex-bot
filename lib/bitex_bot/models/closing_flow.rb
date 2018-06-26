@@ -52,7 +52,6 @@ module BitexBot
     private
 
     # sync_closed_positions helpers
-    # rubocop:disable Metrics/AbcSize
     # Metrics/AbcSize: Assignment Branch Condition size for create_or_cancel! is too high. [17.23/16]
     def create_or_cancel!(orders, transactions)
       order_id = latest_close.order_id.to_s
@@ -67,7 +66,6 @@ module BitexBot
         cancel!(order)
       end
     end
-    # rubocop:enable Metrics/AbcSize
 
     def latest_close
       close_positions.last

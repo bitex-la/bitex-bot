@@ -15,6 +15,7 @@ module BitexBot
     extend Forwardable
 
     cattr_accessor :taker
+    cattr_accessor :maker
 
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
@@ -33,9 +34,8 @@ module BitexBot
     end
 
     def self.setup
-      Bitex.api_key = Settings.maker_settings.api_key
-      Bitex.sandbox = Settings.maker_settings.sandbox
-      self.taker = Settings.taker_class.tap { |klass| klass.setup(Settings.taker_settings) }
+      self.maker = Settings.maker_class.new(Settings.maker_settings)
+      self.taker = Settings.taker_class.new(Settings.taker_settings)
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
@@ -178,7 +178,7 @@ module BitexBot
       return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
       taker_balance = with_cooldown { Robot.taker.balance }
-      profile = Bitex::Profile.get
+      profile = maker.profile
       total_fiat, total_btc = balances(taker_balance, profile)
 
       sync_log(taker_balance)

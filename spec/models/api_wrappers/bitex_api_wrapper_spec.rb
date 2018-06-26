@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe BitstampApiWrapper do
+describe BitexApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+      bitex: {
+        api_key: 'taker_api_key', ssl_version: nil, debug: false, sandbox: false
       }
     )
   end
@@ -17,8 +17,8 @@ describe BitstampApiWrapper do
   let(:api_wrapper) { BitexBot::Robot.taker }
 
   it 'Sends User-Agent header' do
-    url = 'https://www.bitstamp.net/api/v2/balance/btcusd/'
-    stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+    url = "https://bitex.la/api-v1/rest/private/profile?api_key=#{BitexBot::Robot.taker.api_key}"
+    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
     api_wrapper.balance rescue nil
@@ -26,22 +26,8 @@ describe BitstampApiWrapper do
     expect(stub_stuff).to have_been_requested
   end
 
-  def stub_balance(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
-    Bitstamp.stub(:balance) do
-      {
-        'btc_balance' => balance,
-        'btc_reserved' => reserved,
-        'btc_available' => available,
-        'usd_balance' => balance,
-        'usd_reserved' => reserved,
-        'usd_available' => balance,
-        'fee' => fee
-      }
-    end
-  end
-
   it '#balance' do
-    stub_balance
+    stub_bitex_balance
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
@@ -62,23 +48,13 @@ describe BitstampApiWrapper do
   end
 
   it '#cancel' do
-    stub_orders
+    stub_bitex_orders
 
     expect(api_wrapper.orders.sample).to respond_to(:cancel!)
   end
 
-  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
-    Bitstamp.stub(:order_book) do
-      {
-        'timestamp' => Time.now.to_i.to_s,
-        'bids' => count.times.map { |i| [(price + i).to_s, (amount + i).to_s] },
-        'asks' => count.times.map { |i| [(price + i).to_s, (amount + i).to_s] }
-      }
-    end
-  end
-
   it '#order_book' do
-    stub_order_book
+    stub_bitex_order_book
 
     order_book = api_wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
@@ -95,23 +71,8 @@ describe BitstampApiWrapper do
     ask.quantity.should be_a(BigDecimal)
   end
 
-  # [<Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>]
-  def stub_orders(count: 1, price: 1.5, amount: 2.5)
-    Bitstamp.orders.stub(:all) do
-      count.times.map do |i|
-        Bitstamp::Order.new(
-          id: i,
-          type: (i % 2),
-          price: (price + 1).to_s,
-          amount: (amount + i).to_s,
-          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
-        )
-      end
-    end
-  end
-
   it '#orders' do
-    stub_orders
+    stub_bitex_orders
 
     api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
@@ -124,31 +85,18 @@ describe BitstampApiWrapper do
   end
 
   context '#place_order' do
-    it 'raises OrderNotFound error on bitstamp errors' do
-      Bitstamp.orders.stub(:buy) do
-        raise OrderNotFound
-      end
+    it 'raises OrderNotFound error on Bitex errors' do
+      Bitex::Bid.stub(create!: nil)
+      Bitex::Ask.stub(create!: nil)
+      api_wrapper.stub(find_lost: nil)
 
       expect { api_wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
-    end
-  end
-
-  # [<Bitstamp::Transactions @tid=14, @price='1.9', @amount='1.1', @date='1380648951'>]
-  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
-    Bitstamp.stub(:transactions) do
-      count.times.map do |i|
-        double(
-          tid: i,
-          date: 1.seconds.ago.to_i,
-          price: (price + i).to_s,
-          amount: (amount + i).to_s
-        )
-      end
+      expect { api_wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound)
     end
   end
 
   it '#transactions' do
-    stub_transactions
+    stub_bitex_transactions
 
     api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
@@ -159,40 +107,24 @@ describe BitstampApiWrapper do
     transaction.timestamp.should be_a(Integer)
   end
 
-  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
-  def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
-    Bitstamp.user_transactions.stub(:all) do
-      count.times.map do |i|
-        double(
-          id: i,
-          order_id: i,
-          type: (i % 2),
-          usd: (usd + i).to_s,
-          btc: (btc + i).to_s,
-          btc_usd: (btc_usd + i).to_s,
-          fee: fee.to_s,
-          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
-        )
-      end
-    end
-  end
-
   it '#user_transaction' do
-    stub_user_transactions
-    api_wrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
+    stub_bitex_trades
+
+    api_wrapper.user_transactions.should be_a(Array)
+    api_wrapper.user_transactions.all? { |o| o.should be_a(ApiWrapper::UserTransaction) }
 
     user_transaction = api_wrapper.user_transactions.sample
+    user_transaction.order_id.should be_a(Integer)
     user_transaction.usd.should be_a(BigDecimal)
     user_transaction.btc.should be_a(BigDecimal)
     user_transaction.btc_usd.should be_a(BigDecimal)
-    user_transaction.order_id.should be_a(Integer)
     user_transaction.fee.should be_a(BigDecimal)
     user_transaction.type.should be_a(Integer)
     user_transaction.timestamp.should be_a(Integer)
   end
 
   it '#find_lost' do
-    stub_orders
+    stub_bitex_orders
 
     api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
   end

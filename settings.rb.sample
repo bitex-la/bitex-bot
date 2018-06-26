@@ -46,7 +46,7 @@ foreign_exchange_rate 1.to_d
 maker bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false }
 
 # These are the configurations we need for the markets currently supported.
-# Turn on and off the chosen Bitstamp, Itbit or Kraken market with comments.
+# Turn on and off the chosen Bitex, Bitstamp, Itbit or Kraken market with comments.
 
 # These are passed in to the bitstamp gem: see https://github.com/kojnapp/bitstamp for more info.
 taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' }
@@ -56,6 +56,9 @@ taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id:
 
 # These are passed in to the kraken gem: see https://github.com/shideneyu/kraken_client for more info.
 # taker kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret' }
+
+# These are passed in to the Bitex gem: see https://github.com/bitex-la/bitex-ruby.
+# taker bitex: { api_key: 'taker_api_key', ssl_version: nil, debug: false, sandbox: false }
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:
