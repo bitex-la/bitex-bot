@@ -63,21 +63,19 @@ module BitexBot
     def_delegator self, :log
 
     def self.with_cooldown
-      result = yield
-      self.current_cooldowns += 1
-      sleep_for(0.1)
-      result
+      yield.tap do
+        self.current_cooldowns += 1
+        sleep_for(0.1)
+      end
     end
 
-    # private class methods
+    private_class_method
 
     def self.start_robot
       setup
       log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
       new
     end
-
-    # end: private class methods
 
     # rubocop:disable Metrics/AbcSize
     def trade!
@@ -106,11 +104,11 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     def active_closing_flows?
-      [BuyClosingFlow.active, SellClosingFlow.active].any?(&:exists?)
+      [BuyClosingFlow, SellClosingFlow].map(&:active).any?(&:exists?)
     end
 
     def active_opening_flows?
-      [BuyOpeningFlow.active, SellOpeningFlow.active].any?(&:exists?)
+      [BuyOpeningFlow, SellOpeningFlow].map(&:active).any?(&:exists?)
     end
 
     # The trader has a Store
@@ -158,7 +156,7 @@ module BitexBot
     end
 
     def open_positions?
-      [OpenBuy.open, OpenSell.open].any?(&:exists?)
+      [OpenBuy, OpenSell].map(&:open).any?(&:exists?)
     end
 
     def sync_closing_flows
@@ -242,9 +240,9 @@ module BitexBot
       log(:error, message)
       return unless Settings.mailer.present?
 
-      mail = new_mail(subj, message)
-      mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
-      mail.deliver!
+      new_mail(subj, message).tap do |mail|
+        mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
+      end.deliver!
     end
 
     def new_mail(subj, message)
