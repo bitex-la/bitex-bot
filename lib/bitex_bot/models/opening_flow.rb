@@ -94,7 +94,7 @@ module BitexBot
     def self.sync_open_positions
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
       Bitex::Trade.all.map do |transaction|
-        next if sought_transaction?(threshold, transaction)
+        next unless sought_transaction?(threshold, transaction)
 
         flow = find_by_order_id(transaction_order_id(transaction))
         next unless flow.present?
@@ -122,16 +122,16 @@ module BitexBot
     # This use hooks methods, these must be defined in the subclass:
     #   #transaction_class
     def self.sought_transaction?(threshold, transaction)
-      !transaction.is_a?(transaction_class) ||
-        active_transaction?(transaction, threshold) ||
-        open_position?(transaction) ||
-        !expected_order_book?(transaction)
+      transaction.is_a?(transaction_class) &&
+        !active_transaction?(transaction, threshold) &&
+        !open_position?(transaction) &&
+        expected_order_book?(transaction)
     end
     # end: sync_open_positions helpers
 
     # sought_transaction helpers
     def self.active_transaction?(transaction, threshold)
-      threshold && transaction.created_at < (threshold - 30.minutes)
+      threshold.present? && transaction.created_at < (threshold - 30.minutes)
     end
 
     def self.open_position?(transaction)
