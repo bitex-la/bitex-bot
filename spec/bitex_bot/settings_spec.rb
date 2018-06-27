@@ -8,7 +8,8 @@ describe BitexBot::Settings do
         time_to_live: 20,
         buying: { amount_to_spend_per_order: 10, profit: 0.5 },
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
-        foreign_exchange_rate: 1,
+        buying_foreign_exchange_rate: 1,
+        selling_foreign_exchange_rate: 1,
 
         maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false } },
         # By default Bitstamp is taker market.
@@ -31,22 +32,23 @@ describe BitexBot::Settings do
       )
     end
 
-    context 'fx_rate' do
+    context 'buying foreign exchange rate' do
       context 'when Store isn´t loaded' do
         it 'by default' do
-          described_class.fx_rate.should eq(1)
+          described_class.buying_foreign_exchange_rate.should eq(1)
         end
       end
 
       context 'when Store is loaded' do
         before(:each) do
           BitexBot::Store.stub(first: BitexBot::Store.new )
-          BitexBot::Store.any_instance.stub(fx_rate: fx_rate)
+          BitexBot::Store.any_instance.stub(buying_fx_rate: buying_fx_rate)
         end
-        let(:fx_rate) { rand(10) }
+
+        let(:buying_fx_rate) { rand(10) }
 
         it 'take rate from it' do
-          described_class.fx_rate.should eq(fx_rate)
+          described_class.buying_fx_rate.should eq(buying_fx_rate)
         end
       end
     end
