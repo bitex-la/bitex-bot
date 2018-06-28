@@ -46,7 +46,7 @@ module BitexBot
     end
 
     def positions_balance_amount
-      close_positions.sum(:amount) * Settings.fx_rate
+      close_positions.sum(:amount) * fx_rate
     end
 
     private
@@ -87,7 +87,7 @@ module BitexBot
     end
 
     # This use hooks methods, these must be defined in the subclass:
-    #   estimate_btc_profit
+    #   estimate_crypto_profit
     #   amount_positions_balance
     #   next_price_and_quantity
     def create_next_position!
@@ -95,8 +95,8 @@ module BitexBot
       if Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
-        update!(btc_profit: estimate_btc_profit, fiat_profit: estimate_fiat_profit, fx_rate: Settings.fx_rate, done: true)
-        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{btc_profit} BTC.")
+        update!(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
+        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{crypto_profit} BTC.")
       end
     end
 
