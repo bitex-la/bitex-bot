@@ -32,23 +32,26 @@ describe BitexBot::Settings do
       )
     end
 
-    context 'buying foreign exchange rate' do
-      context 'when Store isn´t loaded' do
-        it 'by default' do
-          described_class.buying_foreign_exchange_rate.should eq(1)
-        end
+    context 'fx rate' do
+      context 'when Store isn´t loaded, by default' do
+        it { described_class.buying_fx_rate.should eq(1) }
+        it { described_class.selling_fx_rate.should eq(1) }
       end
 
-      context 'when Store is loaded' do
-        before(:each) do
-          BitexBot::Store.stub(first: BitexBot::Store.new )
-          BitexBot::Store.any_instance.stub(buying_fx_rate: buying_fx_rate)
+      context 'when Store is loaded, take rate from' do
+        before(:each) { BitexBot::Store.stub(first: BitexBot::Store.new) }
+        let(:fx_rate) { rand(10) }
+
+        context 'buying' do
+          before(:each) { BitexBot::Store.any_instance.stub(buying_fx_rate: fx_rate) }
+
+          it { described_class.buying_fx_rate.should eq(fx_rate) }
         end
 
-        let(:buying_fx_rate) { rand(10) }
+        context 'selling' do
+          before(:each) { BitexBot::Store.any_instance.stub(selling_fx_rate: fx_rate) }
 
-        it 'take rate from it' do
-          described_class.buying_fx_rate.should eq(buying_fx_rate)
+          it { described_class.selling_fx_rate.should eq(fx_rate) }
         end
       end
     end
