@@ -66,7 +66,7 @@ describe BitexBot::SellOpeningFlow do
 
     it 'sells 4 bitcoin' do
       BitexBot::Settings.stub(
-        fx_rate: other_fx_rate,
+        selling_foreign_exchange_rate: other_fx_rate,
         time_to_live: 3,
         selling: double(quantity_to_sell_per_order: amount_to_sell, profit: 0)
       )

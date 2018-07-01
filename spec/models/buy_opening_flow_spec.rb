@@ -66,7 +66,7 @@ describe BitexBot::BuyOpeningFlow do
 
     it 'spends 100 usd with other fx_rate' do
       BitexBot::Settings.stub(
-        fx_rate: other_fx_rate,
+        buying_foreign_exchange_rate: other_fx_rate,
         time_to_live: 3,
         buying: double(amount_to_spend_per_order: amount_to_spend, profit: 0)
       )

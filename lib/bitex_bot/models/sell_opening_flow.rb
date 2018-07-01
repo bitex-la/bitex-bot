@@ -72,5 +72,9 @@ module BitexBot
       store.selling_quantity_to_sell_per_order || Settings.selling.quantity_to_sell_per_order
     end
     # end: create_for_market helpers
+
+    def self.fx_rate
+      Settings.selling_fx_rate
+    end
   end
 end

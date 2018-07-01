@@ -45,18 +45,18 @@ describe BitstampApiWrapper do
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    balance.crypto.should be_a(ApiWrapper::Balance)
+    balance.fiat.should be_a(ApiWrapper::Balance)
 
-    btc = balance.btc
-    btc.total.should be_a(BigDecimal)
-    btc.reserved.should be_a(BigDecimal)
-    btc.available.should be_a(BigDecimal)
+    crypto = balance.crypto
+    crypto.total.should be_a(BigDecimal)
+    crypto.reserved.should be_a(BigDecimal)
+    crypto.available.should be_a(BigDecimal)
 
-    usd = balance.usd
-    usd.total.should be_a(BigDecimal)
-    usd.reserved.should be_a(BigDecimal)
-    usd.available.should be_a(BigDecimal)
+    fiat = balance.fiat
+    fiat.total.should be_a(BigDecimal)
+    fiat.reserved.should be_a(BigDecimal)
+    fiat.available.should be_a(BigDecimal)
 
     balance.fee.should be_a(BigDecimal)
   end
@@ -160,6 +160,7 @@ describe BitstampApiWrapper do
   end
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
+  # Transaction type: 0 - deposit; 1 - withdrawal; 2 - market trade; 14 - sub account transfer.
   def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
     Bitstamp.user_transactions.stub(:all) do
       count.times.map do |i|

@@ -39,9 +39,9 @@ class ApiWrapper
   )
 
   BalanceSummary = Struct.new(
-    :btc, # Balance
-    :usd, # Balance
-    :fee  # Decimal
+    :crypto, # Balance
+    :fiat,   # Balance
+    :fee     # Decimal
   )
 
   Balance = Struct.new(
@@ -126,7 +126,7 @@ class ApiWrapper
   # @param transactions: all matches for a purchase or sale order.
   #
   # @return [Array<Decimal, Decimal>]
-  def amount_and_quantity(_order_id, _transactions)
+  def amount_and_quantity(_order_id)
     raise 'self subclass responsibility'
   end
 

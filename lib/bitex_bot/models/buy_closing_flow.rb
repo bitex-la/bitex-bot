@@ -10,11 +10,15 @@ module BitexBot
       OpenBuy
     end
 
+    def fx_rate
+      Settings.buying_fx_rate
+    end
+
     private
 
     # create_or_cancel! hookers
     # The coins we actually bought minus the coins we were supposed to re-buy
-    def estimate_btc_profit
+    def estimate_crypto_profit
       quantity - close_positions.sum(:quantity)
     end
 

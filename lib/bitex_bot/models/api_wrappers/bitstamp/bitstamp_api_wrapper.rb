@@ -18,8 +18,8 @@ class BitstampApiWrapper < ApiWrapper
     end
   end
 
-  def amount_and_quantity(order_id, transactions)
-    closes = transactions.select { |t| t.order_id.to_s == order_id }
+  def amount_and_quantity(order_id)
+    closes = user_transactions.select { |t| t.order_id.to_s == order_id }
     amount = closes.map { |c| c.usd.to_d }.sum.abs
     quantity = closes.map { |c| c.btc.to_d }.sum.abs
 

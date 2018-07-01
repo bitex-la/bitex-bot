@@ -36,8 +36,11 @@ buying amount_to_spend_per_order: 10.0.to_d, profit: 0.5.to_d
 #   places an ask on Bitex charging a higher price.
 selling quantity_to_sell_per_order: 0.1.to_d, profit: 0.5.to_d
 
-# Quote fx rate for maker order book
-foreign_exchange_rate 1.to_d
+# Quote fx rate for selling for order book
+selling_foreign_exchange_rate 1.to_d
+
+# Quote fx rate for buying for order book
+buying_foreign_exchange_rate 1.to_d
 
 # This is your maker, at the moment only will operates with bitex
 #   api_key: it's passed in to the bitex gem: https://github.com/bitex-la/bitex-ruby.

@@ -17,7 +17,7 @@ class KrakenApiWrapper < ApiWrapper
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
   end
 
-  def amount_and_quantity(order_id, _transactions)
+  def amount_and_quantity(order_id)
     KrakenOrder.amount_and_quantity(order_id)
   end
 

@@ -36,9 +36,9 @@ module BitexBot
     end
 
     # TODO: should receive a order_ids and user_transaccions array, then each Wrapper should know how to search for them.
-    def sync_closed_positions(orders, transactions)
+    def sync_closed_positions
       # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
-      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders, transactions)
+      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!
     end
 
     def estimate_fiat_profit
@@ -46,26 +46,27 @@ module BitexBot
     end
 
     def positions_balance_amount
-      close_positions.sum(:amount) * Settings.fx_rate
+      close_positions.sum(:amount) * fx_rate
     end
 
     private
 
     # sync_closed_positions helpers
-    # Metrics/AbcSize: Assignment Branch Condition size for create_or_cancel! is too high. [17.23/16]
-    def create_or_cancel!(orders, transactions)
+    # rubocop:disable Metrics/AbcSize
+    def create_or_cancel!
       order_id = latest_close.order_id.to_s
-      order = orders.find { |o| o.id.to_s == order_id }
+      order = Robot.with_cooldown { Robot.taker.orders.find { |o| o.id.to_s == order_id } }
 
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
       # spawned from it.
       if order.nil?
-        sync_position(order_id, transactions)
+        sync_position(order_id)
         create_next_position!
       elsif latest_close.created_at < close_time_to_live.seconds.ago
         cancel!(order)
       end
     end
+    # rubocop:enable Metrics/AbcSize
 
     def latest_close
       close_positions.last
@@ -85,7 +86,7 @@ module BitexBot
     end
 
     # This use hooks methods, these must be defined in the subclass:
-    #   estimate_btc_profit
+    #   estimate_crypto_profit
     #   amount_positions_balance
     #   next_price_and_quantity
     def create_next_position!
@@ -93,14 +94,14 @@ module BitexBot
       if Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
-        update!(btc_profit: estimate_btc_profit, fiat_profit: estimate_fiat_profit, fx_rate: Settings.fx_rate, done: true)
-        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{btc_profit} BTC.")
+        update!(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
+        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{crypto_profit} BTC.")
       end
     end
 
-    def sync_position(order_id, transactions)
+    def sync_position(order_id)
       latest = latest_close
-      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id, transactions)
+      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id)
       latest.save!
     end
     # end: create_or_cancel! helpers

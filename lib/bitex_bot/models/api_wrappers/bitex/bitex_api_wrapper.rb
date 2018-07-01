@@ -25,9 +25,9 @@ class BitexApiWrapper < ApiWrapper
     with_session { Bitex::Profile.get }
   end
 
-  def amount_and_quantity(order_id, transactions)
+  def amount_and_quantity(order_id)
     with_session do
-      closes = transactions.select { |t| t.order_id.to_s == order_id }
+      closes = user_transactions.select { |t| t.order_id.to_s == order_id }
       amount = closes.map { |c| c.usd.to_d }.sum.abs
       quantity = closes.map { |c| c.btc.to_d }.sum.abs
 
@@ -134,7 +134,7 @@ class BitexApiWrapper < ApiWrapper
   # >
   def user_transaction_parser(trade)
     UserTransaction.new(
-      trade.id, trade.amount, trade.quantity, BitexBot::Settings.fx_rate, trade.fee, trade_type(trade), trade.created_at.to_i
+      trade.id, trade.amount, trade.quantity, trade.price, trade.fee, trade_type(trade), trade.created_at.to_i
     )
   end
 

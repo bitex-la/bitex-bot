@@ -54,18 +54,18 @@ describe ItbitApiWrapper do
 
     balance = api_wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.btc.should be_a(ApiWrapper::Balance)
-    balance.usd.should be_a(ApiWrapper::Balance)
+    balance.crypto.should be_a(ApiWrapper::Balance)
+    balance.fiat.should be_a(ApiWrapper::Balance)
 
-    btc = balance.btc
-    btc.total.should be_a(BigDecimal)
-    btc.reserved.should be_a(BigDecimal)
-    btc.available.should be_a(BigDecimal)
+    crypto = balance.crypto
+    crypto.total.should be_a(BigDecimal)
+    crypto.reserved.should be_a(BigDecimal)
+    crypto.available.should be_a(BigDecimal)
 
-    usd = balance.usd
-    usd.total.should be_a(BigDecimal)
-    usd.reserved.should be_a(BigDecimal)
-    usd.available.should be_a(BigDecimal)
+    fiat = balance.fiat
+    fiat.total.should be_a(BigDecimal)
+    fiat.reserved.should be_a(BigDecimal)
+    fiat.available.should be_a(BigDecimal)
 
     balance.fee.should be_a(BigDecimal)
   end
