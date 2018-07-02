@@ -29,8 +29,12 @@ module BitexBot
       load_settings(path)
     end
 
-    def fx_rate
-      Store.first.try(:fx_rate) || foreign_exchange_rate
+    def buying_fx_rate
+      Store.first.try(:buying_fx_rate) || buying_foreign_exchange_rate
+    end
+
+    def selling_fx_rate
+      Store.first.try(:selling_fx_rate) || selling_foreign_exchange_rate
     end
 
     def base

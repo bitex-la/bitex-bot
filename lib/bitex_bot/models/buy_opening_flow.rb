@@ -73,5 +73,9 @@ module BitexBot
       store.buying_amount_to_spend_per_order || Settings.buying.amount_to_spend_per_order
     end
     # end: create_for_market helpers
+
+    def self.fx_rate
+      Settings.buying_fx_rate
+    end
   end
 end

@@ -26,7 +26,7 @@ describe BitexBot::BuyClosingFlow do
     flow.desired_price.should == 310
     flow.quantity.should == 2
     flow.amount.should == 600
-    flow.btc_profit.should be_nil
+    flow.crypto_profit.should be_nil
     flow.fiat_profit.should be_nil
 
     close = flow.close_positions.first
@@ -51,7 +51,7 @@ describe BitexBot::BuyClosingFlow do
     flow.desired_price.round(10).should == '310.4_975_124_378'.to_d
     flow.quantity.should == 2.01
     flow.amount.should == 604
-    flow.btc_profit.should be_nil
+    flow.crypto_profit.should be_nil
     flow.fiat_profit.should be_nil
 
     close.order_id.should == '1'
@@ -92,7 +92,7 @@ describe BitexBot::BuyClosingFlow do
       close.quantity.should == 2.01
 
       flow.should be_done
-      flow.btc_profit.should be_zero
+      flow.crypto_profit.should be_zero
       flow.fiat_profit.should == 20.105
     end
 
@@ -111,7 +111,7 @@ describe BitexBot::BuyClosingFlow do
 
       it 'syncs the executed orders, calculates profit with other fx rate' do
         flow.should be_done
-        flow.btc_profit.should be_zero
+        flow.crypto_profit.should be_zero
         flow.fiat_profit.should eq positions_balance_amount
       end
     end
@@ -161,7 +161,7 @@ describe BitexBot::BuyClosingFlow do
         close.quantity.should == 1.005
       end
       flow.should be_done
-      flow.btc_profit.should be_zero
+      flow.crypto_profit.should be_zero
       flow.fiat_profit.should == 20.07_485
     end
 
@@ -176,7 +176,7 @@ describe BitexBot::BuyClosingFlow do
       end.not_to change { BitexBot::CloseBuy.count }
 
       flow.should be_done
-      flow.btc_profit.should == 0.00_201
+      flow.crypto_profit.should == 0.00_201
       flow.fiat_profit.should == 19.480_895
     end
 
@@ -195,7 +195,7 @@ describe BitexBot::BuyClosingFlow do
 
       flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
       flow.reload.should be_done
-      flow.btc_profit.should be_zero
+      flow.crypto_profit.should be_zero
       flow.fiat_profit.should == -34.165
     end
   end
@@ -216,7 +216,7 @@ describe BitexBot::BuyClosingFlow do
       flow.open_positions.should == [open]
       flow.desired_price.should == 310
       flow.quantity.should == 2
-      flow.btc_profit.should be_nil
+      flow.crypto_profit.should be_nil
       flow.fiat_profit.should be_nil
       flow.close_positions.should be_empty
     end
