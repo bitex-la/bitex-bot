@@ -32,13 +32,13 @@ describe BitexBot::Settings do
       )
     end
 
-    context 'fx rate' do
-      context 'when Store isn´t loaded, by default' do
+    context 'fx rate, when Store' do
+      context 'isn´t loaded, by default' do
         it { described_class.buying_fx_rate.should eq(1) }
         it { described_class.selling_fx_rate.should eq(1) }
       end
 
-      context 'when Store is loaded, take rate from' do
+      context 'is loaded, take rate from' do
         before(:each) { BitexBot::Store.stub(first: BitexBot::Store.new) }
         let(:fx_rate) { rand(10) }
 

@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe BitexBot::BuyOpeningFlow do
-  before(:each) { Bitex.api_key = 'valid_key' }
+  before(:each) { BitexBot::Robot.setup }
 
   let(:store) { BitexBot::Store.create }
 
@@ -13,7 +13,7 @@ describe BitexBot::BuyOpeningFlow do
 
   describe 'when creating a buying flow' do
     it 'spends 50 usd' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         buying: double(amount_to_spend_per_order: 50, profit: 0))
 
@@ -43,7 +43,7 @@ describe BitexBot::BuyOpeningFlow do
         time_to_live: 3,
         buying: double(amount_to_spend_per_order: amount_to_spend, profit: 0)
       )
-      stub_bitex_orders
+      stub_bitex_active_orders
 
       flow =
         BitexBot::BuyOpeningFlow.create_for_market(
@@ -70,7 +70,7 @@ describe BitexBot::BuyOpeningFlow do
         time_to_live: 3,
         buying: double(amount_to_spend_per_order: amount_to_spend, profit: 0)
       )
-      stub_bitex_orders
+      stub_bitex_active_orders
 
       flow =
         BitexBot::BuyOpeningFlow.create_for_market(
@@ -90,7 +90,7 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     it 'lowers the price to pay on bitex to take a profit' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         buying: double(amount_to_spend_per_order: 100, profit: 50.to_d))
 
@@ -122,7 +122,7 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     it 'fails when there are not enough bitcoin to sell in the other exchange' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         buying: double(amount_to_spend_per_order: 100, profit: 0))
 
@@ -138,7 +138,7 @@ describe BitexBot::BuyOpeningFlow do
 
     it 'prioritizes profit from store' do
       store = BitexBot::Store.new(buying_profit: 0.5)
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         buying: double(amount_to_spend_per_order: 50, profit: 0))
 
@@ -186,9 +186,9 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     it 'does not register buys from another order book' do
-      flow.order_id.should == 12345
       Bitex::Trade.stub(all: [build(:bitex_buy, id: 23456, order_book: :btc_ars)])
 
+      flow.order_id.should == 12345
       expect do
         BitexBot::BuyOpeningFlow.sync_open_positions.should be_empty
       end.not_to change { BitexBot::OpenBuy.count }
@@ -205,7 +205,7 @@ describe BitexBot::BuyOpeningFlow do
   end
 
   it 'cancels the associated bitex bid' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     BitexBot::Settings.stub(time_to_live: 3,
       buying: double(amount_to_spend_per_order: 50, profit: 0))
 
@@ -220,7 +220,7 @@ describe BitexBot::BuyOpeningFlow do
   end
 
   it 'order has expected order book' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     BitexBot::Settings.stub(time_to_live: 3,
       buying: double(amount_to_spend_per_order: 50, profit: 0))
 

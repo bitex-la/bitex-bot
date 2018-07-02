@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe ItbitApiWrapper do
-  let(:api_wrapper) { described_class }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       itbit: {
@@ -14,6 +13,8 @@ describe ItbitApiWrapper do
     BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
+
+  let(:api_wrapper) { BitexBot::Robot.taker }
 
   it 'Sends User-Agent header' do
     url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
