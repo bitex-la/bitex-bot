@@ -113,7 +113,7 @@ describe BitexBot::SellClosingFlow do
     end.not_to change{ BitexBot::SellClosingFlow.count }
   end
 
-  describe 'when syncinc executed orders' do
+  describe 'when sync executed orders' do
     before(:each) do
       stub_bitstamp_buy
       stub_bitstamp_empty_user_transactions

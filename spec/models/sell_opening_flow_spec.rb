@@ -84,8 +84,8 @@ describe BitexBot::SellOpeningFlow do
 
       flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_sell
-      flow.price.should >= flow.suggested_closing_price * other_fx_rate
-      flow.price.truncate(13).should eq usd_price * other_fx_rate
+      flow.price.should >= flow.suggested_closing_price
+      flow.price.should eq usd_price
       flow.suggested_closing_price.should eq suggested_closing_price
     end
 

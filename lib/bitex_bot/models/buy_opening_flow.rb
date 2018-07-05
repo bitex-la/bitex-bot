@@ -62,11 +62,11 @@ module BitexBot
     end
 
     def self.remote_value_to_use(value_to_use_needed, safest_price)
-      value_to_use_needed / safest_price
+      (value_to_use_needed / fx_rate) / safest_price
     end
 
-    def self.safest_price(transactions, order_book, dollars_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, dollars_to_use, nil)
+    def self.safest_price(transactions, order_book, amount_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, amount_to_use / fx_rate, nil)
     end
 
     def self.value_to_use
