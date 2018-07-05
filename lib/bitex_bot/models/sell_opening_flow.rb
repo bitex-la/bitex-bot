@@ -14,6 +14,7 @@ module BitexBot
     # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
     # retrieved from Settings, if there is not enough BTC on bitex or USD on the other exchange then no order will be placed and
     # an exception will be raised instead.
+    #
     # The amount a SellOpeningFlow will try to sell and the price it will try to charge are derived from these parameters:
     #
     # @param usd_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
