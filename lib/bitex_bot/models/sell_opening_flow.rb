@@ -14,6 +14,7 @@ module BitexBot
     # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
     # retrieved from Settings, if there is not enough BTC on bitex or USD on the other exchange then no order will be placed and
     # an exception will be raised instead.
+    #
     # The amount a SellOpeningFlow will try to sell and the price it will try to charge are derived from these parameters:
     #
     # @param usd_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
@@ -48,8 +49,8 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.maker_price(usd_to_spend_re_buying)
-      usd_to_spend_re_buying / value_to_use * (1 + profit / 100)
+    def self.maker_price(fiat_to_spend_re_buying)
+      fiat_to_spend_re_buying * fx_rate / value_to_use * (1 + profit / 100)
     end
 
     def self.order_class

@@ -29,8 +29,6 @@ describe BitexBot::SellOpeningFlow do
     end
 
     let(:order_id) { 12_345 }
-    let(:usd_price) { '25.18_796_992_481_203'.to_d }
-    let(:suggested_closing_price) { 25.to_d }
     let(:amount_to_sell) { 4.to_d }
     let(:btc_balance) { 100_000.to_d }
     let(:maker_fee) { 0.5.to_d }
@@ -58,8 +56,6 @@ describe BitexBot::SellOpeningFlow do
       flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_sell
       flow.price.should >= flow.suggested_closing_price
-      flow.price.should eq usd_price
-      flow.suggested_closing_price.should eq suggested_closing_price
     end
 
     let(:other_fx_rate) { 10.to_d }
@@ -85,8 +81,6 @@ describe BitexBot::SellOpeningFlow do
       flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_sell
       flow.price.should >= flow.suggested_closing_price * other_fx_rate
-      flow.price.truncate(13).should eq usd_price * other_fx_rate
-      flow.suggested_closing_price.should eq suggested_closing_price
     end
 
     it 'raises the price to charge on bitex to take a profit' do

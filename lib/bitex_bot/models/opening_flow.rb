@@ -36,7 +36,7 @@ module BitexBot
       raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
         enough_remote_funds?(remote_balance, remote_value)
 
-      bitex_price = maker_price(remote_value) * fx_rate
+      bitex_price = maker_price(remote_value)
       order = create_order!(bitex_price)
       raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
         enough_funds?(order)

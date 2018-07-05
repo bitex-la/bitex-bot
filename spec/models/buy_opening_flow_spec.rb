@@ -29,8 +29,6 @@ describe BitexBot::BuyOpeningFlow do
     end
 
     let(:order_id) { 12_345 }
-    let(:usd_price) { '14.888_059_701_492'.to_d }
-    let(:suggested_closing_price) { 15.to_d }
     let(:amount_to_spend) { 100.to_d }
     let(:btc_balance) { 100_000.to_d }
     let(:maker_fee) { 0.5.to_d }
@@ -39,6 +37,8 @@ describe BitexBot::BuyOpeningFlow do
     let(:transactions) { bitstamp_api_wrapper_transactions_stub }
 
     it 'spends 100 usd' do
+      suggested_closing_price = 15.to_d
+
       BitexBot::Settings.stub(
         time_to_live: 3,
         buying: double(amount_to_spend_per_order: amount_to_spend, profit: 0)
@@ -57,14 +57,15 @@ describe BitexBot::BuyOpeningFlow do
 
       flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_spend
-      flow.price.should.should <= flow.suggested_closing_price
-      flow.price.truncate(12).should eq usd_price
+      flow.price.should <= suggested_closing_price
       flow.suggested_closing_price.should eq suggested_closing_price
     end
 
     let(:other_fx_rate) { 10.to_d }
 
     it 'spends 100 usd with other fx_rate' do
+      suggested_closing_price = 25.to_d
+
       BitexBot::Settings.stub(
         buying_foreign_exchange_rate: other_fx_rate,
         time_to_live: 3,
@@ -84,8 +85,7 @@ describe BitexBot::BuyOpeningFlow do
 
       flow.order_id.should eq order_id
       flow.value_to_use.should eq amount_to_spend
-      flow.price.should <= flow.suggested_closing_price * other_fx_rate
-      flow.price.truncate(11).should eq usd_price * other_fx_rate
+      flow.price.should <= suggested_closing_price * other_fx_rate
       flow.suggested_closing_price.should eq suggested_closing_price
     end
 
