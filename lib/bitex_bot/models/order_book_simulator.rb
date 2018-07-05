@@ -28,10 +28,11 @@ module BitexBot
 
         # An order may be partially or completely skipped due to volatility.
         if to_skip.positive?
-          dropped = [quantity, to_skip].min
-          to_skip -= dropped
-          quantity -= dropped
-          Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
+          [quantity, to_skip].min.tap do |dropped|
+            to_skip -= dropped
+            quantity -= dropped
+            Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
+          end
           next if quantity.zero?
         end
 
@@ -54,7 +55,7 @@ module BitexBot
       threshold = transactions.first.timestamp - volatility
       transactions
         .select { |t| t.timestamp > threshold }
-        .map { |t| t.amount.to_d }
+        .map(&:amount)
         .sum
     end
 
@@ -63,8 +64,7 @@ module BitexBot
     end
 
     def self.best_price(currency, target, price)
-      Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}")
-      price
+      price.tap { Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}") }
     end
 
     # end: private class methods

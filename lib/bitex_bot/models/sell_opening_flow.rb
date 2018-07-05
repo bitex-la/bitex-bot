@@ -49,8 +49,8 @@ module BitexBot
     # end: sought_transaction helpers
 
     # create_for_market helpers
-    def self.maker_price(usd_to_spend_re_buying)
-      usd_to_spend_re_buying / value_to_use * (1 + profit / 100)
+    def self.maker_price(fiat_to_spend_re_buying)
+      fiat_to_spend_re_buying * fx_rate / value_to_use * (1 + profit / 100)
     end
 
     def self.order_class
