@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
-  let(:api_wrapper) { described_class }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
@@ -14,6 +13,8 @@ describe BitstampApiWrapper do
     BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
+
+  let(:api_wrapper) { BitexBot::Robot.taker }
 
   it 'Sends User-Agent header' do
     url = 'https://www.bitstamp.net/api/v2/balance/btcusd/'
@@ -120,8 +121,6 @@ describe BitstampApiWrapper do
     order.price.should be_a(BigDecimal)
     order.amount.should be_a(BigDecimal)
     order.timestamp.should be_a(Integer)
-
-    expect(order).to respond_to(:cancel!)
   end
 
   context '#place_order' do
@@ -161,6 +160,7 @@ describe BitstampApiWrapper do
   end
 
   # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
+  # Transaction type: 0 - deposit; 1 - withdrawal; 2 - market trade; 14 - sub account transfer.
   def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
     Bitstamp.user_transactions.stub(:all) do
       count.times.map do |i|
@@ -180,9 +180,9 @@ describe BitstampApiWrapper do
 
   it '#user_transaction' do
     stub_user_transactions
-    BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
+    api_wrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
 
-    user_transaction = BitstampApiWrapper.user_transactions.sample
+    user_transaction = api_wrapper.user_transactions.sample
     user_transaction.usd.should be_a(BigDecimal)
     user_transaction.btc.should be_a(BigDecimal)
     user_transaction.btc_usd.should be_a(BigDecimal)

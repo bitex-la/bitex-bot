@@ -35,7 +35,7 @@ describe BitexBot::Robot do
       ltc_reserved:  100.00000000,   # LTC reserved in open orders
       ltc_available: 150.00000000    # LTC available for trading
     })
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
     stub_bitstamp_api_wrapper_balance
@@ -47,7 +47,7 @@ describe BitexBot::Robot do
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_api_wrapper_order_book
     bot.trade!
 
@@ -132,24 +132,12 @@ describe BitexBot::Robot do
       other_bot.store.update(hold: true)
     end
 
-    context 'maker' do
-      it 'crypto stop is reached' do
-        other_bot.store.update(maker_crypto_stop: 30)
-      end
-
-      it 'fiat stop is reached' do
-        other_bot.store.update(maker_fiat_stop: 30)
-      end
+    it 'crypto stop is reached' do
+      other_bot.store.update(crypto_stop: 30)
     end
 
-    context 'taker' do
-      it 'crypto stop is reached' do
-        other_bot.store.update(taker_crypto_stop: 30)
-      end
-
-      it 'fiat stop is reached' do
-        other_bot.store.update(taker_fiat_stop: 30)
-      end
+    it 'fiat stop is reached' do
+      other_bot.store.update(fiat_stop: 30)
     end
   end
 
@@ -166,7 +154,7 @@ describe BitexBot::Robot do
       })
       Bitex::Trade.stub(all: [])
       stub_bitstamp_api_wrapper_balance(100, 100)
-      other_bot.store.update(maker_crypto_warning: 0, taker_crypto_warning: 0, maker_fiat_warning: 0, taker_fiat_warning: 0)
+      other_bot.store.update(crypto_warning: 0, fiat_warning: 0)
     end
 
     after(:each) do
@@ -181,26 +169,14 @@ describe BitexBot::Robot do
       expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
     end
 
-    let(:other_bot) { described_class.new  }
+    let(:other_bot) { described_class.new }
 
-    context 'maker' do
-      it 'crypto warning is reached' do
-        other_bot.store.update(maker_crypto_warning: 100)
-      end
-
-      it 'fiat warning is reached' do
-        other_bot.store.update(maker_fiat_warning: 100)
-      end
+    it 'crypto warning is reached' do
+      other_bot.store.update(crypto_warning: 1_000)
     end
 
-    context 'taker' do
-      it 'crypto warning is reached' do
-        other_bot.store.update(taker_crypto_warning: 100)
-      end
-
-      it 'fiat warning is reached' do
-        other_bot.store.update(taker_fiat_warning: 100)
-      end
+    it 'fiat warning is reached' do
+      other_bot.store.update(fiat_warning: 1_000)
     end
   end
 
@@ -211,7 +187,7 @@ describe BitexBot::Robot do
   end
 
   it 'notifies exceptions and sleeps' do
-    BitstampApiWrapper.stub(:balance) { raise StandardError.new('oh moova') }
+    BitstampApiWrapper.any_instance.stub(:balance) { raise StandardError.new('oh moova') }
 
     expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
   end

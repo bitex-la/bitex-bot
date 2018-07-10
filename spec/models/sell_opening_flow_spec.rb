@@ -13,7 +13,7 @@ describe BitexBot::SellOpeningFlow do
 
   describe 'when creating a selling flow' do
     it 'sells 2 bitcoin' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 2, profit: 0))
 
@@ -41,7 +41,7 @@ describe BitexBot::SellOpeningFlow do
         time_to_live: 3,
         selling: double(quantity_to_sell_per_order: amount_to_sell, profit: 0)
       )
-      stub_bitex_orders
+      stub_bitex_active_orders
 
       flow =
         BitexBot::SellOpeningFlow.create_for_market(
@@ -66,7 +66,7 @@ describe BitexBot::SellOpeningFlow do
         time_to_live: 3,
         selling: double(quantity_to_sell_per_order: amount_to_sell, profit: 0)
       )
-      stub_bitex_orders
+      stub_bitex_active_orders
 
       flow =
         BitexBot::SellOpeningFlow.create_for_market(
@@ -84,7 +84,7 @@ describe BitexBot::SellOpeningFlow do
     end
 
     it 'raises the price to charge on bitex to take a profit' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50.to_d))
 
@@ -115,7 +115,7 @@ describe BitexBot::SellOpeningFlow do
     end
 
     it 'fails when there are not enough USD to re-buy in the other exchange' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
@@ -130,7 +130,7 @@ describe BitexBot::SellOpeningFlow do
     end
 
     it 'Prioritizes profit from store' do
-      stub_bitex_orders
+      stub_bitex_active_orders
       BitexBot::Settings.stub(time_to_live: 3,
         selling: double(quantity_to_sell_per_order: 2, profit: 0))
 
@@ -144,6 +144,7 @@ describe BitexBot::SellOpeningFlow do
   end
 
   describe 'when fetching open positions' do
+    before(:each) { BitexBot::Robot.setup }
     let(:flow) { create(:sell_opening_flow) }
 
     it 'only gets sells' do
@@ -193,14 +194,12 @@ describe BitexBot::SellOpeningFlow do
     it 'does not register buys from unknown bids' do
       stub_bitex_transactions
 
-      expect do
-        BitexBot::SellOpeningFlow.sync_open_positions.should be_empty
-      end.not_to change { BitexBot::OpenSell.count }
+      expect { BitexBot::SellOpeningFlow.sync_open_positions.should be_empty }.not_to change { BitexBot::OpenSell.count }
     end
   end
 
   it 'cancels the associated bitex bid' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     BitexBot::Settings.stub(time_to_live: 3,
       selling: double(quantity_to_sell_per_order: 4, profit: 50))
 
@@ -215,7 +214,7 @@ describe BitexBot::SellOpeningFlow do
   end
 
   it 'order has expected order book' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     BitexBot::Settings.stub(time_to_live: 3,
       selling: double(quantity_to_sell_per_order: 2, profit: 0))
 

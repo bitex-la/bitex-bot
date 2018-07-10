@@ -34,7 +34,7 @@ module BitexBot
 
     # sync_open_positions helpers
     def self.transaction_order_id(transaction)
-      transaction.bid_id
+      transaction.raw.bid_id
     end
 
     def self.open_position_class

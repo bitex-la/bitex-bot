@@ -1,6 +1,6 @@
 module BitstampApiWrapperStubs
   def stub_bitstamp_api_wrapper_order_book
-    BitstampApiWrapper.stub(order_book: bitstamp_api_wrapper_order_book)
+    BitstampApiWrapper.any_instance.stub(order_book: bitstamp_api_wrapper_order_book)
   end
 
   def bitstamp_api_wrapper_order_book
@@ -16,7 +16,7 @@ module BitstampApiWrapperStubs
   end
 
   def stub_bitstamp_api_wrapper_balance(usd = nil, coin = nil, fee = nil)
-    BitstampApiWrapper.stub(:balance) do
+    BitstampApiWrapper.any_instance.stub(:balance) do
       ApiWrapper::BalanceSummary.new(
         ApiWrapper::Balance.new((coin || 10).to_d, 0.to_d, (coin || 10).to_d),
         ApiWrapper::Balance.new((usd || 100).to_d, 0.to_d, (usd || 100).to_d),

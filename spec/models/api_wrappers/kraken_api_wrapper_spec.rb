@@ -1,8 +1,6 @@
 require 'spec_helper'
 
 describe KrakenApiWrapper do
-  let(:api_wrapper) { described_class }
-  let(:api_client) { api_wrapper.client }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       kraken: {
@@ -15,6 +13,9 @@ describe KrakenApiWrapper do
     BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
+
+  let(:api_wrapper) { BitexBot::Robot.taker }
+  let(:api_client) { api_wrapper.client }
 
   def stub_public_client
     api_client.stub(public: double)
@@ -29,7 +30,7 @@ describe KrakenApiWrapper do
     stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
-    KrakenApiWrapper.order_book rescue nil
+    api_wrapper.order_book rescue nil
 
     expect(stub_stuff).to have_been_requested
   end
@@ -204,6 +205,6 @@ describe KrakenApiWrapper do
     stub_private_client
     stub_orders
 
-    described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
+    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 end
