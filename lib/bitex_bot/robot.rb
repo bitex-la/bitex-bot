@@ -69,8 +69,6 @@ module BitexBot
       end
     end
 
-    private_class_method
-
     def self.start_robot
       setup
       log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
