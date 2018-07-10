@@ -63,8 +63,6 @@ class BitexApiWrapper < ApiWrapper
     with_session { Bitex::Trade.all.map { |trade| user_transaction_parser(trade) } }
   end
 
-  private_class_method
-
   # {
   #   usd_balance:               10000.00, # Total USD balance.
   #   usd_reserved:               2000.00, # USD reserved in open orders.
