@@ -92,18 +92,16 @@ module BitexBot
       unless ActiveRecord::Base.connection.table_exists?('stores')
         create_table   :stores, force: true do |t|
           t.decimal    :maker_crypto,                       precision: 20,   scale: 8
-          t.decimal    :maker_crypto_stop,                  precision: 20,   scale: 8
-          t.decimal    :maker_crypto_warning,               precision: 20,   scale: 8
           t.decimal    :maker_fiat,                         precision: 20,   scale: 8
-          t.decimal    :maker_fiat_stop,                    precision: 20,   scale: 8
-          t.decimal    :maker_fiat_warning,                 precision: 20,   scale: 8
 
           t.decimal    :taker_crypto,                       precision: 20,   scale: 8
-          t.decimal    :taker_crypto_stop,                  precision: 20,   scale: 8
-          t.decimal    :taker_crypto_warning,               precision: 20,   scale: 8
           t.decimal    :taker_fiat,                         precision: 20,   scale: 8
-          t.decimal    :taker_fiat_stop,                    precision: 20,   scale: 8
-          t.decimal    :taker_fiat_warning,                 precision: 20,   scale: 8
+
+          t.decimal    :crypto_stop,                  precision: 20,   scale: 8
+          t.decimal    :crypto_warning,               precision: 20,   scale: 8
+
+          t.decimal    :fiat_stop,                    precision: 20,   scale: 8
+          t.decimal    :fiat_warning,                 precision: 20,   scale: 8
 
           t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
           t.decimal    :buying_fx_rate,                     precision: 20,   scale: 8

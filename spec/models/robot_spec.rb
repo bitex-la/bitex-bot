@@ -132,24 +132,12 @@ describe BitexBot::Robot do
       other_bot.store.update(hold: true)
     end
 
-    context 'maker' do
-      it 'crypto stop is reached' do
-        other_bot.store.update(maker_crypto_stop: 30)
-      end
-
-      it 'fiat stop is reached' do
-        other_bot.store.update(maker_fiat_stop: 30)
-      end
+    it 'crypto stop is reached' do
+      other_bot.store.update(crypto_stop: 30)
     end
 
-    context 'taker' do
-      it 'crypto stop is reached' do
-        other_bot.store.update(taker_crypto_stop: 30)
-      end
-
-      it 'fiat stop is reached' do
-        other_bot.store.update(taker_fiat_stop: 30)
-      end
+    it 'fiat stop is reached' do
+      other_bot.store.update(fiat_stop: 30)
     end
   end
 
@@ -166,7 +154,7 @@ describe BitexBot::Robot do
       })
       Bitex::Trade.stub(all: [])
       stub_bitstamp_api_wrapper_balance(100, 100)
-      other_bot.store.update(maker_crypto_warning: 0, taker_crypto_warning: 0, maker_fiat_warning: 0, taker_fiat_warning: 0)
+      other_bot.store.update(crypto_warning: 0, fiat_warning: 0)
     end
 
     after(:each) do
@@ -181,26 +169,14 @@ describe BitexBot::Robot do
       expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
     end
 
-    let(:other_bot) { described_class.new  }
+    let(:other_bot) { described_class.new }
 
-    context 'maker' do
-      it 'crypto warning is reached' do
-        other_bot.store.update(maker_crypto_warning: 100)
-      end
-
-      it 'fiat warning is reached' do
-        other_bot.store.update(maker_fiat_warning: 100)
-      end
+    it 'crypto warning is reached' do
+      other_bot.store.update(crypto_warning: 1_000)
     end
 
-    context 'taker' do
-      it 'crypto warning is reached' do
-        other_bot.store.update(taker_crypto_warning: 100)
-      end
-
-      it 'fiat warning is reached' do
-        other_bot.store.update(taker_fiat_warning: 100)
-      end
+    it 'fiat warning is reached' do
+      other_bot.store.update(fiat_warning: 1_000)
     end
   end
 

@@ -73,8 +73,6 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}"
   end
 
-  private_class_method
-
   # {
   #   btc_reserved: '0', btc_available: '0', btc_balance: '0',
   #   usd_reserved: '1.02, usd_available: '6952.05', usd_balance: '6953.07',

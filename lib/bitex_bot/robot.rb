@@ -68,8 +68,6 @@ module BitexBot
       end
     end
 
-    private_class_method
-
     def self.start_robot
       setup
       log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
@@ -178,8 +176,8 @@ module BitexBot
       check_balance_warning if expired_last_warning?
       return if stop_opening_flows?
 
-      order_book = with_cooldown { taker.order_book }
-      transactions = with_cooldown { taker.transactions }
+      order_book = with_cooldown { Robot.taker.order_book }
+      transactions = with_cooldown { Robot.taker.transactions }
 
       args = [transactions, maker_balance.fee, taker_balance.fee, store]
       BuyOpeningFlow.create_for_market(*[taker_balance.crypto.available, order_book.bids] + args) unless recent_buying
@@ -209,27 +207,24 @@ module BitexBot
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def stop_opening_flows?
-      (log(:debug, "Not placing new orders, #{Settings.quote} target not met") if alert?(:maker, :fiat, :stop)) ||
-        (log(:debug, "Not placing new orders, #{Settings.base} target not met") if alert?(:maker, :crypto, :stop)) ||
-        (log(:debug, 'Not placing new orders, USD target not met') if alert?(:taker, :fiat, :stop)) ||
-        (log(:debug, "Not placing new orders, #{Settings.quote} target not met") if alert?(:taker, :crypto, :stop))
+      (log(:debug, "Not placing new orders, #{Settings.quote} target not met") if alert?(:fiat, :stop)) ||
+        (log(:debug, "Not placing new orders, #{Settings.base} target not met") if alert?(:crypto, :stop))
     end
-    # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
-    # rubocop:disable Metrics/AbcSize
     def check_balance_warning
-      notify_balance_warning(Settings.base, store.maker_crypto, store.maker_crypto_warning) if alert?(:maker, :crypto, :warning)
-      notify_balance_warning(Settings.quote, store.maker_fiat, store.maker_fiat_warning) if alert?(:maker, :fiat, :warning)
-      notify_balance_warning(Settings.base, store.taker_crypto, store.taker_crypto_warning) if alert?(:taker, :crypto, :warning)
-      notify_balance_warning(:usd, store.taker_fiat, store.taker_fiat_warning) if alert?(:taker, :fiat, :warning)
+      notify_balance_warning(Settings.base, balance(:crypto), store.crypto_warning) if alert?(:crypto, :warning)
+      notify_balance_warning(Settings.quote, balance(:fiat), store.fiat_warning) if alert?(:fiat, :warning)
     end
-    # rubocop:enable Metrics/AbcSize
 
-    def alert?(market, currency, flag)
-      return unless store.send("#{market}_#{currency}_#{flag}").present?
-      store.send("#{market}_#{currency}") <= store.send("#{market}_#{currency}_#{flag}")
+    def alert?(currency, flag)
+      return unless store.send("#{currency}_#{flag}").present?
+      balance(currency) <= store.send("#{currency}_#{flag}")
+    end
+
+    def balance(currency)
+      fx_rate = currency == :fiat ? Settings.buying_fx_rate : 1
+      store.send("maker_#{currency}") / fx_rate + store.send("taker_#{currency}")
     end
 
     def notify_balance_warning(currency, amount, warning_amount)
