@@ -58,8 +58,6 @@ class ItbitApiWrapper < ApiWrapper
     []
   end
 
-  private_class_method
-
   # [
   #   { total_balance: 0.2e2, currency: :usd, available_balance: 0.1e2 },
   #   { total_balance: 0.0, currency: :xbt, available_balance: 0.0 },
