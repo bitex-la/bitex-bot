@@ -1,4 +1,5 @@
 require 'hashie'
+require 'fileutils'
 require 'bigdecimal'
 require 'bigdecimal/util'
 
