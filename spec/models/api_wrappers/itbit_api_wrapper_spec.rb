@@ -5,7 +5,11 @@ describe ItbitApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       itbit: {
-        client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false,
+        client_key: 'client-key',
+        secret: 'secret',
+        user_id: 'user-id',
+        default_wallet_id: 'wallet-000',
+        sandbox: false,
         currency_pair: :xbtusd
       }
     )
