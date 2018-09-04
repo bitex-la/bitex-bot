@@ -4,7 +4,7 @@ describe BitexBot::Robot do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd
       }
     )
   end
