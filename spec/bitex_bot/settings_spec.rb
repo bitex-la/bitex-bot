@@ -13,7 +13,14 @@ describe BitexBot::Settings do
 
         maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false } },
         # By default Bitstamp is taker market.
-        taker: { bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' } },
+        taker: {
+          bitstamp: {
+            api_key: 'YOUR_API_KEY',
+            secret: 'YOUR_API_SECRET',
+            client_id: 'YOUR_BITSTAMP_USERNAME',
+            currency_pair: :btcusd
+          }
+        },
 
         database: { adapter: :sqlite3, database: 'bitex_bot.db' },
         mailer: {
