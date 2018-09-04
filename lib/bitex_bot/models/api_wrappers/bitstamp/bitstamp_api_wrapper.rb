@@ -35,7 +35,7 @@ class BitstampApiWrapper < ApiWrapper
 
   # rubocop:disable Metrics/AbcSize
   def self.order_book(retries = 20)
-    book = Bitstamp.order_book.deep_symbolize_keys
+    book = Bitstamp.order_book(currency_pair).deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
     return order_book_parser(book) if age <= 300
 
