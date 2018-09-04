@@ -132,4 +132,10 @@ class BitstampApiWrapper < ApiWrapper
       Time.new(user_transaction.datetime).to_i
     )
   end
+
+  def self.currency_pair
+    BitexBot::Settings.taker.bitstamp.currency_pair
+  end
+
+  private_class_method :currency_pair
 end

@@ -5,7 +5,7 @@ describe BitstampApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd
       }
     )
   end
@@ -13,6 +13,11 @@ describe BitstampApiWrapper do
   before(:each) do
     BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
+  end
+
+  it 'has configured currency pair' do
+    expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError)
+    api_wrapper.send(:currency_pair).should eq taker_settings.bitstamp.currency_pair
   end
 
   it 'Sends User-Agent header' do
