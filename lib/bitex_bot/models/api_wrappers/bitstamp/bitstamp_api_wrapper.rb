@@ -137,5 +137,6 @@ class BitstampApiWrapper < ApiWrapper
     BitexBot::Settings.taker.bitstamp.currency_pair
   end
 
-  private_class_method :currency_pair
+  private_class_method :currency_pair, :user_transaction_parser, :transaction_parser, :order_summary_parser, :order_parser,
+                       :order_is_done?
 end
