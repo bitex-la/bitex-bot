@@ -32,7 +32,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.orders
-    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
+    Itbit::Order.all(instrument: currency_pair, status: :open).map { |o| order_parser(o) }
   end
 
   def self.place_order(type, price, quantity)
