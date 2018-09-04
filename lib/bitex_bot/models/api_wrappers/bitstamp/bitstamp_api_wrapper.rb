@@ -57,7 +57,7 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.send_order(type, price, quantity)
-    Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
+    Bitstamp.orders.send(type, currency_pair: currency_pair, amount: quantity.round(4), price: price.round(2))
   end
 
   def self.transactions
