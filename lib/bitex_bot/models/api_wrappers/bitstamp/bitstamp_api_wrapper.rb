@@ -61,7 +61,7 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Bitstamp.transactions.map { |t| transaction_parser(t) }
+    Bitstamp.transactions(currency_pair).map { |t| transaction_parser(t) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
   end
