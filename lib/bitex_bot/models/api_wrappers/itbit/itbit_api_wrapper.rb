@@ -36,7 +36,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.place_order(type, price, quantity)
-    Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
+    Itbit::Order.create!(type, currency_pair, quantity.round(4), price.round(2), wait: true)
   rescue RestClient::RequestTimeout => e
     # On timeout errors, we still look for the latest active closing order that may be available.
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
