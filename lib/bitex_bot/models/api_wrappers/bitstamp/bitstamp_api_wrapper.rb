@@ -18,7 +18,7 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.balance
-    balance_summary_parser(Bitstamp.balance.symbolize_keys)
+    balance_summary_parser(Bitstamp.balance(currency_pair).symbolize_keys)
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end

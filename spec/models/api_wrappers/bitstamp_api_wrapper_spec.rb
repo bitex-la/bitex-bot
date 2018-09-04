@@ -21,7 +21,7 @@ describe BitstampApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    url = 'https://www.bitstamp.net/api/v2/balance/btcusd/'
+    url = "https://www.bitstamp.net/api/v2/balance/#{api_wrapper.send(:currency_pair)}/"
     stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
