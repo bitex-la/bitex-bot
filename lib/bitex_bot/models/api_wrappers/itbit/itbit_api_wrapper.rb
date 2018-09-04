@@ -111,4 +111,23 @@ class ItbitApiWrapper < ApiWrapper
   def self.transaction_parser(transaction)
     Transaction.new(transaction[:tid], transaction[:price], transaction[:amount], transaction[:date])
   end
+
+  def self.market
+    "Itbit::#{currency_pair.upcase}MarketData".constantize
+  end
+
+  def self.currency_base
+    currency_pair.slice(0..2).to_sym
+  end
+
+  def self.currency_quote
+    currency_pair.slice(3..6).to_sym
+  end
+
+  def self.currency_pair
+    BitexBot::Settings.taker.itbit.currency_pair
+  end
+
+  private_class_method :market, :currency_base, :currency_quote, :currency_pair, :transaction_parser, :order_summary_parser,
+                       :order_book_parser
 end
