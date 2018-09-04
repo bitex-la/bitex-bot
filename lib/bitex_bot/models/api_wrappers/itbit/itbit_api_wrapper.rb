@@ -129,5 +129,5 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   private_class_method :market, :currency_base, :currency_quote, :currency_pair, :transaction_parser, :order_summary_parser,
-                       :order_book_parser
+                       :order_book_parser, :last_order_by
 end
