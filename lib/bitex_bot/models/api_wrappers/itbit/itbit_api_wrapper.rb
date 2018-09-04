@@ -28,7 +28,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.order_book
-    order_book_parser(Itbit::XBTUSDMarketData.orders)
+    order_book_parser(market.orders)
   end
 
   def self.orders
