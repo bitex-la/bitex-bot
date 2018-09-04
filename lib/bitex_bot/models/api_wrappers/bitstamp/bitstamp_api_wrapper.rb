@@ -51,7 +51,7 @@ class BitstampApiWrapper < ApiWrapper
   # rubocop:enable Metrics/AbcSize
 
   def self.orders
-    Bitstamp.orders.all.map { |o| order_parser(o) }
+    Bitstamp.orders.all(currency_pair: currency_pair).map { |o| order_parser(o) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
   end
