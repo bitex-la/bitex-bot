@@ -50,7 +50,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
+    market.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
   # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
