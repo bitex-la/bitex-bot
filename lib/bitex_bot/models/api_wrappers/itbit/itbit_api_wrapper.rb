@@ -65,7 +65,7 @@ class ItbitApiWrapper < ApiWrapper
   #   { total_balance: 0.0, currency: :sgd, available_balance: 0.0 }
   # ]
   def self.balance_summary_parser(balances)
-    BalanceSummary.new(balance_parser(balances, :xbt), balance_parser(balances, :usd), 0.5.to_d)
+    BalanceSummary.new(balance_parser(balances, currency_base), balance_parser(balances, currency_quote), 0.5.to_d)
   end
 
   def self.wallet
