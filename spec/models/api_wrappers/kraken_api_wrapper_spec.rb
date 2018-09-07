@@ -5,9 +5,7 @@ describe KrakenApiWrapper do
   let(:api_client) { api_wrapper.client }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      kraken: {
-        api_key: 'your_api_key', api_secret: 'your_api_secret'
-      }
+      kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', currency_pair: :xbtusd }
     )
   end
 
@@ -205,5 +203,73 @@ describe KrakenApiWrapper do
     stub_orders
 
     described_class.orders.all? { |o| described_class.find_lost(o.type, o.price, o.amount).present? }
+  end
+
+  def stub_assets
+    api_client.public.stub(:asset_pairs) do
+      {
+        'XBTUSD' => {
+          'altname' => 'XBTUSD',
+          'aclass_base' => 'currency',
+          'base' => 'XXBT',
+          'aclass_quote' => 'currency',
+          'quote' => 'ZUSD',
+          'lot' => 'unit',
+          'pair_decimals' => 1,
+          'lot_decimals' => 8,
+          'lot_multiplier' => 1,
+          'leverage_buy' => [2, 3, 4, 5],
+          'leverage_sell' => [2, 3, 4, 5],
+          'fees' => [
+            [0, 0.26],
+            [50_000, 0.24],
+            [100_000, 0.22],
+            [250_000, 0.2],
+            [500_000, 0.18],
+            [1_000_000, 0.16],
+            [2_500_000, 0.14],
+            [5_000_000, 0.12],
+            [10_000_000, 0.1]
+          ],
+          'fees_maker' => [
+            [0, 0.16],
+            [50_000, 0.14],
+            [100_000, 0.12],
+            [250_000, 0.1],
+            [500_000, 0.08],
+            [1_000_000, 0.06],
+            [2_500_000, 0.04],
+            [5_000_000, 0.02],
+            [10_000_000, 0]
+          ],
+          'fee_volume_currency' => 'ZUSD',
+          'margin_call' => 80,
+          'margin_stop' => 40
+        }
+      }.with_indifferent_access
+    end
+  end
+
+  it '#assets' do
+    stub_public_client
+    stub_assets
+
+    BitexBot::Settings.taker.kraken.currency_pair.should eq taker_settings.kraken.currency_pair
+    api_wrapper.assets.should be_a(HashWithIndifferentAccess)
+  end
+
+  it '#currency_pair' do
+    stub_public_client
+    stub_assets
+
+    api_wrapper.currency_pair.should be_a(Struct)
+    api_wrapper.currency_pair.should be_a(KrakenApiWrapper::CurrencyPair)
+    api_wrapper.currency_pair.members.should contain_exactly(*%i[pair base quote])
+
+    api_wrapper.send(:client).public.asset_pairs[BitexBot::Settings.taker.kraken.currency_pair.to_s.upcase].tap do |asset|
+      api_wrapper.currency_pair.pair.should eq asset['altname']
+      api_wrapper.currency_pair.base.should eq asset['base']
+      api_wrapper.currency_pair.quote.should eq asset['quote']
+    end
   end
 end

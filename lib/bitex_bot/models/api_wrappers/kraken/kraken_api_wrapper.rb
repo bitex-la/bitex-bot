@@ -3,9 +3,15 @@
 class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
+  CurrencyPair = Struct.new(
+    :pair, # Integer
+    :base, # Decimal
+    :quote # Decimal
+  )
+
   def self.setup(settings)
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
-    @settings = settings
+    @settings = settings.except(:currency_pair)
   end
 
   def self.client
@@ -105,5 +111,15 @@ class KrakenApiWrapper < ApiWrapper
   # ]
   def self.transaction_parser(transaction)
     Transaction.new(transaction[2].to_i, transaction[0].to_d, transaction[1].to_d, transaction[2].to_i)
+  end
+
+  def self.currency_pair
+    @currency_pair ||= assets[BitexBot::Settings.taker.kraken.currency_pair.upcase]
+  end
+
+  def self.assets
+    client.public.asset_pairs.map do |currency_pair, data|
+      [data['altname'], CurrencyPair.new(currency_pair, data['base'], data['quote'])]
+    end.to_h.with_indifferent_access
   end
 end
