@@ -1,4 +1,4 @@
- File to write log to. The log is rotated every 10.240.000 bytes, 10 oldest logs are kept around.
+# File to write log to. The log is rotated every 10.240.000 bytes, 10 oldest logs are kept around.
 # If you want to log to stdout you can set 'file' to nil or remove the key.
 # How much information to show in the log, valid values are: :debug, :info, :error
 log file: 'bitex_bot.log', level: :info
