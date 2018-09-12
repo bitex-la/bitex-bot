@@ -25,7 +25,7 @@ class KrakenOrder
 
   def self.order_info_by(type, price, quantity)
     KrakenApiWrapper.client.private.add_order(
-      pair: KrakenApiWrapper.currency_pair.pair,
+      pair: KrakenApiWrapper.currency_pair[:altname],
       type: type,
       ordertype: 'limit',
       price: price,

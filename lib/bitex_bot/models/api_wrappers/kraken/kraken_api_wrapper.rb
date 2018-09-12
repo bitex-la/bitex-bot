@@ -3,13 +3,17 @@
 class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
-  def self.setup(settings)
+  def self.setup(configs)
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
-    @settings = settings.except(:currency_pair)
+    settings(configs)
+  end
+
+  def self.settings(configs = {})
+    @settings ||= configs.except(:currency_pair)
   end
 
   def self.client
-    @client ||= KrakenClient.load(@settings)
+    @client ||= KrakenClient.load(settings)
   end
 
   def self.amount_and_quantity(order_id, _transactions)
