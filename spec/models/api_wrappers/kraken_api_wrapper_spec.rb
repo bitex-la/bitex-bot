@@ -78,7 +78,7 @@ describe KrakenApiWrapper do
     # We don't care about the response
     api_wrapper.order_book
 
-    expect(stub_stuff).to have_been_requested
+    stub_stuff.should have_been_requested
   end
 
   def stub_balance
