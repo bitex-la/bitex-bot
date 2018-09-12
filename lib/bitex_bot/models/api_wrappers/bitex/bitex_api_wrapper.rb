@@ -11,14 +11,20 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def with_session
+    # save previous client keys
     prev_key = Bitex.api_key
     prev_sandbox = Bitex.sandbox
+
+    # set keys for current client
     Bitex.api_key = api_key
     Bitex.sandbox = sandbox
-    yield.tap do
-      Bitex.api_key = prev_key
-      Bitex.sandbox = prev_sandbox
-    end
+
+    # call client block
+    yield
+  ensure
+    # reset to previous client keys
+    Bitex.api_key = prev_key
+    Bitex.sandbox = prev_sandbox
   end
 
   def profile
