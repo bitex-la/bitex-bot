@@ -90,36 +90,6 @@ describe KrakenApiWrapper do
     )
   end
 
-  def stub_open_orders
-    stub_request_helper(
-      method: :post,
-      path: '/private/OpenOrders',
-      header_params: { 'Api-Key': api_wrapper.settings.api_key },
-      result: {
-        open:  {
-          'O5TDV2-WDYB2-6OGJRD': {
-            refid: nil, userref: nil, status: 'open', opentm: 1_440_292_821.839, starttm: 0, expiretm: 0,
-            descr: {
-              pair: 'ETHEUR', type: 'buy', ordertype: 'limit', price: '1.19000', price2: '0',
-              leverage: 'none', order: 'buy 1204.00000000 ETHEUR @ limit 1.19000'
-            },
-            vol: '1204.00000000', vol_exec: '0.00000000', cost: '0.00000', fee: '0.00000',
-            price: '0.00008', misc: '', oflags: 'fciq'
-          },
-          'OGAEYL-LVSPL-BYGGRR': {
-            refid: nil, userref: nil, status: 'open', opentm: 1_440_254_004.621, starttm: 0, expiretm: 0,
-            descr: {
-              pair: 'ETHEUR', type: 'sell', ordertype: 'limit', price: '1.29000', price2: '0',
-              leverage: 'none', order: 'sell 99.74972000 ETHEUR @ limit 1.29000'
-            },
-            vol: '99.74972000', vol_exec: '0.00000000', cost: '0.00000', fee: '0.00000',
-            price: '0.00009', misc: '', oflags: 'fciq'
-          }
-        }
-      }
-    )
-  end
-
   def stub_trade_volume
     stub_request_helper(
       method: :post,
@@ -155,7 +125,7 @@ describe KrakenApiWrapper do
   it '#balance' do
     stub_assets
     stub_balance
-    stub_open_orders
+    stub_orders
     stub_trade_volume
 
     balance = api_wrapper.balance
@@ -302,7 +272,7 @@ describe KrakenApiWrapper do
     api_wrapper.currency_pair.keys.should include(*%w[altname base quote raw_name])
   end
 
-  it do
+  it '#settings correctly mapped to wrapper settings' do
     api_wrapper.settings do |settings|
       settings.should be_a(BitexBot::SettingsClass)
       settings.keys.should contain_exactly(*%i[api_key api_secret])
