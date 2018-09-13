@@ -5,7 +5,10 @@ describe BitstampApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd
+        api_key: 'YOUR_API_KEY',
+        secret: 'YOUR_API_SECRET',
+        client_id: 'YOUR_BITSTAMP_USERNAME',
+        currency_pair: :btcusd
       }
     )
   end
@@ -17,11 +20,13 @@ describe BitstampApiWrapper do
 
   it 'has configured currency pair' do
     expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError)
-    api_wrapper.send(:currency_pair).should eq taker_settings.bitstamp.currency_pair
+
+    api_wrapper.send(:currency_pair).should be_a(Hash)
+    api_wrapper.send(:currency_pair).should eq ({ name: :btcusd, base: :btc, quote: :usd })
   end
 
   it 'Sends User-Agent header' do
-    url = "https://www.bitstamp.net/api/v2/balance/#{api_wrapper.send(:currency_pair)}/"
+    url = "https://www.bitstamp.net/api/v2/balance/#{api_wrapper.send(:currency_pair)[:name]}/"
     stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
@@ -30,45 +35,99 @@ describe BitstampApiWrapper do
     expect(stub_stuff).to have_been_requested
   end
 
-  def stub_balance(balance: '0.5', reserved: '1.5', available: '2.0', fee: '0.2')
-    Bitstamp.stub(:balance) do
+  def stub_balance(balance:, reserved:, available:, fee:)
+    Bitstamp.stub(:balance).with(an_instance_of(Symbol)) do
       {
-        'btc_balance' => balance,
-        'btc_reserved' => reserved,
-        'btc_available' => available,
-        'usd_balance' => balance,
-        'usd_reserved' => reserved,
-        'usd_available' => balance,
-        'fee' => fee
+        'btc_balance' => balance.to_s,
+        'btc_reserved' => reserved.to_s,
+        'btc_available' => available.to_s,
+        'bch_balance' => (balance * 2).to_s,
+        'bch_reserved' => (reserved * 2).to_s,
+        'bch_available' => (available *2).to_s,
+        'usd_balance' => balance.to_s,
+        'usd_reserved' => reserved.to_s,
+        'usd_available' => available.to_s,
+        'fee' => fee.to_s
       }
     end
   end
 
-  it '#balance' do
-    stub_balance
+  context '#balance' do
+    before(:each) do
+      stub_balance(balance: total, reserved: reserved, available: available, fee: fee)
+    end
 
-    balance = api_wrapper.balance
-    balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.crypto.should be_a(ApiWrapper::Balance)
-    balance.fiat.should be_a(ApiWrapper::Balance)
+    let(:total) { Faker::Number.between(100, 1_000.to_d) }
+    let(:reserved) { Faker::Number.between(100, 1_000).to_d }
+    let(:available) { Faker::Number.between(100, 1_000).to_d }
+    let(:fee) { Faker::Number.between(1, 50).to_d }
 
-    crypto = balance.crypto
-    crypto.total.should be_a(BigDecimal)
-    crypto.reserved.should be_a(BigDecimal)
-    crypto.available.should be_a(BigDecimal)
+    shared_examples_for 'balances' do
+      it 'has expected structure' do
+        balance = api_wrapper.balance
+        balance.should be_a(ApiWrapper::BalanceSummary)
+        balance.crypto.should be_a(ApiWrapper::Balance)
+        balance.fiat.should be_a(ApiWrapper::Balance)
 
-    fiat = balance.fiat
-    fiat.total.should be_a(BigDecimal)
-    fiat.reserved.should be_a(BigDecimal)
-    fiat.available.should be_a(BigDecimal)
+        crypto = balance.crypto
+        crypto.total.should be_a(BigDecimal)
+        crypto.reserved.should be_a(BigDecimal)
+        crypto.available.should be_a(BigDecimal)
 
-    balance.fee.should be_a(BigDecimal)
+        fiat = balance.fiat
+        fiat.total.should be_a(BigDecimal)
+        fiat.total.should eq total
+        fiat.reserved.should be_a(BigDecimal)
+        fiat.reserved.should eq reserved
+        fiat.available.should be_a(BigDecimal)
+        fiat.available.should eq available
+
+        balance.fee.should be_a(BigDecimal)
+        balance.fee.should eq fee
+      end
+    end
+
+    context 'with btcusd' do
+      before(:each) do
+        api_wrapper.send(:currency_pair)[:name] = :btcusd
+        api_wrapper.send(:currency_pair)[:base] = :btc
+        api_wrapper.send(:currency_pair)[:quote] = :usd
+      end
+
+      it_behaves_like 'balances'
+
+      it 'has the data belonging to its currency pair' do
+        api_wrapper.balance.crypto do |currency|
+          currency.total.should eq total
+          currency.reserved.should eq reserved
+          currency.available.should eq available
+        end
+      end
+    end
+
+    context 'with bchusd' do
+      before(:each) do
+        api_wrapper.send(:currency_pair)[:name] = :bchusd
+        api_wrapper.send(:currency_pair)[:base] = :bch
+        api_wrapper.send(:currency_pair)[:quote] = :usd
+      end
+
+      it_behaves_like 'balances'
+
+      it 'has the data belonging to its currency pair' do
+        api_wrapper.balance.crypto do |currency|
+          currency.total.should eq total * 2
+          currency.reserved.should eq reserved * 2
+          currency.available.should eq available * 2
+        end
+      end
+    end
   end
 
   it '#cancel' do
     stub_orders
 
-    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+    api_wrapper.orders.sample.should respond_to(:cancel!)
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)

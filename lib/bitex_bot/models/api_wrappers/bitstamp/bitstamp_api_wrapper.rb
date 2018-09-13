@@ -18,7 +18,7 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.balance
-    balance_summary_parser(Bitstamp.balance(currency_pair).symbolize_keys)
+    balance_summary_parser(Bitstamp.balance(currency_pair[:name]).symbolize_keys)
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end
@@ -35,7 +35,7 @@ class BitstampApiWrapper < ApiWrapper
 
   # rubocop:disable Metrics/AbcSize
   def self.order_book(retries = 20)
-    book = Bitstamp.order_book(currency_pair).deep_symbolize_keys
+    book = Bitstamp.order_book(currency_pair[:name]).deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
     return order_book_parser(book) if age <= 300
 
@@ -51,23 +51,23 @@ class BitstampApiWrapper < ApiWrapper
   # rubocop:enable Metrics/AbcSize
 
   def self.orders
-    Bitstamp.orders.all(currency_pair: currency_pair).map { |o| order_parser(o) }
+    Bitstamp.orders.all(currency_pair: currency_pair[:name]).map { |o| order_parser(o) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
   end
 
   def self.send_order(type, price, quantity)
-    Bitstamp.orders.send(type, currency_pair: currency_pair, amount: quantity.round(4), price: price.round(2))
+    Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: quantity.round(4), price: price.round(2))
   end
 
   def self.transactions
-    Bitstamp.transactions(currency_pair).map { |t| transaction_parser(t) }
+    Bitstamp.transactions(currency_pair[:name]).map { |t| transaction_parser(t) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
   end
 
   def self.user_transactions
-    Bitstamp.user_transactions.all(currency_pair: currency_pair).map { |ut| user_transaction_parser(ut) }
+    Bitstamp.user_transactions.all(currency_pair: currency_pair[:name]).map { |ut| user_transaction_parser(ut) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}"
   end
@@ -78,7 +78,11 @@ class BitstampApiWrapper < ApiWrapper
   #   fee: '0.4000'
   # }
   def self.balance_summary_parser(balances)
-    BalanceSummary.new(balance_parser(balances, :btc), balance_parser(balances, :usd), balances[:fee].to_d)
+    BalanceSummary.new(
+      balance_parser(balances, currency_pair[:base]),
+      balance_parser(balances, currency_pair[:quote]),
+      balances[:fee].to_d
+    )
   end
 
   def self.balance_parser(balances, currency)
@@ -134,7 +138,11 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.currency_pair
-    BitexBot::Settings.taker.bitstamp.currency_pair
+    @currency_pair ||= {
+      name: BitexBot::Settings.taker.bitstamp.currency_pair,
+      base: BitexBot::Settings.taker.bitstamp.currency_pair.to_s.slice(0..2).to_sym,
+      quote: BitexBot::Settings.taker.bitstamp.currency_pair.to_s.slice(3..5).to_sym
+    }
   end
 
   private_class_method :currency_pair, :user_transaction_parser, :transaction_parser, :order_summary_parser, :order_parser,
