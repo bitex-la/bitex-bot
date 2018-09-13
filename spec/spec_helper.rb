@@ -7,6 +7,7 @@ BitexBot::Settings.load_test
 require 'byebug'
 require 'database_cleaner'
 require 'factory_bot'
+require 'faker'
 require 'shoulda/matchers'
 require 'timecop'
 require 'webmock/rspec'
