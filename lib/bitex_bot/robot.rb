@@ -221,6 +221,7 @@ module BitexBot
 
     def alert?(currency, flag)
       return unless store.send("#{currency}_#{flag}").present?
+
       balance(currency) <= store.send("#{currency}_#{flag}")
     end
 

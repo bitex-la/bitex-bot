@@ -16,6 +16,7 @@ module BitexBot
 
       # Don't even bother trying to close a position that's too small.
       return unless Robot.taker.enough_order_size?(quantity, price)
+
       create_closing_flow!(price, quantity, amount, open_positions)
     end
 

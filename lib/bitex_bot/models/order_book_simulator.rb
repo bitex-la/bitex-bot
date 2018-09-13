@@ -38,10 +38,12 @@ module BitexBot
 
         if quantity_target.present?
           return best_price('BTC', quantity_target, price) if best_price?(quantity, quantity_target, seen)
+
           seen += quantity
         elsif amount_target.present?
           amount = price * quantity
           return best_price('$', amount_target, price) if best_price?(amount, amount_target, seen)
+
           seen += amount
         end
       end
