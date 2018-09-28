@@ -18,14 +18,14 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = %w[lib]
 
-  spec.add_dependency 'activerecord', '~> 4.2'
+  spec.add_dependency 'activerecord'
   spec.add_dependency 'hashie', '~> 3.5.4'
   spec.add_dependency 'mail'
   spec.add_dependency 'sqlite3'
 
   spec.add_dependency 'bitex', '0.6'
   spec.add_dependency 'bitstamp'
-  spec.add_dependency 'itbit', '0.0.6'
+  spec.add_dependency 'itbit'
   spec.add_dependency 'kraken_client', '~> 1.2.1'
 
   spec.add_development_dependency 'bundler'
@@ -36,10 +36,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'factory_bot'
   spec.add_development_dependency 'faker'
   spec.add_development_dependency 'rspec'
+  spec.add_development_dependency 'rspec-its'
   spec.add_development_dependency 'rspec-mocks'
   spec.add_development_dependency 'rspec_junit_formatter'
   spec.add_development_dependency 'rubocop'
   spec.add_development_dependency 'shoulda-matchers'
   spec.add_development_dependency 'timecop'
+  spec.add_development_dependency 'vcr'
   spec.add_development_dependency 'webmock'
 end
