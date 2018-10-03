@@ -57,7 +57,8 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def self.send_order(type, price, quantity)
-    Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: quantity.round(4), price: price.round(2))
+    order = Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: quantity.round(4), price: price.round(2))
+    order_parser(order) unless order.error.present?
   end
 
   def self.transactions

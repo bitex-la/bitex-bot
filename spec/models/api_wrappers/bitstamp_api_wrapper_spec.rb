@@ -5,9 +5,9 @@ describe BitstampApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY',
-        secret: 'YOUR_API_SECRET',
-        client_id: 'YOUR_BITSTAMP_USERNAME',
+        api_key: 'BITSTAMP_KEY',
+        secret: 'BITSTAMP_SECRET',
+        client_id: 'BITSTAMP_USERNAME',
         currency_pair: :btcusd
       }
     )
@@ -18,247 +18,174 @@ describe BitstampApiWrapper do
     BitexBot::Robot.setup
   end
 
-  it 'has configured currency pair' do
-    expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError)
+  describe 'Sends User-Agent header' do
+    let(:url) { 'https://www.bitstamp.net/api/v2/balance/btcusd/' }
 
-    api_wrapper.send(:currency_pair).should be_a(Hash)
-    api_wrapper.send(:currency_pair).should eq ({ name: :btcusd, base: :btc, quote: :usd })
-  end
+    it do
+      stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
-  it 'Sends User-Agent header' do
-    url = "https://www.bitstamp.net/api/v2/balance/#{api_wrapper.send(:currency_pair)[:name]}/"
-    stub_stuff = stub_request(:post, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+      # we don't care about the response
+      api_wrapper.balance rescue nil
 
-    # we don't care about the response
-    api_wrapper.balance rescue nil
-
-    expect(stub_stuff).to have_been_requested
-  end
-
-  def stub_balance(balance:, reserved:, available:, fee:)
-    Bitstamp.stub(:balance).with(an_instance_of(Symbol)) do
-      {
-        'btc_balance' => balance.to_s,
-        'btc_reserved' => reserved.to_s,
-        'btc_available' => available.to_s,
-        'bch_balance' => (balance * 2).to_s,
-        'bch_reserved' => (reserved * 2).to_s,
-        'bch_available' => (available *2).to_s,
-        'usd_balance' => balance.to_s,
-        'usd_reserved' => reserved.to_s,
-        'usd_available' => available.to_s,
-        'fee' => fee.to_s
-      }
+      expect(stub_stuff).to have_been_requested
     end
   end
 
-  context '#balance' do
-    before(:each) do
-      stub_balance(balance: total, reserved: reserved, available: available, fee: fee)
+  describe '.currency_pair' do
+    subject { api_wrapper.send(:currency_pair) }
+
+    it { is_expected.to be_a(Hash) }
+    it { is_expected.to eq({ name: :btcusd, base: :btc, quote: :usd }) }
+
+    it { expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError) }
+  end
+
+  describe '.balance', vcr: { cassette_name: 'bitstamp/balance' } do
+    subject { api_wrapper.balance }
+
+    it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
+
+    its(:members) { is_expected.to eq(%i[crypto fiat fee]) }
+
+    shared_examples_for 'currency balance' do |currency_type|
+      subject { api_wrapper.balance.send(currency_type) }
+
+      it { is_expected.to be_a(ApiWrapper::Balance) }
+
+      its(:members) { is_expected.to eq(%i[total reserved available]) }
+
+      its(:total) { is_expected.to be_a(BigDecimal) }
+      its(:reserved) { is_expected.to be_a(BigDecimal) }
+      its(:available) { is_expected.to be_a(BigDecimal) }
     end
 
-    let(:total) { Faker::Number.between(100, 1_000.to_d) }
-    let(:reserved) { Faker::Number.between(100, 1_000).to_d }
-    let(:available) { Faker::Number.between(100, 1_000).to_d }
-    let(:fee) { Faker::Number.between(1, 50).to_d }
+    it_behaves_like 'currency balance', :crypto
+    it_behaves_like 'currency balance', :fiat
 
-    shared_examples_for 'balances' do
-      it 'has expected structure' do
-        balance = api_wrapper.balance
-        balance.should be_a(ApiWrapper::BalanceSummary)
-        balance.crypto.should be_a(ApiWrapper::Balance)
-        balance.fiat.should be_a(ApiWrapper::Balance)
+    context 'fee' do
+      subject { api_wrapper.balance.fee }
 
-        crypto = balance.crypto
-        crypto.total.should be_a(BigDecimal)
-        crypto.reserved.should be_a(BigDecimal)
-        crypto.available.should be_a(BigDecimal)
+      it { is_expected.to be_a(BigDecimal) }
+    end
+  end
 
-        fiat = balance.fiat
-        fiat.total.should be_a(BigDecimal)
-        fiat.total.should eq total
-        fiat.reserved.should be_a(BigDecimal)
-        fiat.reserved.should eq reserved
-        fiat.available.should be_a(BigDecimal)
-        fiat.available.should eq available
+  describe '.order_book', vcr: { cassette_name: 'bitstamp/order_book' } do
+    subject { api_wrapper.order_book }
 
-        balance.fee.should be_a(BigDecimal)
-        balance.fee.should eq fee
+    it { is_expected.to be_a(ApiWrapper::OrderBook) }
+
+    its(:members) { is_expected.to eq(%i[timestamp bids asks]) }
+
+    its(:timestamp) { is_expected.to be_a(Integer) }
+    its(:bids) { is_expected.to be_a(Array) }
+    its(:asks) { is_expected.to be_a(Array) }
+
+    shared_examples_for :orders do |order_type|
+      subject { api_wrapper.order_book.send(order_type).sample }
+
+      it { is_expected.to be_a(ApiWrapper::OrderSummary) }
+
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:quantity) { is_expected.to be_a(BigDecimal) }
+    end
+
+    it_behaves_like :orders, :bids
+    it_behaves_like :orders, :asks
+  end
+
+  describe '.send_order' do
+    context 'successful buy', vcr: { cassette_name: 'bitstamp/orders/successful_buy' } do
+      subject { api_wrapper.send_order(:buy, 1.01, 1) }
+
+      it { is_expected.to be_a(ApiWrapper::Order) }
+
+      its(:members) { is_expected.to eq(%i[id type price amount timestamp raw_order]) }
+
+      its(:id) { is_expected.to be_a(String) }
+      its(:type) { is_expected.to be_a(Symbol) }
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:amount) { is_expected.to be_a(BigDecimal) }
+      its(:timestamp) { is_expected.to be_a(Integer) }
+      its(:raw_order) { is_expected.to be_a(Bitstamp::Order) }
+
+      context 'raw order' do
+        subject { api_wrapper.send_order(:buy, 1.01, 1).raw_order }
+
+        its(:id) { is_expected.to be_a(Integer) }
+        its(:type) { is_expected.to be_a(Integer) }
+        its(:price) { is_expected.to be_a(String) }
+        its(:amount) { is_expected.to be_a(String) }
+        its(:datetime) { is_expected.to be_a(String) }
       end
     end
 
-    context 'with btcusd' do
-      before(:each) do
-        api_wrapper.send(:currency_pair)[:name] = :btcusd
-        api_wrapper.send(:currency_pair)[:base] = :btc
-        api_wrapper.send(:currency_pair)[:quote] = :usd
-      end
+    context 'failure sell', vcr: { cassette_name: 'bitstamp/orders/failure_sell' } do
+      subject { api_wrapper.send_order(:sell, 1_000, 1) }
 
-      it_behaves_like 'balances'
-
-      it 'has the data belonging to its currency pair' do
-        api_wrapper.balance.crypto do |currency|
-          currency.total.should eq total
-          currency.reserved.should eq reserved
-          currency.available.should eq available
-        end
-      end
-    end
-
-    context 'with bchusd' do
-      before(:each) do
-        api_wrapper.send(:currency_pair)[:name] = :bchusd
-        api_wrapper.send(:currency_pair)[:base] = :bch
-        api_wrapper.send(:currency_pair)[:quote] = :usd
-      end
-
-      it_behaves_like 'balances'
-
-      it 'has the data belonging to its currency pair' do
-        api_wrapper.balance.crypto do |currency|
-          currency.total.should eq total * 2
-          currency.reserved.should eq reserved * 2
-          currency.available.should eq available * 2
-        end
-      end
+      it { is_expected.to be_nil }
     end
   end
 
-  it '#cancel' do
-    stub_orders
+  describe '.transactions', vcr: { cassette_name: 'bitstamp/transactions' } do
+    subject { api_wrapper.transactions.sample }
 
-    api_wrapper.orders.sample.should respond_to(:cancel!)
+    it { is_expected.to be_a(ApiWrapper::Transaction) }
+
+    its(:members) { is_expected.to eq(%i[id price amount timestamp]) }
+
+    its(:id) { is_expected.to be_a(Integer) }
+    its(:price) { is_expected.to be_a(BigDecimal) }
+    its(:amount) { is_expected.to be_a(BigDecimal) }
+    its(:timestamp) { is_expected.to be_a(Integer) }
   end
 
-  def stub_order_book(count: 3, price: 1.5, amount: 2.5)
-    Bitstamp.stub(:order_book) do
-      {
-        'timestamp' => Time.now.to_i.to_s,
-        'bids' => count.times.map { |i| [(price + i).to_s, (amount + i).to_s] },
-        'asks' => count.times.map { |i| [(price + i).to_s, (amount + i).to_s] }
-      }
+  describe '.user_transaction', vcr: { cassette_name: 'bitstamp/user_transactions' } do
+    subject { api_wrapper.user_transactions.sample }
+
+    it { is_expected.to be_a(ApiWrapper::UserTransaction) }
+
+    its(:members) { is_expected.to eq(%i[order_id usd btc ])  }
+
+    # same user transactions haven't order_id
+    its(:order_id) do
+      is_expected.to be_a(Integer) if subject.order_id.present?
+      is_expected.to be_nil unless subject.order_id.present?
     end
+
+    its(:usd) { is_expected.to be_a(BigDecimal) }
+    its(:btc) { is_expected.to be_a(BigDecimal) }
+    its(:btc_usd) { is_expected.to be_a(BigDecimal) }
+    its(:fee) { is_expected.to be_a(BigDecimal) }
+    its(:type) { is_expected.to be_a(Integer) }
+    its(:timestamp) { is_expected.to be_a(Integer) }
   end
 
-  it '#order_book' do
-    stub_order_book
+  describe '.orders', vcr: { cassette_name: 'bitstamp/orders/all' } do
+    subject { api_wrapper.orders.sample }
 
-    order_book = api_wrapper.order_book
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
-    order_book.timestamp.should be_a(Integer)
+    it { is_expected.to be_a(ApiWrapper::Order) }
 
-    bid = order_book.bids.sample
-    bid.price.should be_a(BigDecimal)
-    bid.quantity.should be_a(BigDecimal)
-
-    ask = order_book.asks.sample
-    ask.price.should be_a(BigDecimal)
-    ask.quantity.should be_a(BigDecimal)
+    its(:id) { is_expected.to be_a(String) }
+    its(:type) { is_expected.to be_a(Symbol) }
+    its(:price) { is_expected.to be_a(BigDecimal) }
+    its(:amount) { is_expected.to be_a(BigDecimal) }
+    its(:amount) { is_expected.to be_a(BigDecimal) }
+    its(:timestamp) { is_expected.to be_a(Integer) }
   end
 
-  # [<Bitstamp::Order @id=76, @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>]
-  def stub_orders(count: 1, price: 1.5, amount: 2.5)
-    Bitstamp.orders.stub(:all) do
-      count.times.map do |i|
-        Bitstamp::Order.new(
-          id: i,
-          type: (i % 2),
-          price: (price + 1).to_s,
-          amount: (amount + i).to_s,
-          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
-        )
-      end
-    end
+  describe '.find_lost', vcr: { cassette_name: 'bitstamp/orders/all', allow_playback_repeats: true } do
+    before(:each) { Timecop.freeze(Time.strptime(order.timestamp.to_s, '%s') - 3.minutes.ago) }
+
+    let(:order) { api_wrapper.orders.sample }
+
+    subject { api_wrapper.find_lost(order.type, order.price, order.amount) }
+
+    it { is_expected.to be_present }
   end
 
-  it '#orders' do
-    stub_orders
+  describe '.cancel', vcr: { cassette_name: 'bitstamp/orders/all' } do
+    subject { api_wrapper.orders.sample }
 
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
-
-    order = api_wrapper.orders.sample
-    order.id.should be_a(String)
-    order.type.should be_a(Symbol)
-    order.price.should be_a(BigDecimal)
-    order.amount.should be_a(BigDecimal)
-    order.timestamp.should be_a(Integer)
-
-    expect(order).to respond_to(:cancel!)
-  end
-
-  context '#place_order' do
-    it 'raises OrderNotFound error on bitstamp errors' do
-      Bitstamp.orders.stub(:buy) do
-        raise OrderNotFound
-      end
-
-      expect { api_wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
-    end
-  end
-
-  # [<Bitstamp::Transactions @tid=14, @price='1.9', @amount='1.1', @date='1380648951'>]
-  def stub_transactions(count: 1, price: 1.5, amount: 2.5)
-    Bitstamp.stub(:transactions) do
-      count.times.map do |i|
-        double(
-          tid: i,
-          date: 1.seconds.ago.to_i,
-          price: (price + i).to_s,
-          amount: (amount + i).to_s
-        )
-      end
-    end
-  end
-
-  it '#transactions' do
-    stub_transactions
-
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
-
-    transaction = api_wrapper.transactions.sample
-    transaction.id.should be_a(Integer)
-    transaction.price.should be_a(BigDecimal)
-    transaction.amount.should be_a(BigDecimal)
-    transaction.timestamp.should be_a(Integer)
-  end
-
-  # [<Bitstamp::UserTransaction @id=76, @order_id=14, @type=1, @usd='0.00', @btc='-3.078', @btc_usd='0.00', @fee='0.00', @datetime='2013-09-26 13:46:59'>]
-  def stub_user_transactions(count: 1, usd: 1.5, btc: 2.5, btc_usd: 3.5, fee: 0.05)
-    Bitstamp.user_transactions.stub(:all) do
-      count.times.map do |i|
-        double(
-          id: i,
-          order_id: i,
-          type: (i % 2),
-          usd: (usd + i).to_s,
-          btc: (btc + i).to_s,
-          btc_usd: (btc_usd + i).to_s,
-          fee: fee.to_s,
-          datetime: 1.seconds.ago.strftime('%Y-%m-%d %H:%m:%S')
-        )
-      end
-    end
-  end
-
-  it '#user_transaction' do
-    stub_user_transactions
-    BitstampApiWrapper.user_transactions.all? { |ut| ut.should be_a(ApiWrapper::UserTransaction) }
-
-    user_transaction = BitstampApiWrapper.user_transactions.sample
-    user_transaction.usd.should be_a(BigDecimal)
-    user_transaction.btc.should be_a(BigDecimal)
-    user_transaction.btc_usd.should be_a(BigDecimal)
-    user_transaction.order_id.should be_a(Integer)
-    user_transaction.fee.should be_a(BigDecimal)
-    user_transaction.type.should be_a(Integer)
-    user_transaction.timestamp.should be_a(Integer)
-  end
-
-  it '#find_lost' do
-    stub_orders
-
-    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
+    it { is_expected.to respond_to(:cancel!) }
   end
 end
