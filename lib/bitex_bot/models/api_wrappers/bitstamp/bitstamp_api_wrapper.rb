@@ -9,10 +9,10 @@ class BitstampApiWrapper < ApiWrapper
     end
   end
 
-  def self.amount_and_quantity(order_id, transactions)
-    closes = transactions.select { |t| t.order_id.to_s == order_id }
-    amount = closes.map { |c| c.usd.to_d }.sum.abs
-    quantity = closes.map { |c| c.btc.to_d }.sum.abs
+  def self.amount_and_quantity(order_id)
+    closes = BitexBot::Robot.with_cooldown { user_transactions.select { |t| t.order_id.to_s == order_id } }
+    amount = closes.map { |c| c.fiat }.sum.abs
+    quantity = closes.map { |c| c.crypto }.sum.abs
 
     [amount, quantity]
   end
@@ -129,9 +129,9 @@ class BitstampApiWrapper < ApiWrapper
   def self.user_transaction_parser(user_transaction)
     UserTransaction.new(
       user_transaction.order_id,
-      user_transaction.usd.to_d,
-      user_transaction.btc.to_d,
-      user_transaction.btc_usd.to_d,
+      user_transaction.send(currency_pair[:quote]).to_d,
+      user_transaction.send(currency_pair[:base]).to_d,
+      user_transaction.send("#{currency_pair[:base]}_#{currency_pair[:quote]}").to_d,
       user_transaction.fee.to_d,
       user_transaction.type,
       Time.new(user_transaction.datetime).to_i

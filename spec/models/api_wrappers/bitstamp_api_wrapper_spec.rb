@@ -144,7 +144,7 @@ describe BitstampApiWrapper do
 
     it { is_expected.to be_a(ApiWrapper::UserTransaction) }
 
-    its(:members) { is_expected.to eq(%i[order_id usd btc ])  }
+    its(:members) { is_expected.to eq(%i[order_id fiat crypto crypto_fiat fee type timestamp])  }
 
     # same user transactions haven't order_id
     its(:order_id) do
@@ -152,9 +152,9 @@ describe BitstampApiWrapper do
       is_expected.to be_nil unless subject.order_id.present?
     end
 
-    its(:usd) { is_expected.to be_a(BigDecimal) }
-    its(:btc) { is_expected.to be_a(BigDecimal) }
-    its(:btc_usd) { is_expected.to be_a(BigDecimal) }
+    its(:fiat) { is_expected.to be_a(BigDecimal) }
+    its(:crypto) { is_expected.to be_a(BigDecimal) }
+    its(:crypto_fiat) { is_expected.to be_a(BigDecimal) }
     its(:fee) { is_expected.to be_a(BigDecimal) }
     its(:type) { is_expected.to be_a(Integer) }
     its(:timestamp) { is_expected.to be_a(Integer) }

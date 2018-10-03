@@ -37,9 +37,9 @@ module BitexBot
     end
 
     # TODO: should receive a order_ids and user_transaccions array, then each Wrapper should know how to search for them.
-    def sync_closed_positions(orders, transactions)
+    def sync_closed_positions(orders)
       # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
-      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders, transactions)
+      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders)
     end
 
     def estimate_fiat_profit
@@ -55,14 +55,14 @@ module BitexBot
     # sync_closed_positions helpers
     # rubocop:disable Metrics/AbcSize
     # Metrics/AbcSize: Assignment Branch Condition size for create_or_cancel! is too high. [17.23/16]
-    def create_or_cancel!(orders, transactions)
+    def create_or_cancel!(orders)
       order_id = latest_close.order_id.to_s
       order = orders.find { |o| o.id.to_s == order_id }
 
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
       # spawned from it.
       if order.nil?
-        sync_position(order_id, transactions)
+        sync_position(order_id)
         create_next_position!
       elsif latest_close.created_at < close_time_to_live.seconds.ago
         cancel!(order)
@@ -101,9 +101,9 @@ module BitexBot
       end
     end
 
-    def sync_position(order_id, transactions)
+    def sync_position(order_id)
       latest = latest_close
-      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id, transactions)
+      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id)
       latest.save!
     end
     # end: create_or_cancel! helpers
