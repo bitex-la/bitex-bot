@@ -40,6 +40,24 @@ describe BitstampApiWrapper do
     it { expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError) }
   end
 
+  describe '.base' do
+    subject { api_wrapper.send(:base) }
+
+    it { is_expected.to be_a(Symbol) }
+    it { is_expected.to eq(:btc) }
+
+    it { expect { api_wrapper.base}.to raise_exception(NoMethodError) }
+  end
+
+  describe '.quote' do
+    subject { api_wrapper.send(:quote) }
+
+    it { is_expected.to be_a(Symbol) }
+    it { is_expected.to eq(:usd) }
+
+    it { expect { api_wrapper.quote }.to raise_exception(NoMethodError) }
+  end
+
   describe '.balance', vcr: { cassette_name: 'bitstamp/balance' } do
     subject { api_wrapper.balance }
 

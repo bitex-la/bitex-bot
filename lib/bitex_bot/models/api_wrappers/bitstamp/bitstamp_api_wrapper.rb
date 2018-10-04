@@ -129,13 +129,25 @@ class BitstampApiWrapper < ApiWrapper
   def self.user_transaction_parser(user_transaction)
     UserTransaction.new(
       user_transaction.order_id,
-      user_transaction.send(currency_pair[:quote]).to_d,
-      user_transaction.send(currency_pair[:base]).to_d,
-      user_transaction.send("#{currency_pair[:base]}_#{currency_pair[:quote]}").to_d,
+      user_transaction.send(quote).to_d,
+      user_transaction.send(base).to_d,
+      user_transaction.send(base_quote).to_d,
       user_transaction.fee.to_d,
       user_transaction.type,
       Time.new(user_transaction.datetime).to_i
     )
+  end
+
+  def self.base
+    currency_pair[:base]
+  end
+
+  def self.quote
+    currency_pair[:quote]
+  end
+
+  def self.base_quote
+    :"#{base}_#{quote}"
   end
 
   def self.currency_pair
@@ -146,6 +158,6 @@ class BitstampApiWrapper < ApiWrapper
     }
   end
 
-  private_class_method :currency_pair, :user_transaction_parser, :transaction_parser, :order_summary_parser, :order_parser,
-                       :order_is_done?
+  private_class_method :currency_pair, :base, :quote, :user_transaction_parser, :transaction_parser,
+                       :order_summary_parser, :order_parser, :order_is_done?
 end
