@@ -11,8 +11,8 @@ class BitstampApiWrapper < ApiWrapper
 
   def self.amount_and_quantity(order_id)
     closes = BitexBot::Robot.with_cooldown { user_transactions.select { |t| t.order_id.to_s == order_id } }
-    amount = closes.map { |c| c.fiat }.sum.abs
-    quantity = closes.map { |c| c.crypto }.sum.abs
+    amount = closes.sum(&:fiat).abs
+    quantity = closes.sum(&:crypto).abs
 
     [amount, quantity]
   end

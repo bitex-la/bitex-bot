@@ -2,7 +2,7 @@ Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
 Metrics/AbcSize:
-  Max: 16
+  Max: 18
 
 Metrics/ClassLength:
   Max: 130
