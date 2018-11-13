@@ -28,15 +28,15 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.order_book
-    order_book_parser(Itbit::XBTUSDMarketData.orders)
+    order_book_parser(market.orders)
   end
 
   def self.orders
-    Itbit::Order.all(status: :open).map { |o| order_parser(o) }
+    Itbit::Order.all(instrument: currency_pair, status: :open).map { |o| order_parser(o) }
   end
 
   def self.place_order(type, price, quantity)
-    Itbit::Order.create!(type, :xbtusd, quantity.round(4), price.round(2), wait: true)
+    Itbit::Order.create!(type, currency_pair, quantity.round(4), price.round(2), wait: true, currency: currency_base)
   rescue RestClient::RequestTimeout => e
     # On timeout errors, we still look for the latest active closing order that may be available.
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.
@@ -50,7 +50,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    Itbit::XBTUSDMarketData.trades.map { |t| transaction_parser(t.symbolize_keys) }
+    market.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
   # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
@@ -65,7 +65,7 @@ class ItbitApiWrapper < ApiWrapper
   #   { total_balance: 0.0, currency: :sgd, available_balance: 0.0 }
   # ]
   def self.balance_summary_parser(balances)
-    BalanceSummary.new(balance_parser(balances, :xbt), balance_parser(balances, :usd), 0.5.to_d)
+    BalanceSummary.new(balance_parser(balances, currency_base), balance_parser(balances, currency_quote), 0.5.to_d)
   end
 
   def self.wallet
@@ -111,4 +111,23 @@ class ItbitApiWrapper < ApiWrapper
   def self.transaction_parser(transaction)
     Transaction.new(transaction[:tid], transaction[:price], transaction[:amount], transaction[:date])
   end
+
+  def self.market
+    "Itbit::#{currency_pair.upcase}MarketData".constantize
+  end
+
+  def self.currency_base
+    currency_pair.slice(0..2).to_sym
+  end
+
+  def self.currency_quote
+    currency_pair.slice(3..6).to_sym
+  end
+
+  def self.currency_pair
+    BitexBot::Settings.taker.itbit.currency_pair
+  end
+
+  private_class_method :market, :currency_base, :currency_quote, :currency_pair, :transaction_parser, :order_summary_parser,
+                       :order_book_parser, :last_order_by
 end

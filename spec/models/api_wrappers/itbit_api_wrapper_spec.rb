@@ -5,7 +5,12 @@ describe ItbitApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       itbit: {
-        client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false
+        client_key: 'client-key',
+        secret: 'secret',
+        user_id: 'user-id',
+        default_wallet_id: 'wallet-000',
+        sandbox: false,
+        currency_pair: :xbtusd
       }
     )
   end
@@ -16,7 +21,7 @@ describe ItbitApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    url = 'https://api.itbit.com/v1/markets/XBTUSD/order_book'
+    url = "https://api.itbit.com/v1/markets/#{api_wrapper.send(:currency_pair).upcase}/order_book"
     stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
