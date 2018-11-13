@@ -8,6 +8,7 @@ module BitexBot
   class FileSettings < ::Hashie::Clash
     def method_missing(name, *args, &block)
       return super unless args.none? && args.size == 1
+
       self[name] = args.first
     end
 

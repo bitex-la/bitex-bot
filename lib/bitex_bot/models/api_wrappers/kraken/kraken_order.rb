@@ -24,7 +24,13 @@ class KrakenOrder
   # rubocop:enable Metrics/AbcSize
 
   def self.order_info_by(type, price, quantity)
-    KrakenApiWrapper.client.private.add_order(pair: 'XBTUSD', type: type, ordertype: 'limit', price: price, volume: quantity)
+    KrakenApiWrapper.client.private.add_order(
+      pair: KrakenApiWrapper.currency_pair[:altname],
+      type: type,
+      ordertype: 'limit',
+      price: price,
+      volume: quantity
+    )
   end
 
   def self.find(id)

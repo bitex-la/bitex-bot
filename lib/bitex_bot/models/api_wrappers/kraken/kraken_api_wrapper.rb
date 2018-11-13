@@ -3,13 +3,17 @@
 class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
-  def self.setup(settings)
+  def self.setup(configs)
     HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
-    @settings = settings
+    settings(configs)
+  end
+
+  def self.settings(configs = {})
+    @settings ||= configs.except(:currency_pair)
   end
 
   def self.client
-    @client ||= KrakenClient.load(@settings)
+    @client ||= KrakenClient.load(settings)
   end
 
   def self.amount_and_quantity(order_id, _transactions)
@@ -31,7 +35,7 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def self.order_book
-    order_book_parser(client.public.order_book('XBTUSD')[:XXBTZUSD])
+    order_book_parser(client.public.order_book(currency_pair[:altname])[currency_pair[:raw_name]])
   rescue NoMethodError
     retry
   end
@@ -45,7 +49,7 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def self.transactions
-    client.public.trades('XBTUSD')[:XXBTZUSD].reverse.map { |t| transaction_parser(t) }
+    client.public.trades(currency_pair[:altname])[currency_pair[:raw_name]].reverse.map { |t| transaction_parser(t) }
   rescue NoMethodError
     retry
   end
@@ -56,14 +60,16 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   # { ZEUR: '1433.0939', XXBT: '0.0000000000', 'XETH': '99.7497224800' }
+  # rubocop:disable Metrics/AbcSize
   def self.balance_summary_parser(balances)
     open_orders = KrakenOrder.open
     BalanceSummary.new(
-      balance_parser(balances, :XXBT, btc_reserved(open_orders)),
-      balance_parser(balances, :ZUSD, usd_reserved(open_orders)),
-      client.private.trade_volume(pair: 'XBTUSD')[:fees][:XXBTZUSD][:fee].to_d
+      balance_parser(balances, currency_pair[:base], btc_reserved(open_orders)),
+      balance_parser(balances, currency_pair[:quote], usd_reserved(open_orders)),
+      client.private.trade_volume(pair: currency_pair[:altname])[:fees][currency_pair[:raw_name]][:fee].to_d
     )
   end
+  # rubocop:enable Metrics/AbcSize
 
   def self.balance_parser(balances, currency, reserved)
     Balance.new(balances[currency].to_d, reserved, balances[currency].to_d - reserved)
@@ -105,5 +111,31 @@ class KrakenApiWrapper < ApiWrapper
   # ]
   def self.transaction_parser(transaction)
     Transaction.new(transaction[2].to_i, transaction[0].to_d, transaction[1].to_d, transaction[2].to_i)
+  end
+
+  # {
+  #   'XBTUSD' => {
+  #     'altname' => 'XBTUSD',
+  #     'aclass_base' => 'currency',
+  #     'base' => 'XXBT',
+  #     'aclass_quote' => 'currency',
+  #     'quote' => 'ZUSD',
+  #     'lot' => 'unit',
+  #     'pair_decimals' => 1,
+  #     'lot_decimals' => 8,
+  #     'lot_multiplier' => 1,
+  #     'leverage_buy' => [2, 3, 4, 5],
+  #     'leverage_sell' => [2, 3, 4, 5],
+  #     'fees' => [[0, 0.26], .., [250_000, 0.2]],
+  #     'fees_maker' => [[0, 0.16], .., [250_000, 0.1]],
+  #     'fee_volume_currency' => 'ZUSD',
+  #     'margin_call' => 80,
+  #     'margin_stop' => 40
+  #   }
+  # }
+  def self.currency_pair
+    @currency_pair ||= client.public.asset_pairs.map do |currency_pair, data|
+      [data['altname'], data.merge(raw_name: currency_pair.to_sym).with_indifferent_access]
+    end.to_h[BitexBot::Settings.taker.kraken.currency_pair.upcase.to_s]
   end
 end
