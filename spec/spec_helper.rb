@@ -7,13 +7,15 @@ BitexBot::Settings.load_test
 require 'byebug'
 require 'database_cleaner'
 require 'factory_bot'
+require 'faker'
+require 'rspec/its'
 require 'shoulda/matchers'
 require 'timecop'
 require 'webmock/rspec'
 
 require 'bitex_bot'
 FactoryBot.find_definitions
-Dir[File.dirname(__FILE__) + '/support/**/*.rb'].each { |file| require file }
+Dir[File.expand_path('support/**/*.rb', __dir__)].each { |f| require f }
 
 # Automatically do rake db:test:prepare
 ActiveRecord::Migration.maintain_test_schema!

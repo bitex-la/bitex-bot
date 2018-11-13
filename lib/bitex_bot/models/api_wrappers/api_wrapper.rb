@@ -50,13 +50,13 @@ class ApiWrapper
   )
 
   UserTransaction = Struct.new(
-    :order_id, # Integer
-    :usd,      # Decimal
-    :btc,      # Decimal
-    :btc_usd,  # Decimal
-    :fee,      # Decimal
-    :type,     # Integer
-    :timestamp # Epoch Integer
+    :order_id,    # Integer
+    :fiat,        # Decimal
+    :crypto,      # Decimal
+    :crypto_fiat, # Decimal
+    :fee,         # Decimal
+    :type,        # Integer
+    :timestamp    # Epoch Integer
   )
 
   # @return [Void]

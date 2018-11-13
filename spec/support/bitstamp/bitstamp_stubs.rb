@@ -50,7 +50,7 @@ module BitstampStubs
     Bitstamp.orders.stub(all: orders)
     Bitstamp.orders.stub(:sell) do |args|
       remote_id = Bitstamp.orders.all.size + 1 if remote_id.nil?
-      ask = double(amount: args[:amount], price: args[:price], type: 1, id: remote_id,
+      ask = Bitstamp::Order.new(amount: args[:amount], price: args[:price], type: 1, id: remote_id,
         datetime: DateTime.now.to_s)
       ask.stub(:cancel!) do
         orders = Bitstamp.orders.all.reject { |o| o.id.to_s == ask.id.to_s && o.type == 1 }
@@ -67,7 +67,7 @@ module BitstampStubs
     Bitstamp.orders.stub(all: orders)
     Bitstamp.orders.stub(:buy) do |args|
       remote_id = Bitstamp.orders.all.size + 1 if remote_id.nil?
-      bid = double(amount: args[:amount], price: args[:price], type: 0, id: remote_id,
+      bid = Bitstamp::Order.new(amount: args[:amount], price: args[:price], type: 0, id: remote_id,
         datetime: DateTime.now.to_s)
       bid.stub(:cancel!) do
         orders = Bitstamp.orders.all.reject { |o| o.id.to_s == bid.id.to_s && o.type == 0 }

@@ -4,7 +4,7 @@ describe BitexBot::BuyClosingFlow do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME'
+        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd
       }
     )
   end
@@ -85,7 +85,7 @@ describe BitexBot::BuyClosingFlow do
       flow = BitexBot::BuyClosingFlow.last
       stub_bitstamp_orders_into_transactions
 
-      flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+      flow.sync_closed_positions(Bitstamp.orders.all)
 
       close = flow.close_positions.last
       close.amount.should == 624.105
@@ -106,7 +106,7 @@ describe BitexBot::BuyClosingFlow do
         subject.class.close_open_positions
 
         stub_bitstamp_orders_into_transactions
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end
 
       it 'syncs the executed orders, calculates profit with other fx rate' do
@@ -121,12 +121,12 @@ describe BitexBot::BuyClosingFlow do
       flow = BitexBot::BuyClosingFlow.last
 
       expect do
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end.not_to change { BitexBot::CloseBuy.count }
       flow.should_not be_done
 
       # Immediately calling sync again does not try to cancel the ask.
-      flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+      flow.sync_closed_positions(Bitstamp.orders.all)
       Bitstamp.orders.all.size.should == 1
 
       # Partially executes order, and 61 seconds after that
@@ -135,7 +135,7 @@ describe BitexBot::BuyClosingFlow do
       Timecop.travel 61.seconds.from_now
       Bitstamp.orders.all.size.should == 1
       expect do
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end.not_to change { BitexBot::CloseBuy.count }
       Bitstamp.orders.all.size.should be_zero
       flow.should_not be_done
@@ -144,7 +144,7 @@ describe BitexBot::BuyClosingFlow do
       # detects the previous close_buy was cancelled correctly so
       # it syncs it's total amounts and tries to place a new one.
       expect do
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end.to change { BitexBot::CloseBuy.count }.by(1)
 
       flow.close_positions.first.tap do |close|
@@ -155,7 +155,7 @@ describe BitexBot::BuyClosingFlow do
       # The second ask is executed completely so we can wrap it up and consider
       # this closing flow done.
       stub_bitstamp_orders_into_transactions
-      flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+      flow.sync_closed_positions(Bitstamp.orders.all)
       flow.close_positions.last.tap do |close|
         close.amount.should == 312.02_235
         close.quantity.should == 1.005
@@ -172,7 +172,7 @@ describe BitexBot::BuyClosingFlow do
       Bitstamp.orders.all.first.cancel!
 
       expect do
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end.not_to change { BitexBot::CloseBuy.count }
 
       flow.should be_done
@@ -188,12 +188,12 @@ describe BitexBot::BuyClosingFlow do
 
       60.times do
         Timecop.travel 60.seconds.from_now
-        flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+        flow.sync_closed_positions(Bitstamp.orders.all)
       end
 
       stub_bitstamp_orders_into_transactions
 
-      flow.sync_closed_positions(Bitstamp.orders.all, Bitstamp.user_transactions.all)
+      flow.sync_closed_positions(Bitstamp.orders.all)
       flow.reload.should be_done
       flow.crypto_profit.should be_zero
       flow.fiat_profit.should == -34.165

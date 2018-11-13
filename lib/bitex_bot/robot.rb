@@ -159,10 +159,9 @@ module BitexBot
 
     def sync_closing_flows
       orders = with_cooldown { Robot.taker.orders }
-      transactions = with_cooldown { Robot.taker.user_transactions }
 
       [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each { |flow| flow.sync_closed_positions(orders, transactions) }
+        kind.active.each { |flow| flow.sync_closed_positions(orders) }
       end
     end
 

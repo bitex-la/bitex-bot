@@ -52,7 +52,9 @@ maker bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_bo
 # Turn on and off the chosen Bitstamp, Itbit or Kraken market with comments.
 
 # These are passed in to the bitstamp gem: see https://github.com/kojnapp/bitstamp for more info.
-taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' }
+# Supported values for currency_pair: :btcusd, :btceur, :eurusd, :xrpusd, :xrpeur, :xrpbtc, :ltcusd, :ltceur, :ltcbtc, :ethusd,
+# :etheur, :ethbtc, :bchusd, :bcheur, :bchbtc
+taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd }
 
 # These are passed in to the itbit gem: see https://github.com/bitex-la/itbit for more info.
 # Choices: :xbtusd, :xbtsgd, :xbteur, https://api.itbit.com/docs#market-data-get-order-book-get.

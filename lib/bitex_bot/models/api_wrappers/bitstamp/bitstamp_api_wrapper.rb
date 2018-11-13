@@ -9,16 +9,16 @@ class BitstampApiWrapper < ApiWrapper
     end
   end
 
-  def self.amount_and_quantity(order_id, transactions)
-    closes = transactions.select { |t| t.order_id.to_s == order_id }
-    amount = closes.map { |c| c.usd.to_d }.sum.abs
-    quantity = closes.map { |c| c.btc.to_d }.sum.abs
+  def self.amount_and_quantity(order_id)
+    closes = BitexBot::Robot.with_cooldown { user_transactions.select { |t| t.order_id.to_s == order_id } }
+    amount = closes.sum(&:fiat).abs
+    quantity = closes.sum(&:crypto).abs
 
     [amount, quantity]
   end
 
   def self.balance
-    balance_summary_parser(Bitstamp.balance.symbolize_keys)
+    balance_summary_parser(Bitstamp.balance(currency_pair[:name]).symbolize_keys)
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end
@@ -35,7 +35,7 @@ class BitstampApiWrapper < ApiWrapper
 
   # rubocop:disable Metrics/AbcSize
   def self.order_book(retries = 20)
-    book = Bitstamp.order_book.deep_symbolize_keys
+    book = Bitstamp.order_book(currency_pair[:name]).deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
     return order_book_parser(book) if age <= 300
 
@@ -51,23 +51,24 @@ class BitstampApiWrapper < ApiWrapper
   # rubocop:enable Metrics/AbcSize
 
   def self.orders
-    Bitstamp.orders.all.map { |o| order_parser(o) }
+    Bitstamp.orders.all(currency_pair: currency_pair[:name]).map { |o| order_parser(o) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
   end
 
   def self.send_order(type, price, quantity)
-    Bitstamp.orders.send(type, amount: quantity.round(4), price: price.round(2))
+    order = Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: quantity.round(4), price: price.round(2))
+    order_parser(order) unless order.error.present?
   end
 
   def self.transactions
-    Bitstamp.transactions.map { |t| transaction_parser(t) }
+    Bitstamp.transactions(currency_pair[:name]).map { |t| transaction_parser(t) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp transactions failed: #{e.message}"
   end
 
   def self.user_transactions
-    Bitstamp.user_transactions.all.map { |ut| user_transaction_parser(ut) }
+    Bitstamp.user_transactions.all(currency_pair: currency_pair[:name]).map { |ut| user_transaction_parser(ut) }
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp user_transactions failed: #{e.message}"
   end
@@ -78,7 +79,11 @@ class BitstampApiWrapper < ApiWrapper
   #   fee: '0.4000'
   # }
   def self.balance_summary_parser(balances)
-    BalanceSummary.new(balance_parser(balances, :btc), balance_parser(balances, :usd), balances[:fee].to_d)
+    BalanceSummary.new(
+      balance_parser(balances, currency_pair[:base]),
+      balance_parser(balances, currency_pair[:quote]),
+      balances[:fee].to_d
+    )
   end
 
   def self.balance_parser(balances, currency)
@@ -124,12 +129,35 @@ class BitstampApiWrapper < ApiWrapper
   def self.user_transaction_parser(user_transaction)
     UserTransaction.new(
       user_transaction.order_id,
-      user_transaction.usd.to_d,
-      user_transaction.btc.to_d,
-      user_transaction.btc_usd.to_d,
+      user_transaction.send(quote).to_d,
+      user_transaction.send(base).to_d,
+      user_transaction.send(base_quote).to_d,
       user_transaction.fee.to_d,
       user_transaction.type,
       Time.new(user_transaction.datetime).to_i
     )
   end
+
+  def self.base
+    currency_pair[:base]
+  end
+
+  def self.quote
+    currency_pair[:quote]
+  end
+
+  def self.base_quote
+    :"#{base}_#{quote}"
+  end
+
+  def self.currency_pair
+    @currency_pair ||= {
+      name: BitexBot::Settings.taker.bitstamp.currency_pair,
+      base: BitexBot::Settings.taker.bitstamp.currency_pair.to_s.slice(0..2).to_sym,
+      quote: BitexBot::Settings.taker.bitstamp.currency_pair.to_s.slice(3..5).to_sym
+    }
+  end
+
+  private_class_method :currency_pair, :base, :quote, :user_transaction_parser, :transaction_parser,
+                       :order_summary_parser, :order_parser, :order_is_done?
 end
