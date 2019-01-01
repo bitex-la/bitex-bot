@@ -50,11 +50,16 @@ module BitexBot
 
     # create_for_market helpers
     def self.maker_price(crypto_to_resell)
-      value_to_use / crypto_to_resell * (1 - profit / 100)
+      value_to_use * fx_rate / crypto_to_resell * (1 - profit / 100)
     end
 
     def self.order_class
       Bitex::Bid
+    end
+    def_delegator self, :order_class
+
+    def self.order_type
+      :buy
     end
 
     def self.profit
@@ -62,11 +67,11 @@ module BitexBot
     end
 
     def self.remote_value_to_use(value_to_use_needed, safest_price)
-      (value_to_use_needed / fx_rate) / safest_price
+      value_to_use_needed / safest_price
     end
 
-    def self.safest_price(transactions, order_book, amount_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, amount_to_use / fx_rate, nil)
+    def self.safest_price(transactions, taker_bids, amount_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, transactions, taker_bids, amount_to_use, nil, fx_rate)
     end
 
     def self.value_to_use
@@ -76,6 +81,14 @@ module BitexBot
 
     def self.fx_rate
       Settings.buying_fx_rate
+    end
+
+    def self.value_per_order
+      value_to_use * fx_rate
+    end
+
+    def self.order_specie
+      Robot.taker.base.upcase
     end
   end
 end

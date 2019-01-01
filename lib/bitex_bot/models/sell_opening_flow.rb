@@ -56,6 +56,11 @@ module BitexBot
     def self.order_class
       Bitex::Ask
     end
+    def_delegator self, :order_class
+
+    def self.order_type
+      :sell
+    end
 
     def self.profit
       store.selling_profit || Settings.selling.profit
@@ -65,8 +70,8 @@ module BitexBot
       value_to_use_needed * safest_price
     end
 
-    def self.safest_price(transactions, order_book, bitcoins_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, nil, bitcoins_to_use)
+    def self.safest_price(transactions, taker_asks, bitcoins_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, transactions, taker_asks, nil, bitcoins_to_use, nil)
     end
 
     def self.value_to_use

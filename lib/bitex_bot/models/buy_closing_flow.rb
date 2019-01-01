@@ -10,9 +10,10 @@ module BitexBot
       OpenBuy
     end
 
-    def fx_rate
+    def self.fx_rate
       Settings.buying_fx_rate
     end
+    def_delegator self, :fx_rate
 
     private
 

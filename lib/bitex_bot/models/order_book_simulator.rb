@@ -17,37 +17,36 @@ module BitexBot
     #   quantity.
     #
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-    def self.run(volatility, transactions, order_book, amount_target, quantity_target)
-      to_skip = estimate_quantity_to_skip(volatility, transactions)
-      Robot.log(:debug, "Skipping #{to_skip} BTC")
+    def self.run(volatility, taker_transactions, taker_orderbook, amount_target, quantity_target, fx_rate = 1)
+      to_skip = estimate_quantity_to_skip(volatility, taker_transactions)
+      Robot.log(:debug, "Skipping #{to_skip} #{Robot.taker.base.upcase}")
       seen = 0
 
-      order_book.each do |order_summary|
+      taker_orderbook.each do |order_summary|
         price = order_summary.price
         quantity = order_summary.quantity
 
         # An order may be partially or completely skipped due to volatility.
         if to_skip.positive?
-          [quantity, to_skip].min.tap do |dropped|
-            to_skip -= dropped
-            quantity -= dropped
-            Robot.log(:debug, "Skipped #{dropped} BTC @ $#{price}")
-          end
+          dropped = [quantity, to_skip].min
+          to_skip -= dropped
+          quantity -= dropped
+          Robot.log(:debug, "Skipped #{dropped} #{Robot.taker.base.upcase} @ #{Robot.taker.quote.upcase} #{price}")
           next if quantity.zero?
         end
 
         if quantity_target.present?
-          return best_price('BTC', quantity_target, price) if best_price?(quantity, quantity_target, seen)
+          return best_price(Robot.maker.base.upcase, quantity_target, price) if best_price?(quantity, quantity_target, seen)
 
           seen += quantity
         elsif amount_target.present?
           amount = price * quantity
-          return best_price('$', amount_target, price) if best_price?(amount, amount_target, seen)
+          return best_price(Robot.maker.quote.upcase, amount_target * fx_rate, price) if best_price?(amount, amount_target, seen)
 
           seen += amount
         end
       end
-      order_book.last.price
+      taker_orderbook.last.price
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
