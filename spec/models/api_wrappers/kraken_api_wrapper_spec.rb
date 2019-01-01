@@ -1,11 +1,15 @@
 require 'spec_helper'
 
 describe KrakenApiWrapper do
-  let(:api_wrapper) { described_class }
+  let(:api_wrapper) { BitexBot::Robot.taker }
   let(:api_client) { api_wrapper.client }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', currency_pair: :xbtusd }
+      kraken: {
+        api_key: 'your_api_key',
+        api_secret: 'your_api_secret',
+        order_book: 'xbtusd'
+      }
     )
   end
 
@@ -85,7 +89,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/Balance',
-      header_params: { 'Api-Key': api_wrapper.settings.api_key },
+      header_params: { 'Api-Key': api_wrapper.api_key },
       result: { XXBT: '1433.0939', ZUSD: '1230.0233', ETH: '99.7497224800' }
     )
   end
@@ -94,7 +98,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/TradeVolume',
-      header_params: { 'Api-Key': api_wrapper.settings.api_key },
+      header_params: { 'Api-Key': api_wrapper.api_key },
       result: {
         currency: 'ZUSD',
         volume: '3878.8703',
@@ -188,7 +192,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/OpenOrders',
-      header_params: { 'Api-Key': api_wrapper.settings.api_key },
+      header_params: { 'Api-Key': api_wrapper.api_key },
       result: {
         open: {
           'O5TDV2-WDYB2-6OGJRD': {
@@ -266,18 +270,9 @@ describe KrakenApiWrapper do
 
   it '#currency_pair' do
     stub_assets
-    BitexBot::Settings.taker.kraken.currency_pair.should eq taker_settings.kraken.currency_pair
+    BitexBot::Settings.taker.kraken.order_book.should eq taker_settings.kraken.order_book
 
     api_wrapper.currency_pair.should be_a(HashWithIndifferentAccess)
-    api_wrapper.currency_pair.keys.should include(*%w[altname base quote raw_name])
-  end
-
-  it '#settings correctly mapped to wrapper settings' do
-    api_wrapper.settings do |settings|
-      settings.should be_a(BitexBot::SettingsClass)
-      settings.keys.should contain_exactly(*%i[api_key api_secret])
-      settings.api_key.should eq BitexBot::Settings.taker.kraken.api_key
-      settings.api_secret.should eq BitexBot::Settings.taker.kraken.api_secret
-    end
+    api_wrapper.currency_pair.keys.should include(*%w[altname base quote name])
   end
 end

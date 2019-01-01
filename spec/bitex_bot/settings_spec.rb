@@ -11,14 +11,14 @@ describe BitexBot::Settings do
         buying_foreign_exchange_rate: 1,
         selling_foreign_exchange_rate: 1,
 
-        maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false } },
+        maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: 'btc_usd', sandbox: false, ssl_version: nil, debug: false } },
         # By default Bitstamp is taker market.
         taker: {
           bitstamp: {
             api_key: 'YOUR_API_KEY',
             secret: 'YOUR_API_SECRET',
             client_id: 'YOUR_BITSTAMP_USERNAME',
-            currency_pair: :btcusd
+            order_book: 'btcusd'
           }
         },
 
@@ -39,13 +39,13 @@ describe BitexBot::Settings do
       )
     end
 
-    context 'fx rate' do
-      context 'when Store isn´t loaded, by default' do
+    context 'fx rate, when Store' do
+      context 'isn´t loaded, by default' do
         it { described_class.buying_fx_rate.should eq(1) }
         it { described_class.selling_fx_rate.should eq(1) }
       end
 
-      context 'when Store is loaded, take rate from' do
+      context 'is loaded, take rate from' do
         before(:each) { BitexBot::Store.stub(first: BitexBot::Store.new) }
         let(:fx_rate) { rand(10) }
 
@@ -65,7 +65,7 @@ describe BitexBot::Settings do
 
     context 'maker' do
       {
-        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false }
+        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', ssl_version: nil, debug: false, sandbox: false, order_book: 'btc_usd' }
       }.each do |market, market_settings|
         before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
 

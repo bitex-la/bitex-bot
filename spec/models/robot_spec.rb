@@ -4,7 +4,10 @@ describe BitexBot::Robot do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd
+        api_key: 'YOUR_API_KEY',
+        secret: 'YOUR_API_SECRET',
+        client_id: 'YOUR_BITSTAMP_USERNAME',
+        order_book: 'btcusd'
       }
     )
   end
@@ -35,7 +38,7 @@ describe BitexBot::Robot do
       ltc_reserved:  100.00000000,   # LTC reserved in open orders
       ltc_available: 150.00000000    # LTC available for trading
     })
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_sell
     stub_bitstamp_buy
     stub_bitstamp_api_wrapper_balance
@@ -47,7 +50,7 @@ describe BitexBot::Robot do
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
-    stub_bitex_orders
+    stub_bitex_active_orders
     stub_bitstamp_api_wrapper_order_book
     bot.trade!
 
@@ -187,7 +190,7 @@ describe BitexBot::Robot do
   end
 
   it 'notifies exceptions and sleeps' do
-    BitstampApiWrapper.stub(:balance) { raise StandardError.new('oh moova') }
+    BitstampApiWrapper.any_instance.stub(:balance) { raise StandardError.new('oh moova') }
 
     expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
   end

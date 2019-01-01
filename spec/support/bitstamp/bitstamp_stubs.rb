@@ -33,7 +33,7 @@ module BitstampStubs
     transactions = orders.collect do |o|
       usd = o.amount * o.price
       usd, btc = o.type == 0 ? [-usd, o.amount] : [usd, -o.amount]
-      double(usd: (usd * ratio).to_s, btc: (btc * ratio).to_s,
+      Bitstamp::UserTransaction.new(usd: (usd * ratio).to_s, btc: (btc * ratio).to_s,
         btc_usd: o.price.to_s, order_id: o.id, fee: '0.5', type: 2,
         datetime: DateTime.now.to_s)
     end
