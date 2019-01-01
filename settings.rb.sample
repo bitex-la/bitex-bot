@@ -46,30 +46,37 @@ buying_foreign_exchange_rate 1.to_d
 #   api_key: it's passed in to the bitex gem: https://github.com/bitex-la/bitex-ruby.
 #   sandbox: Use sandbox environments instead of live environments.
 #   order_book: order book with which you will operate.
-maker bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: :btc_usd, sandbox: false }
+maker bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', sandbox: false, ssl_version: nil, debug: false, order_book: 'btc_usd' }
 
 # These are the configurations we need for the markets currently supported.
-# Turn on and off the chosen Bitstamp, Itbit or Kraken market with comments.
+# Turn on and off the chosen Bitex, Bitstamp, Itbit or Kraken market with comments.
 
 # These are passed in to the bitstamp gem: see https://github.com/kojnapp/bitstamp for more info.
-# Supported values for currency_pair: :btcusd, :btceur, :eurusd, :xrpusd, :xrpeur, :xrpbtc, :ltcusd, :ltceur, :ltcbtc, :ethusd,
-# :etheur, :ethbtc, :bchusd, :bcheur, :bchbtc
-taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', currency_pair: :btcusd }
+# Supported values for order_book: 'btcusd', 'btceur', 'eurusd', 'xrpusd', 'xrpeur', 'xrpbtc', 'ltcusd', 'ltceur', 'ltcbtc',
+# 'ethusd', 'etheur', 'ethbtc', 'bchusd', 'bcheur', 'bchbtc'
+#
+taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', order_book: 'btcusd' }
 
 # These are passed in to the itbit gem: see https://github.com/bitex-la/itbit for more info.
-# Choices: :xbtusd, :xbtsgd, :xbteur, https://api.itbit.com/docs#market-data-get-order-book-get.
-# taker itbit: { client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false, currency_pair: :xbtusd }
+# Choices: 'xbtusd', 'xbtsgd', 'xbteur', https://api.itbit.com/docs#market-data-get-order-book-get.
+#
+# taker itbit: { client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false, order_book: 'xbtusd' }
 
 # These are passed in to the kraken gem: see https://github.com/shideneyu/kraken_client for more info.
-# Supported values for currency_pair https://api.kraken.com/0/public/AssetPairs:
-#   [:bcheur, :bchusd, :bchxbt, :dasheur, :dashusd, :dashxbt, :eoseth, :eoseur, :eosusd, :eosxbt, :etceth, :etceur
-#   :etcusd, :etcxbt, :ethcad, :"ethcad.d", :etheur, :"etheur.d", :ethgbp, :'ethgbp.d', :ethjpy, :'ethjpy.d', :ethusd,
-#   :'ethusd.d', :ethxbt, :'ethxbt.d', :gnoeth, :gnoeur, :gnousd, :gnoxbt, :icneth, :icnxbt, :ltceur, :ltcusd, :ltcxbt,
-#   :mlneth, :mlnxbt, :repeth, :repeur, :repusd, :repxbt, :usdtusd, :xbtcad, :'xbtcad.d', :xbteur, :'xbteur.d', :xbtgbp,
-#   :'xbtgbp.d', :xbtjpy, :'xbtjpy.d', :xbtusd, :'xbtusd.d', :xdgxbt, :xlmeur, :xlmusd, :xlmxbt, :xmreur, :xmrusd,
-#   :xmrxbt, :xrpcad, :xrpeur, :xrpjpy, :xrpusd, :xrpxbt, :zeceur, :zecjpy, :zecusd, :zecxbt]
+# Supported values for order_book https://api.kraken.com/0/public/AssetPairs:
+#   'bcheur', 'bchusd', 'bchxbt', 'dasheur', 'dashusd', 'dashxbt', 'eoseth', 'eoseur', 'eosusd', 'eosxbt', 'etceth', 'etceur',
+#   'etcusd', 'etcxbt', 'ethcad', '"ethcad.d"', 'etheur', '"etheur.d"', 'ethgbp', ''ethgbp.d'', 'ethjpy', ''ethjpy.d'', 'ethusd',
+#   'ethusd.d', 'ethxbt', ''ethxbt.d'', 'gnoeth', 'gnoeur', 'gnousd', 'gnoxbt', 'icneth', 'icnxbt', 'ltceur', 'ltcusd', 'ltcxbt',
+#   'mlneth', 'mlnxbt', 'repeth', 'repeur', 'repusd', 'repxbt', 'usdtusd', 'xbtcad', ''xbtcad.d'', 'xbteur', ''xbteur.d'', 'xbtgbp',
+#   'xbtgbp.d', 'xbtjpy', ''xbtjpy.d'', 'xbtusd', ''xbtusd.d'', 'xdgxbt', 'xlmeur', 'xlmusd', 'xlmxbt', 'xmreur', 'xmrusd',
+#   'xmrxbt', 'xrpcad', 'xrpeur', 'xrpjpy', 'xrpusd', 'xrpxbt', 'zeceur', 'zecjpy', 'zecusd', 'zecxbt']
 #
-# taker kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', currency_pair: :xbtusd }
+# taker kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', order_book: 'xbtusd' }
+
+# These are passed in to the Bitex gem: see https://github.com/bitex-la/bitex-ruby.
+# Supported values for order_book: 'btc_usd', 'bch_usd', 'bct_ars', 'bct_clp', 'bct_pyg', 'btc_uyu'
+#
+# taker bitex: { api_key: 'taker_api_key', sandbox: false, ssl_version: nil, debug: false, order_book: 'btc_usd' }
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:
