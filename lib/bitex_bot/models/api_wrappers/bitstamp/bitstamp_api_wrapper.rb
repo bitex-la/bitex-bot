@@ -1,40 +1,44 @@
 # Wrapper implementation for Bitstamp API.
 # https://www.bitstamp.net/api/
 class BitstampApiWrapper < ApiWrapper
-  def self.setup(settings)
+  attr_accessor :key, :secret, :client_id
+
+  def initialize(settings)
+    self.key = settings.api_key
+    self.secret = settings.secret
+    self.client_id = settings.client_id
+    currency_pair(settings.order_book)
+    setup
+  end
+
+  def setup
     Bitstamp.setup do |config|
-      config.key = settings.api_key
-      config.secret = settings.secret
-      config.client_id = settings.client_id
+      config.key = key
+      config.secret = secret
+      config.client_id = client_id
     end
   end
 
-  def self.amount_and_quantity(order_id)
-    closes = BitexBot::Robot.with_cooldown { user_transactions.select { |t| t.order_id.to_s == order_id } }
+  def amount_and_quantity(order_id)
+    closes = user_transactions.select { |t| t.order_id.to_s == order_id }
     amount = closes.sum(&:fiat).abs
     quantity = closes.sum(&:crypto).abs
 
     [amount, quantity]
   end
 
-  def self.balance
+  def balance
     balance_summary_parser(Bitstamp.balance(currency_pair[:name]).symbolize_keys)
   rescue StandardError => e
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end
 
-  def self.cancel(order)
-    Bitstamp::Order.new(id: order.id).cancel!
-  rescue StandardError => e
-    raise ApiWrapperError, "Bitstamp cancel! failed: #{e.message}"
-  end
-
-  def self.find_lost(type, price, _quantity)
+  def find_lost(type, price, _quantity)
     orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
   # rubocop:disable Metrics/AbcSize
-  def self.order_book(retries = 20)
+  def order_book(retries = 20)
     book = Bitstamp.order_book(currency_pair[:name]).deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
     return order_book_parser(book) if age <= 300
