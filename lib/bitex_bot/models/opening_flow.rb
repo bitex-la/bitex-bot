@@ -3,6 +3,8 @@ module BitexBot
   # The OpeningFlow stage places an order on bitex, detecting and storing all transactions spawn from that order as
   # Open positions.
   class OpeningFlow < ActiveRecord::Base
+    extend Forwardable
+
     self.abstract_class = true
 
     # The updated config store as passed from the robot

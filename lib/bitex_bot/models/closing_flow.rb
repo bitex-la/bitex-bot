@@ -112,11 +112,15 @@ module BitexBot
     # end: next_price_and_quantity helpers
 
     # This use hooks methods, these must be defined in the subclass:
-    #   order_method
+    #   order_type
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
-      Robot.log(:info, "Closing: Going to place #{order_method} order for #{self.class.name} ##{id} #{quantity} BTC @ $#{price}")
-      order = Robot.taker.place_order(order_method, price, quantity)
+      Robot.log(
+        :info,
+        "Closing: Going to place #{order_type} order for #{self.class} ##{id}"\
+        " #{Robot.taker.base.upcase} #{quantity} @ #{Robot.taker.quote.upcase} #{price}"
+      )
+      order = Robot.taker.place_order(order_type, price, quantity)
       close_positions.create!(order_id: order.id)
     end
   end

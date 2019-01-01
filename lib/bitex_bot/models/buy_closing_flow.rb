@@ -38,7 +38,7 @@ module BitexBot
     # end: create_or_cancel! hookers
 
     # create_order_and_close_position hookers
-    def order_method
+    def order_type
       :sell
     end
     # end: create_order_and_close_position hookers
