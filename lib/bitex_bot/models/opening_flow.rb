@@ -100,7 +100,7 @@ module BitexBot
     #   #open_position_class
     def self.sync_open_positions
       threshold = open_position_class.order('created_at DESC').first.try(:created_at)
-      Bitex::Trade.all.map do |transaction|
+      Robot.maker.transactions.map do |transaction|
         next unless sought_transaction?(threshold, transaction)
 
         flow = find_by_order_id(transaction_order_id(transaction))

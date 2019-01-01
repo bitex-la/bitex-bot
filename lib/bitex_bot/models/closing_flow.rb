@@ -1,23 +1,28 @@
 module BitexBot
   # Close buy/sell positions.
   class ClosingFlow < ActiveRecord::Base
+    extend Forwardable
+
     self.abstract_class = true
 
     cattr_reader(:close_time_to_live) { 30 }
 
-    # Start a new CloseBuy that closes exising OpenBuy's by selling on another exchange what was just bought on bitex.
+    # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
     def self.close_open_positions
-      open_positions = open_position_class.open
-      return if open_positions.empty?
+      return unless open_positions.any?
 
-      quantity = open_positions.map(&:quantity).sum
-      amount = open_positions.map(&:amount).sum
-      price = suggested_amount(open_positions) / quantity
+      positions = open_positions
+      quantity = positions.sum(&:quantity)
+      amount = positions.sum(&:amount) / fx_rate
+      price = suggested_amount(positions) / quantity
 
-      # Don't even bother trying to close a position that's too small.
       return unless Robot.taker.enough_order_size?(quantity, price)
 
-      create_closing_flow!(price, quantity, amount, open_positions)
+      create_closing_flow!(price, quantity, amount, positions)
+    end
+
+    def self.open_positions
+      open_position_class.open
     end
 
     # close_open_positions helpers
@@ -37,9 +42,9 @@ module BitexBot
     end
 
     # TODO: should receive a order_ids and user_transaccions array, then each Wrapper should know how to search for them.
-    def sync_closed_positions(orders)
+    def sync_closed_positions
       # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
-      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!(orders)
+      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!
     end
 
     def estimate_fiat_profit
@@ -53,9 +58,10 @@ module BitexBot
     private
 
     # sync_closed_positions helpers
-    def create_or_cancel!(orders)
+    # rubocop:disable Metrics/AbcSize
+    def create_or_cancel!
       order_id = latest_close.order_id.to_s
-      order = orders.find { |o| o.id.to_s == order_id }
+      order = Robot.with_cooldown { Robot.taker.orders.find { |o| o.id.to_s == order_id } }
 
       # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
       # spawned from it.
@@ -66,6 +72,7 @@ module BitexBot
         cancel!(order)
       end
     end
+    # rubocop:enable Metrics/AbcSize
 
     def latest_close
       close_positions.last
@@ -75,9 +82,9 @@ module BitexBot
     # create_or_cancel! helpers
     def cancel!(order)
       Robot.with_cooldown do
-        Robot.log(:debug, "Finalising #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalising #{order.raw.class}##{order.id}")
         order.cancel!
-        Robot.log(:debug, "Finalised #{order.class}##{order.id}")
+        Robot.log(:debug, "Finalised #{order.raw.class}##{order.id}")
       end
     rescue StandardError => error
       Robot.log(:debug, error)
@@ -88,15 +95,21 @@ module BitexBot
     #   estimate_crypto_profit
     #   amount_positions_balance
     #   next_price_and_quantity
+    # rubocop:disable Metrics/AbcSize
     def create_next_position!
       next_price, next_quantity = next_price_and_quantity
       if Robot.taker.enough_order_size?(next_quantity, next_price)
         create_order_and_close_position(next_quantity, next_price)
       else
         update!(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
-        Robot.logger.info("Closing: Finished #{self.class.name} ##{id} earned $#{fiat_profit} and #{crypto_profit} BTC.")
+        Robot.log(
+          :info,
+          "Closing: Finished #{self.class} ##{id} earned"\
+          "#{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
+        )
       end
     end
+    # rubocop:enable Metrics/AbcSize
 
     def sync_position(order_id)
       latest = latest_close

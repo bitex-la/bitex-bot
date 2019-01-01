@@ -65,7 +65,7 @@ module BitexBot
     end
 
     def self.best_price(currency, target, price)
-      price.tap { Robot.log(:debug, "Best price to get #{currency} #{target} is $#{price}") }
+      price.tap { Robot.log(:debug, "Best price to get #{currency} #{target} is #{Robot.taker.quote.upcase} #{price}") }
     end
 
     # end: private class methods

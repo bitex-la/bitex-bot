@@ -10,11 +10,11 @@ end
 
 module BitexBot
   # Documentation here!
-  # rubocop:disable Metrics/ClassLength
   class Robot
     extend Forwardable
 
     cattr_accessor :taker
+    cattr_accessor :maker
 
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
@@ -33,9 +33,8 @@ module BitexBot
     end
 
     def self.setup
-      Bitex.api_key = Settings.maker_settings.api_key
-      Bitex.sandbox = Settings.maker_settings.sandbox
-      self.taker = Settings.taker_class.tap { |klass| klass.setup(Settings.taker_settings) }
+      self.maker = Settings.maker_class.new(Settings.maker_settings)
+      self.taker = Settings.taker_class.new(Settings.taker_settings)
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
@@ -68,6 +67,7 @@ module BitexBot
         sleep_for(0.1)
       end
     end
+    def_delegator self, :with_cooldown
 
     def self.start_robot
       setup
@@ -116,10 +116,6 @@ module BitexBot
 
     private
 
-    def with_cooldown(&block)
-      self.class.with_cooldown(&block)
-    end
-
     def sync_opening_flows
       [SellOpeningFlow, BuyOpeningFlow].each(&:sync_open_positions)
     end
@@ -158,52 +154,45 @@ module BitexBot
     end
 
     def sync_closing_flows
-      orders = with_cooldown { Robot.taker.orders }
-
-      [BuyClosingFlow, SellClosingFlow].each do |kind|
-        kind.active.each { |flow| flow.sync_closed_positions(orders) }
-      end
+      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.active.each(&:sync_closed_positions) }
     end
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def start_opening_flows_if_needed
-      return log(:debug, 'Not placing new orders because of hold') if store.reload.hold?
-      return log(:debug, 'Not placing new orders, closing flows.') if active_closing_flows?
+      return log(:debug, 'Not placing new orders, because Store is held') if store.reload.hold?
+      return log(:debug, 'Not placing new orders, has active closing flows.') if active_closing_flows?
       return log(:debug, 'Not placing new orders, shutting down.') if turn_off?
 
       recent_buying, recent_selling = recent_operations
       return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
-      profile = Bitex::Profile.get
-      taker_balance = with_cooldown { Robot.taker.balance }
-      sync_log_and_store(taker_balance, profile)
+      maker_balance = with_cooldown { maker.balance }
+      taker_balance = with_cooldown { taker.balance }
+      sync_log_and_store(maker_balance, taker_balance)
 
       check_balance_warning if expired_last_warning?
+      return if stop_opening_flows?
 
-      return log(:debug, "Not placing new orders, #{Settings.quote} target not met") if alert?(:fiat, :stop)
-      return log(:debug, "Not placing new orders, #{Settings.base} target not met") if alert?(:crypto, :stop)
+      order_book = with_cooldown { taker.order_book }
+      transactions = with_cooldown { taker.transactions }
 
-      order_book = with_cooldown { Robot.taker.order_book }
-      transactions = with_cooldown { Robot.taker.transactions }
-
-      create_buy_opening_flow(taker_balance, order_book, transactions, profile) unless recent_buying
-      create_sell_opening_flow(taker_balance, order_book, transactions, profile) unless recent_selling
+      args = [transactions, maker_balance.fee, taker_balance.fee, store]
+      BuyOpeningFlow.create_for_market(*[taker_balance.crypto.available, order_book.bids] + args) unless recent_buying
+      SellOpeningFlow.create_for_market(*[taker_balance.fiat.available, order_book.asks] + args) unless recent_selling
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def recent_operations
-      [BuyOpeningFlow, SellOpeningFlow].map do |kind|
-        threshold = (Settings.time_to_live / 2).seconds.ago
-        kind.active.where('created_at > ?', threshold).first
-      end
+      threshold = (Settings.time_to_live / 2).seconds.ago
+      [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.active.where('created_at > ?', threshold).first }
     end
 
-    def sync_log_and_store(taker_balance, maker_balance)
+    def sync_log_and_store(maker_balance, taker_balance)
       file = Settings.log.try(:file)
       last_log = `tail -c 61440 #{file}` if file.present?
 
       store.update(
-        maker_fiat: maker_balance[:"#{Settings.quote}_balance"], maker_crypto: maker_balance[:"#{Settings.base}_balance"],
+        maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
         taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
         log: last_log
       )
@@ -213,9 +202,14 @@ module BitexBot
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
+    def stop_opening_flows?
+      (log(:debug, "Not placing new orders, #{maker.quote.upcase} target not met") if alert?(:fiat, :stop)) ||
+        (log(:debug, "Not placing new orders, #{maker.base.upcase} target not met") if alert?(:crypto, :stop))
+    end
+
     def check_balance_warning
-      notify_balance_warning(Settings.base, balance(:crypto), store.crypto_warning) if alert?(:crypto, :warning)
-      notify_balance_warning(Settings.quote, balance(:fiat), store.fiat_warning) if alert?(:fiat, :warning)
+      notify_balance_warning(maker.base, balance(:crypto), store.crypto_warning) if alert?(:crypto, :warning)
+      notify_balance_warning(maker.quote, balance(:fiat), store.fiat_warning) if alert?(:fiat, :warning)
     end
 
     def alert?(currency, flag)
@@ -251,14 +245,5 @@ module BitexBot
         body message
       end
     end
-
-    def create_buy_opening_flow(balance, order_book, transactions, profile)
-      BuyOpeningFlow.create_for_market(balance.crypto.available, order_book.bids, transactions, profile[:fee], balance.fee, store)
-    end
-
-    def create_sell_opening_flow(balance, order_book, transactions, profile)
-      SellOpeningFlow.create_for_market(balance.fiat.available, order_book.asks, transactions, profile[:fee], balance.fee, store)
-    end
-    # rubocop:enable Metrics/ClassLength
   end
 end
