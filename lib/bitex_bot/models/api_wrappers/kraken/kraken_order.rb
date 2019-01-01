@@ -2,7 +2,7 @@ require 'kraken_client'
 
 # Wrapper for Kraken orders.
 class KrakenOrder
-  cattr_accessor :last_closed_order
+  cattr_accessor :last_closed_order, :api_wrapper
   attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime
 
   # rubocop:disable Metrics/AbcSize
@@ -24,7 +24,7 @@ class KrakenOrder
   # rubocop:enable Metrics/AbcSize
 
   def self.order_info_by(type, price, quantity)
-    KrakenApiWrapper.client.private.add_order(
+    api_wrapper.client.private.add_order(
       pair: KrakenApiWrapper.currency_pair[:altname],
       type: type,
       ordertype: 'limit',
@@ -34,7 +34,7 @@ class KrakenOrder
   end
 
   def self.find(id)
-    new(*KrakenApiWrapper.client.private.query_orders(txid: id).first)
+    new(*api_wrapper.client.private.query_orders(txid: id).first)
   rescue KrakenClient::ErrorResponse
     retry
   end
@@ -48,13 +48,13 @@ class KrakenOrder
   end
 
   def self.open
-    KrakenApiWrapper.client.private.open_orders['open'].map { |o| new(*o) }
+    api_wrapper.client.private.open_orders['open'].map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse
     retry
   end
 
   def self.closed(start: 1.hour.ago.to_i)
-    KrakenApiWrapper.client.private.closed_orders(start: start)[:closed].map { |o| new(*o) }
+    api_wrapper.client.private.closed_orders(start: start)[:closed].map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse
     retry
   end
@@ -106,7 +106,7 @@ class KrakenOrder
   end
 
   def cancel!
-    KrakenApiWrapper.client.private.cancel_order(txid: id)
+    api_wrapper.client.private.cancel_order(txid: id)
   rescue KrakenClient::ErrorResponse => e
     e.message == 'EService:Unavailable' ? retry : raise
   end
