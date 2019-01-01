@@ -31,26 +31,31 @@ module BitexBot
     #   #safest_price
     #   #value_to_use
     # rubocop:disable Metrics/AbcSize
-    def self.create_for_market(remote_balance, order_book, transactions, maker_fee, taker_fee, store)
+    def self.create_for_market(taker_balance, taker_orders, taker_transactions, maker_fee, taker_fee, store)
       self.store = store
 
-      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, order_book, transactions)
-      raise CannotCreateFlow, "Needed #{remote_value} but you only have #{remote_balance}" unless
-        enough_remote_funds?(remote_balance, remote_value)
+      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
+      unless enough_remote_funds?(taker_balance, remote_value)
+        raise CannotCreateFlow,
+              "Needed #{remote_value} but you only have #{order_specie} #{taker_balance} on your taker market."
+      end
 
-      bitex_price = maker_price(remote_value)
-      order = create_order!(bitex_price)
-      raise CannotCreateFlow, "You need to have #{value_to_use} on bitex to place this #{order_class.name}." unless
-        enough_funds?(order)
+      price = maker_price(remote_value)
+
+      order = create_order!(price)
+      unless enough_funds?(order)
+        raise CannotCreateFlow,
+              "You need to have #{Robot.maker.quote.upcase} #{value_per_order} on Bitex to place this #{order_class}."
+      end
 
       Robot.log(
         :info,
-        "Opening: Placed #{order_class.name} ##{order.id} #{value_to_use} @ #{Settings.quote.upcase} #{bitex_price}"\
-        " (#{remote_value})"
+        "Opening: Placed #{order_class} ##{order.id} #{value_per_order} @ #{Robot.maker.quote.upcase} #{price}"\
+        " (#{order_specie} #{remote_value})"
       )
 
       create!(
-        price: bitex_price,
+        price: price,
         value_to_use: value_to_use,
         suggested_closing_price: safest_price,
         status: 'executing',
@@ -62,16 +67,16 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     # create_for_market helpers
-    def self.calc_remote_value(maker_fee, taker_fee, order_book, transactions)
+    def self.calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
       value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
-      safest_price = safest_price(transactions, order_book, value_to_use_needed)
+      safest_price = safest_price(taker_transactions, taker_orders, value_to_use_needed)
       remote_value = remote_value_to_use(value_to_use_needed, safest_price)
 
       [remote_value, safest_price]
     end
 
-    def self.create_order!(bitex_price)
-      order_class.create!(Settings.maker_settings.order_book, value_to_use, bitex_price, true)
+    def self.create_order!(maker_price)
+      Robot.maker.send_order(order_type, maker_price, value_per_order, true)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -80,8 +85,8 @@ module BitexBot
       !order.reason.to_s.inquiry.not_enough_funds?
     end
 
-    def self.enough_remote_funds?(remote_balance, remote_value)
-      remote_balance >= remote_value
+    def self.enough_remote_funds?(taker_balance, remote_value)
+      taker_balance >= remote_value
     end
 
     def self.maker_plus(fee)
@@ -106,25 +111,28 @@ module BitexBot
     end
 
     # sync_open_positions helpers
+    # rubocop:disable Metrics/AbcSize
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.quantity} #{Settings.base.upcase} @ #{Settings.quote.upcase}"\
-        " #{transaction.price}"
+        "Opening: #{name} ##{flow.id} was hit for #{transaction.raw.quantity} #{Robot.maker.base.upcase}"\
+        "@ #{Robot.maker.quote.upcase} #{transaction.price}"
       )
+
       open_position_class.create!(
         transaction_id: transaction.id,
         price: transaction.price,
         amount: transaction.amount,
-        quantity: transaction.quantity,
+        quantity: transaction.raw.quantity,
         opening_flow: flow
       )
     end
+    # rubocop:enable Metrics/AbcSize
 
     # This use hooks methods, these must be defined in the subclass:
     #   #transaction_class
     def self.sought_transaction?(threshold, transaction)
-      transaction.is_a?(transaction_class) &&
+      expected_kind_transaction?(transaction) &&
         !active_transaction?(transaction, threshold) &&
         !open_position?(transaction) &&
         expected_order_book?(transaction)
@@ -132,16 +140,20 @@ module BitexBot
     # end: sync_open_positions helpers
 
     # sought_transaction helpers
+    def self.expected_kind_transaction?(transaction)
+      transaction.raw.is_a?(transaction_class)
+    end
+
     def self.active_transaction?(transaction, threshold)
-      threshold.present? && transaction.created_at < (threshold - 30.minutes)
+      threshold.present? && transaction.timestamp < (threshold - 30.minutes).to_i
     end
 
     def self.open_position?(transaction)
       open_position_class.find_by_transaction_id(transaction.id)
     end
 
-    def self.expected_order_book?(transaction)
-      transaction.order_book == Settings.maker_settings.order_book
+    def self.expected_order_book?(maker_transaction)
+      maker_transaction.raw.order_book.to_s == Robot.maker.base_quote
     end
     # end: sought_transaction helpers
 
@@ -159,7 +171,7 @@ module BitexBot
     end
 
     def finalise!
-      order = self.class.order_class.find(order_id)
+      order = order_class.find(order_id)
       canceled_or_completed?(order) ? do_finalize : do_cancel(order)
     end
 
@@ -171,12 +183,12 @@ module BitexBot
     end
 
     def do_finalize
-      Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} finalised.")
+      Robot.log(:info, "Opening: #{order_class} ##{order_id} finalised.")
       finalised!
     end
 
     def do_cancel(order)
-      Robot.log(:info, "Opening: #{self.class.order_class.name} ##{order_id} canceled.")
+      Robot.log(:info, "Opening: #{order_class} ##{order_id} canceled.")
       order.cancel!
       settling! unless settling?
     end

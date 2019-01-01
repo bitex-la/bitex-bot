@@ -28,13 +28,13 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
     # of USD on the other exchange.
-    def self.create_for_market(usd_balance, order_book, transactions, maker_fee, taker_fee, store)
+    def self.create_for_market(taker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee, store)
       super
     end
 
     # sync_open_positions helpers
     def self.transaction_order_id(transaction)
-      transaction.ask_id
+      transaction.raw.ask_id
     end
 
     def self.open_position_class
@@ -81,6 +81,14 @@ module BitexBot
 
     def self.fx_rate
       Settings.selling_fx_rate
+    end
+
+    def self.value_per_order
+      value_to_use
+    end
+
+    def self.order_specie
+      Robot.taker.quote.upcase
     end
   end
 end

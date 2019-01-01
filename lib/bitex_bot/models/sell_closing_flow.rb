@@ -38,7 +38,7 @@ module BitexBot
     # end: create_or_cancel! helpers
 
     # create_order_and_close_position helpers
-    def order_method
+    def order_type
       :buy
     end
     # end: create_order_and_close_position helpers
