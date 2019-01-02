@@ -51,7 +51,7 @@ module BitexBot
       Robot.log(
         :info,
         "Opening: Placed #{order_class} ##{order.id} #{value_per_order} @ #{Robot.maker.quote.upcase} #{price}"\
-        " (#{specie_to_obtain} #{remote_value})"
+        " (#{maker_specie_to_obtain} #{remote_value})"
       )
 
       create!(
