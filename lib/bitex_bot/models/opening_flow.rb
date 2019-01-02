@@ -37,7 +37,7 @@ module BitexBot
       remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
       unless enough_remote_funds?(taker_balance, remote_value)
         raise CannotCreateFlow,
-              "Needed #{remote_value} but you only have #{order_specie} #{taker_balance} on your taker market."
+              "Needed #{remote_value} but you only have #{taker_specie_to_spend} #{taker_balance} on your taker market."
       end
 
       price = maker_price(remote_value)
@@ -45,13 +45,13 @@ module BitexBot
       order = create_order!(price)
       unless enough_funds?(order)
         raise CannotCreateFlow,
-              "You need to have #{Robot.maker.quote.upcase} #{value_per_order} on Bitex to place this #{order_class}."
+              "You need to have #{maker_specie_to_spend} #{value_per_order} on Bitex to place this #{order_class}."
       end
 
       Robot.log(
         :info,
         "Opening: Placed #{order_class} ##{order.id} #{value_per_order} @ #{Robot.maker.quote.upcase} #{price}"\
-        " (#{order_specie} #{remote_value})"
+        " (#{specie_to_obtain} #{remote_value})"
       )
 
       create!(
@@ -116,7 +116,7 @@ module BitexBot
       Robot.log(
         :info,
         "Opening: #{name} ##{flow.id} was hit for #{transaction.raw.quantity} #{Robot.maker.base.upcase}"\
-        "@ #{Robot.maker.quote.upcase} #{transaction.price}"
+        " @ #{Robot.maker.quote.upcase} #{transaction.price}"
       )
 
       open_position_class.create!(

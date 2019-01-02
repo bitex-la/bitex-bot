@@ -87,8 +87,20 @@ module BitexBot
       value_to_use
     end
 
-    def self.order_specie
+    def self.maker_specie_to_spend
+      Robot.maker.base.upcase
+    end
+
+    def self.maker_specie_to_obtain
+      Robot.maker.quote.upcase
+    end
+
+    def self.taker_specie_to_spend
       Robot.taker.quote.upcase
+    end
+
+    def self.taker_specie_to_obtain
+      Robot.taker.base.upcase
     end
   end
 end

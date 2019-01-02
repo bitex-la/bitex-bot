@@ -87,8 +87,20 @@ module BitexBot
       value_to_use * fx_rate
     end
 
-    def self.order_specie
+    def self.maker_specie_to_spend
+      Robot.maker.quote.upcase
+    end
+
+    def self.maker_specie_to_obtain
+      Robot.maker.base.upcase
+    end
+
+    def self.taker_specie_to_spend
       Robot.taker.base.upcase
+    end
+
+    def self.taker_specie_to_obtain
+      Robot.taker.quote.upcase
     end
   end
 end
