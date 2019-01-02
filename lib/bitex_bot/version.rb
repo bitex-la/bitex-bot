@@ -1,3 +1,3 @@
 module BitexBot
-  VERSION = '0.6.1'.freeze
+  VERSION = '1.0'.freeze
 end
