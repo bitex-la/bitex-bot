@@ -28,13 +28,13 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
     # of USD on the other exchange.
-    def self.create_for_market(usd_balance, order_book, transactions, maker_fee, taker_fee, store)
+    def self.create_for_market(taker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee, store)
       super
     end
 
     # sync_open_positions helpers
     def self.transaction_order_id(transaction)
-      transaction.ask_id
+      transaction.raw.ask_id
     end
 
     def self.open_position_class
@@ -56,6 +56,11 @@ module BitexBot
     def self.order_class
       Bitex::Ask
     end
+    def_delegator self, :order_class
+
+    def self.order_type
+      :sell
+    end
 
     def self.profit
       store.selling_profit || Settings.selling.profit
@@ -65,8 +70,8 @@ module BitexBot
       value_to_use_needed * safest_price
     end
 
-    def self.safest_price(transactions, order_book, bitcoins_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions, order_book, nil, bitcoins_to_use)
+    def self.safest_price(transactions, taker_asks, bitcoins_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, transactions, taker_asks, nil, bitcoins_to_use, nil)
     end
 
     def self.value_to_use
@@ -76,6 +81,26 @@ module BitexBot
 
     def self.fx_rate
       Settings.selling_fx_rate
+    end
+
+    def self.value_per_order
+      value_to_use
+    end
+
+    def self.maker_specie_to_spend
+      Robot.maker.base.upcase
+    end
+
+    def self.maker_specie_to_obtain
+      Robot.maker.quote.upcase
+    end
+
+    def self.taker_specie_to_spend
+      Robot.taker.quote.upcase
+    end
+
+    def self.taker_specie_to_obtain
+      Robot.taker.base.upcase
     end
   end
 end

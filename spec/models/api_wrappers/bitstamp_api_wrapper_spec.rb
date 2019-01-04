@@ -1,14 +1,13 @@
 require 'spec_helper'
 
 describe BitstampApiWrapper do
-  let(:api_wrapper) { described_class }
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       bitstamp: {
-        api_key: 'BITSTAMP_KEY',
-        secret: 'BITSTAMP_SECRET',
+        api_key: 'BITSTAMP_API_KEY',
+        secret: 'BITSTAMP_API_SECRET',
         client_id: 'BITSTAMP_USERNAME',
-        currency_pair: :btcusd
+        order_book: 'btcusd'
       }
     )
   end
@@ -17,6 +16,8 @@ describe BitstampApiWrapper do
     BitexBot::Settings.stub(taker: taker_settings)
     BitexBot::Robot.setup
   end
+
+  let(:api_wrapper) { BitexBot::Robot.taker }
 
   describe 'Sends User-Agent header' do
     let(:url) { 'https://www.bitstamp.net/api/v2/balance/btcusd/' }
@@ -31,34 +32,19 @@ describe BitstampApiWrapper do
     end
   end
 
-  describe '.currency_pair' do
-    subject { api_wrapper.send(:currency_pair) }
-
-    it { is_expected.to be_a(Hash) }
-    it { is_expected.to eq({ name: :btcusd, base: :btc, quote: :usd }) }
-
-    it { expect { api_wrapper.currency_pair }.to raise_exception(NoMethodError) }
+  describe '#currency_pair' do
+    it { expect(api_wrapper.currency_pair).to eq({ name: 'btcusd', base: 'btc', quote: 'usd' }) }
   end
 
-  describe '.base' do
-    subject { api_wrapper.send(:base) }
-
-    it { is_expected.to be_a(Symbol) }
-    it { is_expected.to eq(:btc) }
-
-    it { expect { api_wrapper.base}.to raise_exception(NoMethodError) }
+  describe '#base' do
+    it { expect(api_wrapper.base).to eq('btc') }
   end
 
-  describe '.quote' do
-    subject { api_wrapper.send(:quote) }
-
-    it { is_expected.to be_a(Symbol) }
-    it { is_expected.to eq(:usd) }
-
-    it { expect { api_wrapper.quote }.to raise_exception(NoMethodError) }
+  describe '#quote' do
+    it { expect(api_wrapper.quote).to eq('usd') }
   end
 
-  describe '.balance', vcr: { cassette_name: 'bitstamp/balance' } do
+  describe '#balance', vcr: { cassette_name: 'bitstamp/balance' } do
     subject { api_wrapper.balance }
 
     it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
@@ -80,10 +66,8 @@ describe BitstampApiWrapper do
     it_behaves_like 'currency balance', :crypto
     it_behaves_like 'currency balance', :fiat
 
-    context 'fee' do
-      subject { api_wrapper.balance.fee }
-
-      it { is_expected.to be_a(BigDecimal) }
+    it 'fee' do
+      expect(api_wrapper.balance.fee).to be_a(BigDecimal)
     end
   end
 
@@ -117,17 +101,17 @@ describe BitstampApiWrapper do
 
       it { is_expected.to be_a(ApiWrapper::Order) }
 
-      its(:members) { is_expected.to eq(%i[id type price amount timestamp raw_order]) }
+      its(:members) { is_expected.to eq(%i[id type price amount timestamp raw]) }
 
       its(:id) { is_expected.to be_a(String) }
       its(:type) { is_expected.to be_a(Symbol) }
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:amount) { is_expected.to be_a(BigDecimal) }
       its(:timestamp) { is_expected.to be_a(Integer) }
-      its(:raw_order) { is_expected.to be_a(Bitstamp::Order) }
+      its(:raw) { is_expected.to be_a(Bitstamp::Order) }
 
       context 'raw order' do
-        subject { api_wrapper.send_order(:buy, 1.01, 1).raw_order }
+        subject { api_wrapper.send_order(:buy, 1.01, 1).raw }
 
         its(:id) { is_expected.to be_a(Integer) }
         its(:type) { is_expected.to be_a(Integer) }
@@ -149,12 +133,13 @@ describe BitstampApiWrapper do
 
     it { is_expected.to be_a(ApiWrapper::Transaction) }
 
-    its(:members) { is_expected.to eq(%i[id price amount timestamp]) }
+    its(:members) { is_expected.to eq(%i[id price amount timestamp raw]) }
 
     its(:id) { is_expected.to be_a(Integer) }
     its(:price) { is_expected.to be_a(BigDecimal) }
     its(:amount) { is_expected.to be_a(BigDecimal) }
     its(:timestamp) { is_expected.to be_a(Integer) }
+    its(:raw) { is_expected.to be_a(Bitstamp::Transactions) }
   end
 
   describe '.user_transaction', vcr: { cassette_name: 'bitstamp/user_transactions' } do

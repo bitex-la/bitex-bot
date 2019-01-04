@@ -10,9 +10,10 @@ module BitexBot
       OpenBuy
     end
 
-    def fx_rate
+    def self.fx_rate
       Settings.buying_fx_rate
     end
+    def_delegator self, :fx_rate
 
     private
 
@@ -37,7 +38,7 @@ module BitexBot
     # end: create_or_cancel! hookers
 
     # create_order_and_close_position hookers
-    def order_method
+    def order_type
       :sell
     end
     # end: create_order_and_close_position hookers

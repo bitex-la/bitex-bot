@@ -1,6 +1,11 @@
 require 'spec_helper'
 
 describe BitexBot::OrderBookSimulator do
+  before(:each) do
+    BitexBot::Robot.taker = double(base: 'btc', quote: 'usd')
+    BitexBot::Robot.maker = double(base: 'btc', quote: 'usd')
+  end
+
   describe 'when buying on bitex to sell somewhere else' do
     def simulate(volatility, amount)
       BitexBot::OrderBookSimulator.run(volatility, bitstamp_api_wrapper_transactions_stub,
