@@ -1,6 +1,6 @@
 # This class represents the general behaviour for trading platform wrappers.
 class ApiWrapper
-  attr_accessor :currency_pair
+  attr_accessor :currency_pair, :name
 
   MIN_AMOUNT = 5
 

@@ -6,6 +6,7 @@ class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
   def initialize(settings)
+    self.name = 'Kraken'
     self.api_key = settings.api_key
     self.api_secret = settings.api_secret
     setup

@@ -21,6 +21,7 @@ class BitexApiWrapper < ApiWrapper
   attr_accessor :api_key, :ssl_version, :debug, :sandbox
 
   def initialize(settings)
+    self.name = 'Bitex'
     self.api_key = settings.api_key
     self.ssl_version = settings.ssl_version
     self.debug = settings.debug

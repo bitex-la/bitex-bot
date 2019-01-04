@@ -4,6 +4,7 @@ class BitstampApiWrapper < ApiWrapper
   attr_accessor :key, :secret, :client_id
 
   def initialize(settings)
+    self.name = 'Bitstamp'
     self.key = settings.api_key
     self.secret = settings.secret
     self.client_id = settings.client_id
