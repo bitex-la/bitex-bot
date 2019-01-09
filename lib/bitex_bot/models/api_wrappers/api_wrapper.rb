@@ -116,7 +116,7 @@ class ApiWrapper
       order = find_lost(type, price, quantity)
       return order if order.present?
     end
-    raise OrderNotFound, "Closing: #{type} order not found for #{base.upcase} #{quantity} @ #{quote.ucpase} #{price}."
+    raise OrderNotFound, "Closing: #{type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
   end
 
   # Hook Method - arguments could not be used in their entirety by the subclasses
