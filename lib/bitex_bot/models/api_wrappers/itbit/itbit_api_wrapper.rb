@@ -44,11 +44,12 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def orders
-    Itbit::Order.all(instrument: currency_pair, status: :open).map { |o| order_parser(o) }
+    Itbit::Order.all(instrument: currency_pair[:name], status: :open).map { |o| order_parser(o) }
   end
 
-  def place_order(type, price, quantity)
-    Itbit::Order.create!(type, currency_pair, quantity.round(4), price.round(2), wait: true, currency: currency_base)
+  def send_order(type, price, quantity)
+    order = Itbit::Order.create!(type, currency_pair[:name], quantity.round(4), price.round(2), wait: true, currency: currency_pair[:base])
+    order_parser(order) if order.present?
   rescue RestClient::RequestTimeout => e
     # On timeout errors, we still look for the latest active closing order that may be available.
     # We have a magic threshold of 5 minutes and also use the price to recognize an order as the current one.

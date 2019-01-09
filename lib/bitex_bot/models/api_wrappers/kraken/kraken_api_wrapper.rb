@@ -32,7 +32,8 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def find_lost(type, price, quantity)
-    KrakenOrder.find_lost(type, price, quantity)
+    order = KrakenOrder.find_lost(type, price, quantity)
+    order_parser(order) if order.present?
   end
 
   def order_book
@@ -42,11 +43,12 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def orders
-    KrakenOrder.open.map { |ko| order_parser(ko) }
+    KrakenOrder.open.map { |o| order_parser(o) }
   end
 
   def send_order(type, price, quantity)
-    KrakenOrder.create!(type, price, quantity)
+    order = KrakenOrder.create!(type, price, quantity)
+    order_parser(order) if order.present?
   end
 
   def transactions
@@ -65,8 +67,8 @@ class KrakenApiWrapper < ApiWrapper
   def balance_summary_parser(balances)
     open_orders = KrakenOrder.open
     BalanceSummary.new(
-      balance_parser(balances, currency_pair[:base], btc_reserved(open_orders)),
-      balance_parser(balances, currency_pair[:quote], usd_reserved(open_orders)),
+      balance_parser(balances, currency_pair[:base], crypto_reserved(open_orders)),
+      balance_parser(balances, currency_pair[:quote], fiat_reserved(open_orders)),
       client.private.trade_volume(pair: currency_pair[:altname])[:fees][currency_pair[:name]][:fee].to_d
     )
   end
@@ -76,12 +78,12 @@ class KrakenApiWrapper < ApiWrapper
     Balance.new(balances[currency].to_d, reserved, balances[currency].to_d - reserved)
   end
 
-  def btc_reserved(open_orders)
-    orders_by(open_orders, :sell).map { |o| (o.amount - o.executed_amount).to_d }.sum
+  def crypto_reserved(open_orders)
+    orders_by(open_orders, :sell).sum { |o| (o.amount - o.executed_amount).to_d }
   end
 
-  def usd_reserved(open_orders)
-    orders_by(open_orders, :buy).map { |o| (o.amount - o.executed_amount) * o.price.to_d }.sum
+  def fiat_reserved(open_orders)
+    orders_by(open_orders, :buy).sum { |o| (o.amount - o.executed_amount) * o.price.to_d }
   end
 
   def orders_by(open_orders, order_type)

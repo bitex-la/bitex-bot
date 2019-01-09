@@ -8,7 +8,9 @@ class KrakenOrder
   # rubocop:disable Metrics/AbcSize
   def self.create!(type, price, quantity)
     self.last_closed_order = closed.first.try(:id) || Time.now.to_i
-    find(order_info_by(type, price.truncate(1), quantity.truncate(8))['txid'].first)
+    order = place_order(type, price.truncate(1), quantity.truncate(8))
+    order_id = order['txid'].first
+    find(order_id)
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed
     if e.message == 'EService:Unavailable'
@@ -23,9 +25,10 @@ class KrakenOrder
   end
   # rubocop:enable Metrics/AbcSize
 
-  def self.order_info_by(type, price, quantity)
+  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2, @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
+  def self.place_order(type, price, quantity)
     api_wrapper.client.private.add_order(
-      pair: KrakenApiWrapper.currency_pair[:altname],
+      pair: api_wrapper.currency_pair[:altname],
       type: type,
       ordertype: 'limit',
       price: price,
@@ -62,12 +65,12 @@ class KrakenOrder
 
   def self.find_lost(type, price, quantity)
     BitexBot::Robot.log(:debug, "Looking for #{type} order in open orders...")
-    order = open_order_by(type, price, quantity)
+    order = open_order_by(type, price.truncate(2), quantity.truncate(8))
     return log_and_return(order, :open) if order.present?
 
     BitexBot::Robot.log(:debug, "Looking for #{type} order in closed orders...")
-    order = closed_order_by(type, price, quantity)
-    return log_and_return(order, :closed) if order && order.id != last_closed_order
+    order = closed_order_by(type, price.truncate(2), quantity.truncate(8))
+    return log_and_return(order, :closed) if order.present? && order.id != last_closed_order
   end
 
   def self.log_and_return(order, status)

@@ -67,7 +67,8 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def send_order(type, price, quantity, wait = false)
-    { sell: Bitex::Ask, buy: Bitex::Bid }[type].create!(base_quote.to_sym, quantity, price, wait)
+    order = { sell: Bitex::Ask, buy: Bitex::Bid }[type].create!(base_quote.to_sym, quantity, price, wait)
+    order_parser(order) if order.present?
   end
 
   def transactions
