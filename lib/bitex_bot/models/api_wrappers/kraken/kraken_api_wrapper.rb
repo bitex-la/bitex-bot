@@ -6,7 +6,6 @@ class KrakenApiWrapper < ApiWrapper
   MIN_AMOUNT = 0.002
 
   def initialize(settings)
-    self.name = 'Kraken'
     self.api_key = settings.api_key
     self.api_secret = settings.api_secret
     setup
@@ -101,9 +100,9 @@ class KrakenApiWrapper < ApiWrapper
     stock_market.map { |stock| OrderSummary.new(stock[0].to_d, stock[1].to_d) }
   end
 
-  # <KrakenOrder: @id='O5TDV2-WDYB2-6OGJRD', @type=:buy, @price='1.01', @amount='1.00000000', @datetime='2013-09-26 23:15:04'>
+  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2, @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
   def order_parser(order)
-    Order.new(order.id.to_s, order.type, order.price, order.amount, order.datetime, order)
+    Order.new(order.id, order.type, order.price, order.amount, order.datetime, order)
   end
 
   # [

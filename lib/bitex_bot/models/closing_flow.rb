@@ -15,7 +15,6 @@ module BitexBot
       quantity = positions.sum(&:quantity)
       amount = positions.sum(&:amount) / fx_rate
       price = suggested_amount(positions) / quantity
-
       return unless Robot.taker.enough_order_size?(quantity, price)
 
       create_closing_flow!(price, quantity, amount, positions)

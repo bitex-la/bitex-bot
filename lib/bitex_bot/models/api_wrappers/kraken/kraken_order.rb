@@ -39,6 +39,7 @@ class KrakenOrder
     retry
   end
 
+  # [BigDecimal, BigDecimal]
   def self.amount_and_quantity(order_id)
     order = find(order_id)
     amount = order.avg_price * order.executed_amount
@@ -76,12 +77,12 @@ class KrakenOrder
 
   # description: [type, price, quantity]
   def self.open_order_by(type, price, quantity)
-    open.detect { |o| o == [type, price, quantity] }
+    open.detect { |order| order == [type, price, quantity] }
   end
 
   # description: [type, price, quantity]
   def self.closed_order_by(type, price, quantity)
-    closed(start: last_closed_order).detect { |o| o == [type, price, quantity] }
+    closed(start: last_closed_order).detect { |order| order == [type, price, quantity] }
   end
 
   # id: 'O5TDV2-WDYB2-6OGJRD'

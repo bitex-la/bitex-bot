@@ -4,7 +4,6 @@ class ItbitApiWrapper < ApiWrapper
   attr_accessor :client_key, :secret, :user_id, :default_wallet_id, :sandbox
 
   def initialize(settings)
-    self.name = 'Itbit'
     self.client_key = settings.client_key
     self.secret = settings.secret
     self.user_id = settings.user_id

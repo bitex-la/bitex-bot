@@ -1,6 +1,6 @@
 # This class represents the general behaviour for trading platform wrappers.
 class ApiWrapper
-  attr_accessor :currency_pair, :name
+  attr_accessor :currency_pair
 
   MIN_AMOUNT = 5
 
@@ -61,6 +61,10 @@ class ApiWrapper
     :type,        # Integer
     :timestamp    # Epoch Integer
   )
+
+  def name
+    self.class.name.underscore.split('_').first.capitalize
+  end
 
   # @return [Array<Transaction>]
   def transactions
