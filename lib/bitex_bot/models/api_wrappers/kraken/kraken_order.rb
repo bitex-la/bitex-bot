@@ -25,7 +25,8 @@ class KrakenOrder
   end
   # rubocop:enable Metrics/AbcSize
 
-  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2, @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
+  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2,
+  #  @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
   def self.place_order(type, price, quantity)
     api_wrapper.client.private.add_order(
       pair: api_wrapper.currency_pair[:altname],

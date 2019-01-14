@@ -102,5 +102,13 @@ module BitexBot
     def self.taker_specie_to_obtain
       Robot.taker.base.upcase
     end
+
+    def self.maker_balance
+      store.maker_crypto
+    end
+
+    def self.available_maker_balance
+      Robot.maker.balance.crypto.available
+    end
   end
 end

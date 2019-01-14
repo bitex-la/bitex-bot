@@ -102,7 +102,8 @@ class KrakenApiWrapper < ApiWrapper
     stock_market.map { |stock| OrderSummary.new(stock[0].to_d, stock[1].to_d) }
   end
 
-  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2, @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
+  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2,
+  #  @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
   def order_parser(order)
     Order.new(order.id, order.type, order.price, order.amount, order.datetime, order)
   end

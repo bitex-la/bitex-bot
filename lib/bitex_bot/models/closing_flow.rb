@@ -15,7 +15,14 @@ module BitexBot
       quantity = positions.sum(&:quantity)
       amount = positions.sum(&:amount) / fx_rate
       price = suggested_amount(positions) / quantity
-      return unless Robot.taker.enough_order_size?(quantity, price)
+      unless Robot.taker.enough_order_size?(quantity, price)
+        Robot.log(
+          :info,
+          "Closing: #{Robot.taker.name} - enough order size for #{Robot.taker.base.upcase} #{quantity}"\
+          " @ #{Robot.taker.quote.upcase} #{price}"
+        )
+
+      end
 
       create_closing_flow!(price, quantity, amount, positions)
     end
@@ -30,8 +37,12 @@ module BitexBot
     end
 
     def self.create_closing_flow!(price, quantity, amount, open_positions)
-      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
-        .create_initial_order_and_close_position!
+      flow = create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
+      Robot.log(
+        :debug,
+        "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, amount: #{flow.amount}.\n"
+      )
+      flow.create_initial_order_and_close_position!
       nil
     end
     # end: close_open_positions helpers
@@ -104,7 +115,7 @@ module BitexBot
         Robot.log(
           :info,
           "Closing: Finished #{self.class} ##{id} earned"\
-          "#{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
+          " #{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
         )
       end
     end
@@ -133,6 +144,12 @@ module BitexBot
         " #{Robot.taker.base.upcase} #{quantity} @ #{Robot.taker.quote.upcase} #{price}"
       )
       order = Robot.taker.place_order(order_type, price, quantity)
+      Robot.log(
+        :debug,
+        "Closing: #{Robot.taker.name} placed #{order.type} with price: #{order.price} @ quantity #{order.amount}.\n"\
+        "Closing: Going to create Close#{order.type.to_s.capitalize} position.\n"
+      )
+
       close_positions.create!(order_id: order.id)
     end
   end
