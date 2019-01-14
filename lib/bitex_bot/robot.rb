@@ -71,7 +71,7 @@ module BitexBot
 
     def self.start_robot
       setup
-      log(:info, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
+      log(:info, "Loading trading robot, ctrl+c *once* to exit gracefully.\n")
       new
     end
 
@@ -84,19 +84,19 @@ module BitexBot
       sync_closing_flows if active_closing_flows?
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
-      notify("#{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 3)
     rescue Curl::Err::TimeoutError => e
-      log(:error, "#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
     rescue OrderNotFound => e
-      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue ApiWrapperError => e
-      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue OrderArgumentError => e
-      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
-      notify("#{e.class} - #{e.message}:\n\n#{e.backtrace.join("\n")}")
+      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
     # rubocop:enable Metrics/AbcSize
@@ -168,7 +168,9 @@ module BitexBot
 
       maker_balance = with_cooldown { maker.balance }
       taker_balance = with_cooldown { taker.balance }
+
       sync_log_and_store(maker_balance, taker_balance)
+      log_balances('Store: Current balances.')
 
       check_balance_warning if expired_last_warning?
       return if stop_opening_flows?
@@ -188,6 +190,7 @@ module BitexBot
     end
 
     def sync_log_and_store(maker_balance, taker_balance)
+      log_balances('Store: Updating log, maker and taker balances...')
       file = Settings.log.try(:file)
       last_log = `tail -c 61440 #{file}` if file.present?
 
@@ -198,13 +201,24 @@ module BitexBot
       )
     end
 
+    # rubocop:disable Metrics/AbcSize
+    def log_balances(header)
+      log(
+        :info,
+        "#{header}\n"\
+        "Store: #{maker.name} maker - #{maker.base.upcase}: #{store.maker_crypto}, #{maker.quote.upcase}: #{store.maker_fiat}.\n"\
+        "Store: #{taker.name} taker - #{taker.base.upcase}: #{store.taker_crypto}, #{taker.quote.upcase}: #{store.taker_fiat}.\n"
+      )
+    end
+    # rubocop:enable Metrics/AbcSize
+
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
     def stop_opening_flows?
-      (log(:debug, "Not placing new orders, #{maker.quote.upcase} target not met") if alert?(:fiat, :stop)) ||
-        (log(:debug, "Not placing new orders, #{maker.base.upcase} target not met") if alert?(:crypto, :stop))
+      (log(:info, "Opening: Not placing new orders, #{maker.quote.upcase} target not met") if alert?(:fiat, :stop)) ||
+        (log(:info, "Opening: Not placing new orders, #{maker.base.upcase} target not met") if alert?(:crypto, :stop))
     end
 
     def check_balance_warning
@@ -229,7 +243,7 @@ module BitexBot
     end
 
     def notify(message, subj = 'Notice from your robot trader')
-      log(:error, message)
+      log(:info, "Sending mail with subject: #{subj}\n\n#{message}")
       return unless Settings.mailer.present?
 
       new_mail(subj, message).tap do |mail|

@@ -35,6 +35,12 @@ module BitexBot
       self.store = store
 
       remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
+      Robot.log(
+        :info,
+        "Opening: Need #{taker_specie_to_spend} #{remote_value.truncate(8)} on #{Robot.taker.name} taker,"\
+        " has #{taker_balance.truncate(8)}."
+      )
+
       unless enough_remote_funds?(taker_balance, remote_value)
         raise CannotCreateFlow,
               "Needed #{remote_value} but you only have #{taker_specie_to_spend} #{taker_balance} on your taker market."
@@ -45,22 +51,26 @@ module BitexBot
       order = create_order!(price)
       unless enough_funds?(order)
         raise CannotCreateFlow,
-              "You need to have #{maker_specie_to_spend} #{value_per_order} on Bitex to place this #{order_class}."
+              "Needed #{maker_specie_to_spend} #{value_per_order} on #{Robot.maker.name} maker to place this #{order_class}"\
+              " but you only have #{maker_specie_to_spend} #{available_maker_balance}."
       end
 
-      Robot.log(
-        :info,
-        "Opening: Placed #{order_class} ##{order.id} #{value_per_order} @ #{Robot.maker.quote.upcase} #{price}"\
-        " (#{maker_specie_to_obtain} #{remote_value})"
-      )
-
-      create!(
+      flow = create!(
         price: price,
         value_to_use: value_to_use,
         suggested_closing_price: safest_price,
         status: 'executing',
         order_id: order.id
       )
+
+      Robot.log(
+        :info,
+        "Opening: Placed #{order_class} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @ #{price.truncate(2)}."\
+        " (#{maker_specie_to_obtain} #{remote_value})."\
+        " #{name.demodulize}##{flow.id} suggests closing price #{Robot.taker.quote.upcase}"\
+        " #{flow.suggested_closing_price}."
+      )
+      flow
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -115,8 +125,8 @@ module BitexBot
     def self.create_open_position!(transaction, flow)
       Robot.log(
         :info,
-        "Opening: #{name} ##{flow.id} was hit for #{transaction.raw.quantity} #{Robot.maker.base.upcase}"\
-        " @ #{Robot.maker.quote.upcase} #{transaction.price}"
+        "Opening: #{self} ##{flow.id} was hit for #{Robot.maker.base.upcase} #{transaction.raw.quantity}"\
+        " @ #{Robot.maker.quote.upcase} #{transaction.price}. Creating #{open_position_class}..."
       )
 
       open_position_class.create!(

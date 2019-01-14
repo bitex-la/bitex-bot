@@ -8,6 +8,7 @@ module BitexBot
     cattr_reader(:close_time_to_live) { 30 }
 
     # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
+    # rubocop:disable Metrics/AbcSize
     def self.close_open_positions
       return unless open_positions.any?
 
@@ -15,11 +16,18 @@ module BitexBot
       quantity = positions.sum(&:quantity)
       amount = positions.sum(&:amount) / fx_rate
       price = suggested_amount(positions) / quantity
-
-      return unless Robot.taker.enough_order_size?(quantity, price)
+      unless Robot.taker.enough_order_size?(quantity, price)
+        Robot.log(
+          :info,
+          "Closing: #{Robot.taker.name} - enough order size for #{Robot.taker.base.upcase} #{quantity}"\
+          " @ #{Robot.taker.quote.upcase} #{price}"
+        )
+        return
+      end
 
       create_closing_flow!(price, quantity, amount, positions)
     end
+    # rubocop:enable Metrics/AbcSize
 
     def self.open_positions
       open_position_class.open
@@ -31,8 +39,13 @@ module BitexBot
     end
 
     def self.create_closing_flow!(price, quantity, amount, open_positions)
-      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
-        .create_initial_order_and_close_position!
+      flow = create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
+      Robot.log(
+        :info,
+        "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, "\
+        "amount: #{flow.amount}."
+      )
+      flow.create_initial_order_and_close_position!
       nil
     end
     # end: close_open_positions helpers
@@ -105,7 +118,7 @@ module BitexBot
         Robot.log(
           :info,
           "Closing: Finished #{self.class} ##{id} earned"\
-          "#{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
+          " #{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
         )
       end
     end
@@ -126,6 +139,7 @@ module BitexBot
 
     # This use hooks methods, these must be defined in the subclass:
     #   order_type
+    # rubocop:disable Metrics/AbcSize
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
       Robot.log(
@@ -134,7 +148,14 @@ module BitexBot
         " #{Robot.taker.base.upcase} #{quantity} @ #{Robot.taker.quote.upcase} #{price}"
       )
       order = Robot.taker.place_order(order_type, price, quantity)
+      Robot.log(
+        :info,
+        "Closing: #{Robot.taker.name} placed #{order.type} with price: #{order.price} @ quantity #{order.amount}.\n"\
+        "Closing: Going to create Close#{order.type.to_s.capitalize} position.\n"
+      )
+
       close_positions.create!(order_id: order.id)
     end
+    # rubocop:enable Metrics/AbcSize
   end
 end

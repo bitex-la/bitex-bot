@@ -32,7 +32,8 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def find_lost(type, price, quantity)
-    KrakenOrder.find_lost(type, price, quantity)
+    order = KrakenOrder.find_lost(type, price, quantity)
+    order_parser(order) if order.present?
   end
 
   def order_book
@@ -42,11 +43,12 @@ class KrakenApiWrapper < ApiWrapper
   end
 
   def orders
-    KrakenOrder.open.map { |ko| order_parser(ko) }
+    KrakenOrder.open.map { |o| order_parser(o) }
   end
 
   def send_order(type, price, quantity)
-    KrakenOrder.create!(type, price, quantity)
+    order = KrakenOrder.create!(type, price, quantity)
+    order_parser(order) if order.present?
   end
 
   def transactions
@@ -65,8 +67,8 @@ class KrakenApiWrapper < ApiWrapper
   def balance_summary_parser(balances)
     open_orders = KrakenOrder.open
     BalanceSummary.new(
-      balance_parser(balances, currency_pair[:base], btc_reserved(open_orders)),
-      balance_parser(balances, currency_pair[:quote], usd_reserved(open_orders)),
+      balance_parser(balances, currency_pair[:base], crypto_reserved(open_orders)),
+      balance_parser(balances, currency_pair[:quote], fiat_reserved(open_orders)),
       client.private.trade_volume(pair: currency_pair[:altname])[:fees][currency_pair[:name]][:fee].to_d
     )
   end
@@ -76,12 +78,12 @@ class KrakenApiWrapper < ApiWrapper
     Balance.new(balances[currency].to_d, reserved, balances[currency].to_d - reserved)
   end
 
-  def btc_reserved(open_orders)
-    orders_by(open_orders, :sell).map { |o| (o.amount - o.executed_amount).to_d }.sum
+  def crypto_reserved(open_orders)
+    orders_by(open_orders, :sell).sum { |o| (o.amount - o.executed_amount).to_d }
   end
 
-  def usd_reserved(open_orders)
-    orders_by(open_orders, :buy).map { |o| (o.amount - o.executed_amount) * o.price.to_d }.sum
+  def fiat_reserved(open_orders)
+    orders_by(open_orders, :buy).sum { |o| (o.amount - o.executed_amount) * o.price.to_d }
   end
 
   def orders_by(open_orders, order_type)
@@ -100,9 +102,10 @@ class KrakenApiWrapper < ApiWrapper
     stock_market.map { |stock| OrderSummary.new(stock[0].to_d, stock[1].to_d) }
   end
 
-  # <KrakenOrder: @id='O5TDV2-WDYB2-6OGJRD', @type=:buy, @price='1.01', @amount='1.00000000', @datetime='2013-09-26 23:15:04'>
+  # <KrakenOrder:0x007faf255382d0 @id="OGZ3HI-5I322-OIOV52", @type=:sell, @datetime=1546971756, @amount=0.248752e-2,
+  #  @executed_amount=0.248752e-2, @price=0.40025e4, @avg_price=0.40074e4>
   def order_parser(order)
-    Order.new(order.id.to_s, order.type, order.price, order.amount, order.datetime, order)
+    Order.new(order.id, order.type, order.price, order.amount, order.datetime, order)
   end
 
   # [

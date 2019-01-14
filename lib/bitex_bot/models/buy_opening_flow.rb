@@ -102,5 +102,13 @@ module BitexBot
     def self.taker_specie_to_obtain
       Robot.taker.quote.upcase
     end
+
+    def self.maker_balance
+      store.maker_fiat
+    end
+
+    def self.available_maker_balance
+      Robot.maker.balance.fiat.available
+    end
   end
 end

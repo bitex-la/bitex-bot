@@ -62,6 +62,10 @@ class ApiWrapper
     :timestamp    # Epoch Integer
   )
 
+  def name
+    self.class.name.underscore.split('_').first.capitalize
+  end
+
   # @return [Array<Transaction>]
   def transactions
     raise 'self subclass responsibility'
@@ -95,20 +99,27 @@ class ApiWrapper
   # @param type
   # @param price
   # @param quantity
+  # rubocop:disable Metrics/AbcSize
   def place_order(type, price, quantity)
     order = send_order(type, price, quantity)
     return order unless order.nil? || order.id.nil?
 
-    BitexBot::Robot.log(:debug, "Captured error when placing order on #{self.class}")
+    BitexBot::Robot.log(:debug, "Captured error when placing order on #{name}")
     # Order may have gone through and be stuck somewhere in Wrapper's pipeline.
     # We just sleep for a bit and then look for the order.
-    20.times do
-      BitexBot::Robot.sleep_for(10)
+    5.times do |i|
+      BitexBot::Robot.log(
+        :info,
+        "#{name} cauldn't place #{type} order #{i} times for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}.\n"\
+        "Going to sleep 10 seconds.\n"
+      )
+      BitexBot::Robot.sleep_for(15)
       order = find_lost(type, price, quantity)
       return order if order.present?
     end
-    raise OrderNotFound, "Closing: #{type} order not found for #{quantity} #{base} @ #{quote} #{price}. #{order}"
+    raise OrderNotFound, "Closing: #{type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
   end
+  # rubocop:enable Metrics/AbcSize
 
   # Hook Method - arguments could not be used in their entirety by the subclasses
   def send_order(_type, _price, _quantity)
