@@ -22,7 +22,7 @@ module BitexBot
           "Closing: #{Robot.taker.name} - enough order size for #{Robot.taker.base.upcase} #{quantity}"\
           " @ #{Robot.taker.quote.upcase} #{price}"
         )
-
+        return
       end
 
       create_closing_flow!(price, quantity, amount, positions)
@@ -41,7 +41,7 @@ module BitexBot
     def self.create_closing_flow!(price, quantity, amount, open_positions)
       flow = create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
       Robot.log(
-        :debug,
+        :info,
         "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, "\
         "amount: #{flow.amount}."
       )
@@ -149,7 +149,7 @@ module BitexBot
       )
       order = Robot.taker.place_order(order_type, price, quantity)
       Robot.log(
-        :debug,
+        :info,
         "Closing: #{Robot.taker.name} placed #{order.type} with price: #{order.price} @ quantity #{order.amount}.\n"\
         "Closing: Going to create Close#{order.type.to_s.capitalize} position.\n"
       )

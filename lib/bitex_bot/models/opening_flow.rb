@@ -36,7 +36,7 @@ module BitexBot
 
       remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
       Robot.log(
-        :debug,
+        :info,
         "Opening: Need #{taker_specie_to_spend} #{remote_value.truncate(8)} on #{Robot.taker.name} taker,"\
         " has #{taker_balance.truncate(8)}."
       )

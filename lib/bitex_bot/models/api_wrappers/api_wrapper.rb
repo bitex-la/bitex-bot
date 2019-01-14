@@ -109,7 +109,7 @@ class ApiWrapper
     # We just sleep for a bit and then look for the order.
     5.times do |i|
       BitexBot::Robot.log(
-        :debug,
+        :info,
         "#{name} cauldn't place #{type} order #{i} times for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}.\n"\
         "Going to sleep 10 seconds.\n"
       )
