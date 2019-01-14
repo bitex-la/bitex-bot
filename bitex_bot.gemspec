@@ -23,8 +23,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'mail'
   spec.add_dependency 'sqlite3'
 
-  spec.add_dependency 'bitex', '0.6'
-  spec.add_dependency 'bitstamp'
+  spec.add_dependency 'bitex', '0.9.1'
+  spec.add_dependency 'bitex-bitstamp', '0.9.1'
   spec.add_dependency 'itbit'
   spec.add_dependency 'kraken_client', '~> 1.2.1'
 
