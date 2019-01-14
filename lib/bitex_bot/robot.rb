@@ -201,6 +201,7 @@ module BitexBot
       )
     end
 
+    # rubocop:disable Metrics/AbcSize
     def log_balances(header)
       log(
         :debug,
@@ -209,6 +210,7 @@ module BitexBot
         "Store: #{taker.name} taker - #{taker.base.upcase}: #{store.taker_crypto}, #{taker.quote.upcase}: #{store.taker_fiat}.\n"
       )
     end
+    # rubocop:enable Metrics/AbcSize
 
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago

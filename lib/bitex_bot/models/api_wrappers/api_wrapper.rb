@@ -99,6 +99,7 @@ class ApiWrapper
   # @param type
   # @param price
   # @param quantity
+  # rubocop:disable Metrics/AbcSize
   def place_order(type, price, quantity)
     order = send_order(type, price, quantity)
     return order unless order.nil? || order.id.nil?
@@ -118,6 +119,7 @@ class ApiWrapper
     end
     raise OrderNotFound, "Closing: #{type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
   end
+  # rubocop:enable Metrics/AbcSize
 
   # Hook Method - arguments could not be used in their entirety by the subclasses
   def send_order(_type, _price, _quantity)

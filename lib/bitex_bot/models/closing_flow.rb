@@ -8,6 +8,7 @@ module BitexBot
     cattr_reader(:close_time_to_live) { 30 }
 
     # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
+    # rubocop:disable Metrics/AbcSize
     def self.close_open_positions
       return unless open_positions.any?
 
@@ -26,6 +27,7 @@ module BitexBot
 
       create_closing_flow!(price, quantity, amount, positions)
     end
+    # rubocop:enable Metrics/AbcSize
 
     def self.open_positions
       open_position_class.open
@@ -40,7 +42,8 @@ module BitexBot
       flow = create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
       Robot.log(
         :debug,
-        "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, amount: #{flow.amount}.\n"
+        "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, "\
+        "amount: #{flow.amount}."
       )
       flow.create_initial_order_and_close_position!
       nil
@@ -136,6 +139,7 @@ module BitexBot
 
     # This use hooks methods, these must be defined in the subclass:
     #   order_type
+    # rubocop:disable Metrics/AbcSize
     def create_order_and_close_position(quantity, price)
       # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
       Robot.log(
@@ -152,5 +156,6 @@ module BitexBot
 
       close_positions.create!(order_id: order.id)
     end
+    # rubocop:enable Metrics/AbcSize
   end
 end
