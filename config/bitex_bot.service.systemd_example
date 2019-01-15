@@ -1,0 +1,26 @@
+[Unit]
+Description=Bitex Bot
+After=network.target
+
+[Service]
+Type=simple
+# User who owns code folder
+User=<user>
+
+# Assuming that you use capistrano this folder must
+# point to current foldr 
+WorkingDirectory=<absolute_bitex_bot_path>/current
+
+# If you use rbenv as ruby version manager
+# bundle commands must be executed like this:
+# /home/<user>/.rbenv/bin/rbenv exec bundle exec
+ExecStart=/home/<user>/.rbenv/bin/rbenv exec bundle exec ruby bin/bitex_bot <absolute_path_to_your_bitex_bot_config>
+
+TimeoutSec=20
+Restart=always
+KillMode=process
+KillSignal=SIGINT
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
