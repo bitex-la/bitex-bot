@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+$:.unshift File.expand_path(File.dirname(__FILE__)+'/../lib')
 
 require 'bitex_bot/settings'
 BitexBot::Settings.load_default
