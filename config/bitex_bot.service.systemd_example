@@ -1,6 +1,6 @@
 [Unit]
 Description=Bitex Bot
-After=network.target
+StopWhenUnneeded=true
 
 [Service]
 Type=simple
@@ -23,4 +23,4 @@ KillSignal=SIGINT
 TimeoutStopSec=120
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=arbitrage_bots.target
