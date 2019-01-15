@@ -15,3 +15,5 @@ test/tmp
 test/version_tmp
 tmp
 settings.yml
+production.rb
+staging.rb
