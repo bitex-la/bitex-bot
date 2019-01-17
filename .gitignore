@@ -1,5 +1,7 @@
 *.gem
 *.rbc
+*.swp
+*.swo
 .bundle
 .config
 .yardoc
@@ -15,5 +17,5 @@ test/tmp
 test/version_tmp
 tmp
 settings.yml
-deploy/production.rb
-deploy/staging.rb
+production.rb
+staging.rb

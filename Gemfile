@@ -27,4 +27,9 @@ group :test, :development do
   gem 'timecop'
   gem 'vcr'
   gem 'webmock'
+
+  gem 'capistrano', '~> 3.4.0', require: false
+  gem 'capistrano-bundler', '~> 1.1.2', require: false
+  gem 'capistrano-rbenv', '~> 2.0.2', require: false
+  gem 'capistrano-rbenv-install', require: false
 end

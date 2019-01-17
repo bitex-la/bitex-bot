@@ -19,6 +19,7 @@ module BitexBot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
+    cattr_accessor(:last_log) { [] }
 
     cattr_accessor(:logger) do
       logdev = Settings.log.try(:file)
@@ -57,6 +58,7 @@ module BitexBot
     def_delegator self, :sleep_for
 
     def self.log(level, message)
+      last_log << "#{level.upcase} #{Time.now.strftime('%m/%d %H:%M:%S.%L')}: #{message}"
       logger.send(level, message)
     end
     def_delegator self, :log
@@ -77,6 +79,7 @@ module BitexBot
 
     # rubocop:disable Metrics/AbcSize
     def trade!
+      last_log.clear
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
       shutdown! if shutdable?
@@ -191,13 +194,10 @@ module BitexBot
 
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
-      file = Settings.log.try(:file)
-      last_log = `tail -c 61440 #{file}` if file.present?
-
       store.update(
         maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
         taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
-        log: last_log
+        log: last_log.join("\n")
       )
     end
 
