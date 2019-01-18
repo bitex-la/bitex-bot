@@ -1,11 +1,11 @@
 trap 'INT' do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
-    BitexBot::Robot.log(:info, "Ok, ok, I'm out.")
+    puts "Ok, ok, I'm out."
     exit 1
   end
   BitexBot::Robot.graceful_shutdown = true
-  BitexBot::Robot.log(:info, "Shutting down as soon as I've cleaned up.")
+  puts "Shutting down as soon as I've cleaned up."
 end
 
 module BitexBot
