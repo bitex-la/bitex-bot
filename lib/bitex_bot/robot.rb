@@ -1,11 +1,11 @@
 trap 'INT' do
   if BitexBot::Robot.graceful_shutdown
     print "\b"
-    BitexBot::Robot.log(:info, "Ok, ok, I'm out.")
+    puts "Ok, ok, I'm out."
     exit 1
   end
   BitexBot::Robot.graceful_shutdown = true
-  BitexBot::Robot.log(:info, "Shutting down as soon as I've cleaned up.")
+  puts "Shutting down as soon as I've cleaned up."
 end
 
 module BitexBot
@@ -79,7 +79,6 @@ module BitexBot
 
     # rubocop:disable Metrics/AbcSize
     def trade!
-      last_log.clear
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
       shutdown! if shutdable?
@@ -194,10 +193,12 @@ module BitexBot
 
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
+      logs = last_log.join("\n")
+      last_log.clear
       store.update(
         maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
         taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
-        log: last_log.join("\n")
+        log: logs
       )
     end
 
