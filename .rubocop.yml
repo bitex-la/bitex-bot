@@ -29,5 +29,6 @@ AllCops:
     - 'settings.rb.sample'
     - 'spec/**/*'
     - 'vendor/**/*'
+    - 'lib/capistrano/**/*'
     - 'lib/bitex_bot/database.rb'
     - 'lib/bitex_bot/version.rb'

@@ -195,6 +195,15 @@ describe KrakenApiWrapper do
       header_params: { 'Api-Key': api_wrapper.api_key },
       result: {
         open: {
+          'O5TDV2-WDYB2-XXXXXX': {
+             refid: nil, userref: nil, status: 'open', opentm: 1_440_292_821.999, starttm: 0, expiretm: 0,
+             descr: {
+               pair: 'XBTUSD', type: 'buy', ordertype: 'limit', price: '1.19000', price2: '0',
+               leverage: 'none', order: 'buy 1204.00000000 XBTUSD @ limit 1.19000'
+             },
+             vol: '1204.00000000', vol_exec: '0.00000000', cost: '0.00000', fee: '0.00000',
+             price: '0.00008', misc: '', oflags: 'fciq'
+           },
           'O5TDV2-WDYB2-6OGJRD': {
             refid: nil, userref: nil, status: 'open', opentm: 1_440_292_821.839, starttm: 0, expiretm: 0,
             descr: {

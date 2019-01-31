@@ -75,7 +75,7 @@ class KrakenApiWrapper < ApiWrapper
   # rubocop:enable Metrics/AbcSize
 
   def balance_parser(balances, currency, reserved)
-    Balance.new(balances[currency].to_d, reserved, balances[currency].to_d - reserved)
+    Balance.new(balances[currency].to_d, reserved.to_d, balances[currency].to_d - reserved.to_d)
   end
 
   def crypto_reserved(open_orders)
