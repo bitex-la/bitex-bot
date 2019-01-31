@@ -53,9 +53,10 @@ class KrakenOrder
   end
 
   def self.open
-    api_wrapper.client.private.open_orders['open']
-     .select { |id, data| data[:descr][:pair] == api_wrapper.currency_pair[:altname] }
-     .map { |o| new(*o) }
+    api_wrapper
+      .client.private.open_orders['open']
+      .select { |_, data| data[:descr][:pair] == api_wrapper.currency_pair[:altname] }
+      .map { |o| new(*o) }
   rescue KrakenClient::ErrorResponse
     retry
   end
