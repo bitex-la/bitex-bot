@@ -3,49 +3,47 @@ require 'spec_helper'
 describe BitexApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      bitex: {
-        api_key: 'taker_api_key',
-        ssl_version: nil,
-        debug: false,
-        sandbox: false,
-        order_book: 'btc_usd'
+      {
+        api_key: 'your_magic_api_key',
+        sandbox: true,
+        order_book: 'btc_usd',
+        trading_fee: 0
       }
     )
   end
 
-  before(:each) do
-    BitexBot::Settings.stub(taker: taker_settings)
-    BitexBot::Robot.setup
-  end
-
-  let(:api_wrapper) { BitexBot::Robot.taker }
+  let(:wrapper) { BitexApiWrapper.new(taker_settings) }
 
   it 'Sends User-Agent header' do
     url = "https://bitex.la/api-v1/rest/private/profile?api_key=#{BitexBot::Robot.taker.api_key}"
     stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # we don't care about the response
-    api_wrapper.balance rescue nil
+    wrapper.balance rescue nil
 
     expect(stub_stuff).to have_been_requested
   end
 
   it '#base_quote' do
-    expect(api_wrapper.base_quote).to eq('btc_usd')
+    expect(wrapper.base_quote).to eq('btc_usd')
   end
 
   it '#base' do
-    expect(api_wrapper.base).to eq('btc')
+    expect(wrapper.base).to eq('btc')
   end
 
   it '#quote' do
-    expect(api_wrapper.quote).to eq('usd')
+    expect(wrapper.quote).to eq('usd')
   end
 
   it '#balance' do
-    stub_bitex_balance
+    coin_wallet = double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd')
+    allow_any_instance_of(BitexApiWrapper).to receive(:cash_wallet).and_return(coin_wallet)
 
-    balance = api_wrapper.balance
+    cash_wallet = double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc')
+    allow_any_instance_of(BitexApiWrapper).to receive(:coin_wallet).and_return(cash_wallet)
+
+    balance = wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
     balance.crypto.should be_a(ApiWrapper::Balance)
     balance.fiat.should be_a(ApiWrapper::Balance)
@@ -66,13 +64,13 @@ describe BitexApiWrapper do
   it '#cancel' do
     stub_bitex_orders
 
-    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+    expect(wrapper.orders.sample).to respond_to(:cancel!)
   end
 
   it '#order_book' do
     stub_bitex_order_book
 
-    order_book = api_wrapper.order_book
+    order_book = wrapper.order_book
     order_book.should be_a(ApiWrapper::OrderBook)
     order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
     order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
@@ -90,9 +88,9 @@ describe BitexApiWrapper do
   it '#orders' do
     stub_bitex_orders
 
-    api_wrapper.orders.all? { |o| o.should be_a(BitexApiWrapper::Order) }
+    wrapper.orders.all? { |o| o.should be_a(BitexApiWrapper::Order) }
 
-    order = api_wrapper.orders.sample
+    order = wrapper.orders.sample
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
@@ -104,19 +102,19 @@ describe BitexApiWrapper do
     it 'raises OrderNotFound error on Bitex errors' do
       Bitex::Bid.stub(create!: nil)
       Bitex::Ask.stub(create!: nil)
-      api_wrapper.stub(find_lost: nil)
+      wrapper.stub(find_lost: nil)
 
-      expect { api_wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
-      expect { api_wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound)
+      expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
+      expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound)
     end
   end
 
   it '#transactions' do
     stub_bitex_transactions
 
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
-    transaction = api_wrapper.transactions.sample
+    transaction = wrapper.transactions.sample
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
@@ -126,10 +124,10 @@ describe BitexApiWrapper do
   it '#user_transaction' do
     stub_bitex_trades
 
-    api_wrapper.user_transactions.should be_a(Array)
-    api_wrapper.user_transactions.all? { |o| o.should be_a(ApiWrapper::UserTransaction) }
+    wrapper.user_transactions.should be_a(Array)
+    wrapper.user_transactions.all? { |o| o.should be_a(ApiWrapper::UserTransaction) }
 
-    user_transaction = api_wrapper.user_transactions.sample
+    user_transaction = wrapper.user_transactions.sample
     user_transaction.order_id.should be_a(Integer)
     user_transaction.fiat.should be_a(BigDecimal)
     user_transaction.crypto.should be_a(BigDecimal)
@@ -142,6 +140,6 @@ describe BitexApiWrapper do
   it '#find_lost' do
     stub_bitex_orders
 
-    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
+    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 end

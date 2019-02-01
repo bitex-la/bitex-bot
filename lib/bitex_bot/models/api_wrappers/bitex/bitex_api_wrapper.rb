@@ -18,26 +18,12 @@ class BitexApiWrapper < ApiWrapper
     end
   end
 
-  attr_accessor :api_key, :ssl_version, :debug, :sandbox
+  attr_accessor :client, :trading_fee
 
   def initialize(settings)
-    self.api_key = settings.api_key
-    self.ssl_version = settings.ssl_version
-    self.debug = settings.debug
-    self.sandbox = settings.sandbox
+    self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
+    self.trading_fee = settings.trading_fee.to_s.to_d
     currency_pair(settings.order_book)
-    setup
-  end
-
-  def setup
-    Bitex.api_key = api_key
-    Bitex.ssl_version = ssl_version
-    Bitex.debug = debug
-    Bitex.sandbox = sandbox
-  end
-
-  def profile
-    Bitex::Profile.get
   end
 
   # rubocop:disable Metrics/AbcSize
@@ -51,7 +37,25 @@ class BitexApiWrapper < ApiWrapper
   # rubocop:enable Metrics/AbcSize
 
   def balance
-    balance_summary_parser(profile)
+    BalanceSummary.new(
+      balance_parser(coin_wallet),
+      balance_parser(cash_wallet),
+      trading_fee
+    )
+  end
+  # <Bitex::Resources::Wallets::CoinWallet:
+  #   @attributes={
+  #     "type"=>"coin_wallets", "id"=>"7347", "balance"=>0.0, "available"=>0.0, "currency"=>"btc",
+  #     "address"=>"mu4DKZpadxMgHtRSLwQpaQ9eTTXDEjWZUF", "auto_sell_address"=>"msmet4V5WzBjCR4tr17cxqHKw1LJiRnhHH"
+  #   }
+  # >
+  #
+  # <Bitex::Resources::Wallets::CashWallet:
+  #   @attributes={
+  #     "type"=>"cash_wallets", "id"=>"usd", "balance"=>0.0, "available"=>0.0, "currency"=>"usd"  }
+  # >
+  def balance_parser(wallet)
+    Balance.new(wallet.balance, wallet.balance - wallet.available, wallet.available)
   end
 
   def find_lost(type, price, _quantity)
@@ -79,30 +83,13 @@ class BitexApiWrapper < ApiWrapper
     Bitex::Trade.all.map { |trade| user_transaction_parser(trade) }
   end
 
-  # {
-  #   usd_balance:               10000.00, # Total USD balance.
-  #   usd_reserved:               2000.00, # USD reserved in open orders.
-  #   usd_available:              8000.00, # USD available for trading.
-  #   btc_balance:            20.00000000, # Total BTC balance.
-  #   btc_reserved:            5.00000000, # BTC reserved in open orders.
-  #   btc_available:          15.00000000, # BTC available for trading.
-  #   fee:                            0.5, # Your trading fee (0.5 means 0.5%).
-  #   btc_deposit_address: "1XXXXXXXX..."  # Your BTC deposit address.
-  # }
-  def balance_summary_parser(balances)
-    BalanceSummary.new(
-      balance_parser(balances, currency_pair[:base]),
-      balance_parser(balances, currency_pair[:quote]),
-      balances[:fee].to_d
-    )
+
+  def cash_wallet
+    client.cash_wallets.find(currency_pair[:quote])
   end
 
-  def balance_parser(balances, currency)
-    Balance.new(
-      balances["#{currency}_balance".to_sym].to_d,
-      balances["#{currency}_reserved".to_sym].to_d,
-      balances["#{currency}_available".to_sym].to_d
-    )
+  def coin_wallet
+    client.coin_wallets.all.find { |wallet| wallet.currency == currency_pair[:base] }
   end
 
   def last_order_by(price)
