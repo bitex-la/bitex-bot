@@ -1,27 +1,11 @@
 # Wrapper implementation for Bitex API.
 # https://bitex.la/developers
 class BitexApiWrapper < ApiWrapper
-  Order = Struct.new(
-    :id,        # String
-    :type,      # Symbol
-    :price,     # Decimal
-    :amount,    # Decimal
-    :timestamp, # Integer
-    :raw        # Actual order object
-  ) do
-    def method_missing(method_name, *args, &block)
-      raw.respond_to?(method_name) ? raw.send(method_name, *args, &block) : super
-    end
-
-    def respond_to_missing?(method_name, include_private = false)
-      raw.respond_to?(method_name) || super
-    end
-  end
-
   attr_accessor :client, :trading_fee
 
   def initialize(settings)
     self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
+#   self.client = Bitex::Client.new(api_key: '468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a', sandbox: settings.sandbox)
     self.trading_fee = settings.trading_fee.to_s.to_d
     currency_pair(settings.order_book)
   end
@@ -107,16 +91,13 @@ class BitexApiWrapper < ApiWrapper
   #   >
   # }
   def order_parser(order)
-    Order.new(order.id, order_type(order), order.price, order.amount, order.timestamp, order)
+    type = order.type == 'bids' ? :buy : :sell
+    Order.new(order.id, type, order.price, order.amount, DateTime.parse(order.created_at).to_i, order)
   end
 
   def send_order(type, price, quantity, wait = false)
     order = { sell: Bitex::Ask, buy: Bitex::Bid }[type].create!(base_quote.to_sym, quantity, price, wait)
     order_parser(order) if order.present?
-  end
-
-  def order_type(order)
-    order.type == 'bids' ? :buy : :sell
   end
 
   def transactions
@@ -131,6 +112,11 @@ class BitexApiWrapper < ApiWrapper
   # >
   def transaction_parser(transaction)
     Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.timestamp, transaction)
+  end
+
+  # @param [ApiWrapper::Order]
+  def cancel_order(order)
+    client.send(order.raw.type).cancel(id: order.id)
   end
 
   def user_transactions

@@ -73,14 +73,6 @@ describe BitexApiWrapper do
     end
   end
 
-=begin
-  it '#cancel' do
-    stub_bitex_orders
-
-    expect(wrapper.orders.sample).to respond_to(:cancel!)
-  end
-=end
-
   context '#market', vcr: { cassette_name: 'bitex/market' } do
     subject(:market) { wrapper.market }
 
@@ -113,14 +105,14 @@ describe BitexApiWrapper do
     let(:bid) {
       wrapper.client.bids.new(
         id: '4252', amount: 100.to_d, remaining_amount: 90.to_d, price: 4_200.to_d, status: 'executing',
-        orderbook_code: 'btc_usd', timestamp: 1_534_349_999
+        orderbook_code: 'btc_usd', created_at: '2018-08-15 13:19:59 -0300'
       )
     }
 
     let(:ask) {
       wrapper.client.asks.new(
         id: '1591', amount: 3.to_d, remaining_amount: 3.to_d, price: 5_000.to_d, status: 'executing',
-        orderbook_code: 'btc_usd', timestamp: 1_534_344_859
+        orderbook_code: 'btc_usd', created_at: '2018-08-15 11:54:19 -0300'
       )
     }
 
@@ -134,6 +126,28 @@ describe BitexApiWrapper do
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:amount) { is_expected.to be_a(BigDecimal) }
       its(:timestamp) { is_expected.to be_a(Integer) }
+    end
+  end
+
+  context '#cancel_order', vcr: { cassette_name: 'bitex/orders/cancel' } do
+    subject { wrapper.cancel_order(order) }
+
+    let(:order) { wrapper.send(:order_parser, client_ask_order) }
+    let(:client_ask_order) do
+      double(
+        type: 'asks', id: order_id, amount: '4000', remaining_amount: '4', price: '5000', status: 'executing',
+        orderbook_code: 'btc_usd', created_at: '2019-01-16T19:45:37.160Z'
+      )
+    end
+
+    let(:order_id) { '1593' }
+
+    it { is_expected.to be_empty }
+
+    context 'searching for cancelling ask order', vcr: { cassette_name: 'bitex/orders/cancelled_not_found' } do
+      subject(:not_found) { wrapper.orders.find { |order| order.id == order_id } }
+
+      it { is_expected.to be_nil }
     end
   end
 
