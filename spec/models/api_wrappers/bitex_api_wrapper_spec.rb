@@ -97,25 +97,36 @@ describe BitexApiWrapper do
     end
   end
 
-  it '#orders' do
-    bid = wrapper.client.bids.new(
-      id: '4252', amount: 100.to_d, remaining_amount: 90.to_d, price: 4_200.to_d, status: 'executing',
-      orderbook_code: 'btc_usd', timestamp: 1_534_349_999
-    )
-    ask = wrapper.client.asks.new(
-      id: '1591', amount: 3.to_d, remaining_amount: 3.to_d, price: 5_000.to_d, status: 'executing',
-      orderbook_code: 'btc_usd', timestamp: 1_534_344_859
-    )
-    allow_any_instance_of(Bitex::Client).to receive_message_chain(:orders, :all).and_return([bid, ask])
+  context '#orders' do
+    subject(:orders) { wrapper.orders }
 
-    wrapper.orders.all? { |o| o.should be_a(BitexApiWrapper::Order) }
+    before(:each) { allow_any_instance_of(Bitex::Client).to receive_message_chain(:orders, :all).and_return([bid, ask]) }
 
-    order = wrapper.orders.sample
-    order.id.should be_a(String)
-    order.type.should be_a(Symbol)
-    order.price.should be_a(BigDecimal)
-    order.amount.should be_a(BigDecimal)
-    order.timestamp.should be_a(Integer)
+    let(:bid) {
+      wrapper.client.bids.new(
+        id: '4252', amount: 100.to_d, remaining_amount: 90.to_d, price: 4_200.to_d, status: 'executing',
+        orderbook_code: 'btc_usd', timestamp: 1_534_349_999
+      )
+    }
+
+    let(:ask) {
+      wrapper.client.asks.new(
+        id: '1591', amount: 3.to_d, remaining_amount: 3.to_d, price: 5_000.to_d, status: 'executing',
+        orderbook_code: 'btc_usd', timestamp: 1_534_344_859
+      )
+    }
+
+    it { is_expected.to all(be_a(BitexApiWrapper::Order)) }
+
+    context 'about sample' do
+      subject(:sample) { orders.sample }
+
+      its(:id) { is_expected.to be_a(String) }
+      its(:type) { is_expected.to be_a(Symbol) }
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:amount) { is_expected.to be_a(BigDecimal) }
+      its(:timestamp) { is_expected.to be_a(Integer) }
+    end
   end
 
 =begin
