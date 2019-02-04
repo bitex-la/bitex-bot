@@ -43,6 +43,7 @@ class BitexApiWrapper < ApiWrapper
       trading_fee
     )
   end
+
   # <Bitex::Resources::Wallets::CoinWallet:
   #   @attributes={
   #     "type"=>"coin_wallets", "id"=>"7347", "balance"=>0.0, "available"=>0.0, "currency"=>"btc",
@@ -62,17 +63,60 @@ class BitexApiWrapper < ApiWrapper
     orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
-  def order_book
-    order_book_parser(market.order_book)
+  # <
+  #   Bitex::Resources::Market:
+  #     @attributes={"type"=>"markets", "id"=>"btc_usd"},
+  #     asks: [
+  #       <Bitex::Resources::OrderGroup:@attributes={"type"=>"order_groups", "id"=>"4400.0", "price"=>4400.0, "amount"=>20.0}>,
+  #       <Bitex::Resources::OrderGroup:@attributes={"type"=>"order_groups", "id"=>"5000.0", "price"=>5000.0, "amount"=>3.0}>
+  #     ],
+  #     bids: [
+  #       <Bitex::Resources::OrderGroup:@attributes={"type"=>"order_groups", "id"=>"4200.0", "price"=>4200.0, "amount"=>218.336904745238}>,
+  #       <Bitex::Resources::OrderGroup:@attributes={"type"=>"order_groups", "id"=>"4100.0", "price"=>4100.0, "amount"=>25.007783841463}>
+  #     ]
+  # >
+  def market
+    current_market = client.markets.find(orderbook, includes: %i[asks bids])
+    OrderBook.new(Time.now.to_i, order_summary(current_market.bids), order_summary(current_market.asks))
+  end
+
+  def orderbook
+    client.orderbooks.find_by_code(currency_pair[:name])
+  end
+
+  def order_summary(summary)
+    summary.map { |order| OrderSummary.new(order.price, order.amount) }
   end
 
   def orders
-    Bitex::Order.all.map { |o| order_parser(o) }
+    client.orders.all.map { |o| order_parser(o) }
+  end
+
+  # [
+  #   <Bitex::Resources::Orders::Order:
+  #     @attributes={
+  #       "type"=>"bids", "id"=>"4252", "amount"=>1000000.0, "remaining_amount"=>917014.99993, "price"=>4200.0,
+  #       "status"=>"executing", "orderbook_code"=>"btc_usd", "timestamp": 1534349999
+  #     }
+  #   >,
+  #   <Bitex::Resources::Orders::Order:
+  #     @attributes={
+  #       "type"=>"asks", "id"=>"1591", "amount"=>3.0, "remaining_amount"=>3.0, "price"=>5000.0,
+  #       "status"=>"executing", "orderbook_code"=>"btc_usd", "timestamp": 1534344859
+  #     }
+  #   >
+  # }
+  def order_parser(order)
+    Order.new(order.id, order_type(order), order.price, order.amount, order.timestamp, order)
   end
 
   def send_order(type, price, quantity, wait = false)
     order = { sell: Bitex::Ask, buy: Bitex::Bid }[type].create!(base_quote.to_sym, quantity, price, wait)
     order_parser(order) if order.present?
+  end
+
+  def order_type(order)
+    order.type == 'bids' ? :buy : :sell
   end
 
   def transactions
@@ -82,7 +126,6 @@ class BitexApiWrapper < ApiWrapper
   def user_transactions
     Bitex::Trade.all.map { |trade| user_transaction_parser(trade) }
   end
-
 
   def cash_wallet
     client.cash_wallets.find(currency_pair[:quote])
@@ -94,34 +137,6 @@ class BitexApiWrapper < ApiWrapper
 
   def last_order_by(price)
     orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
-  end
-
-  # {
-  #   bids: [[0.63921e3, 0.195e1], [0.637e3, 0.47e0], [0.63e3, 0.158e1]],
-  #   asks: [[0.6424e3, 0.4e0], [0.6433e3, 0.95e0], [0.6443e3, 0.25e0]]
-  # }
-  def order_book_parser(book)
-    OrderBook.new(Time.now.to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
-  end
-
-  def order_summary_parser(orders)
-    orders.map { |order| OrderSummary.new(order[0].to_d, order[1].to_d) }
-  end
-
-  # <Bitex::Bid
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @price=0.1e4, @status=:executing, @reason=nil,
-  #   @issuer=nil, @amount=0.1e3, @remaining_amount=0.1e2, @produced_quantity=0.0
-  # >
-  def order_parser(order)
-    Order.new(order.id.to_s, order_type(order), order.price, order_amount(order), order.created_at.to_i, order)
-  end
-
-  def order_type(order)
-    order.is_a?(Bitex::Bid) ? :buy : :sell
-  end
-
-  def order_amount(order)
-    order.is_a?(Bitex::Bid) ? order.amount : order.quantity
   end
 
   # [
@@ -150,10 +165,6 @@ class BitexApiWrapper < ApiWrapper
   def trade_type(trade)
     # ask: 0, bid: 1
     trade.is_a?(Bitex::Buy) ? 1 : 0
-  end
-
-  def market
-    @market ||= { btc: Bitex::BitcoinMarketData, bch: Bitex::BitcoinCashMarketData }[currency_pair[:base].to_sym]
   end
 
   def currency_pair(order_book = '_')

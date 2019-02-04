@@ -72,7 +72,7 @@ class ApiWrapper
   end
 
   # @return [OrderBook]
-  def order_book(_retries = 20)
+  def market(_retries = 20)
     raise 'self subclass responsibility'
   end
 
