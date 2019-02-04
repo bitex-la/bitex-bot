@@ -5,7 +5,6 @@ class BitexApiWrapper < ApiWrapper
 
   def initialize(settings)
     self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
-#   self.client = Bitex::Client.new(api_key: '468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a', sandbox: settings.sandbox)
     self.trading_fee = settings.trading_fee.to_s.to_d
     currency_pair(settings.order_book)
   end
@@ -65,7 +64,7 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def orderbook
-    client.orderbooks.find_by_code(currency_pair[:name])
+    @orderbook ||= client.orderbooks.find_by_code(currency_pair[:name])
   end
 
   def order_summary(summary)
@@ -73,7 +72,9 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def orders
-    client.orders.all.map { |o| order_parser(o) }
+    client.orders.all
+      .select { |o| o.orderbook_code == orderbook.code.to_s }
+      .map { |o| order_parser(o) }
   end
 
   # [
@@ -153,6 +154,18 @@ class BitexApiWrapper < ApiWrapper
   def trade_type(trade)
     # ask: 0, bid: 1
     trade.is_a?(Bitex::Buy) ? 1 : 0
+  end
+
+  def cash_wallet
+    client.cash_wallets.find(currency_pair[:quote])
+  end
+
+  def coin_wallet
+    client.coin_wallets.all.find { |wallet| wallet.currency == currency_pair[:base] }
+  end
+
+  def last_order_by(price)
+    orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
   end
 
   def currency_pair(order_book = '_')

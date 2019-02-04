@@ -97,26 +97,14 @@ describe BitexApiWrapper do
     end
   end
 
-  context '#orders' do
+  context '#orders', vcr: { cassette_name: 'bitex/orders/all' } do
     subject(:orders) { wrapper.orders }
 
-    before(:each) { allow_any_instance_of(Bitex::Client).to receive_message_chain(:orders, :all).and_return([bid, ask]) }
-
-    let(:bid) {
-      wrapper.client.bids.new(
-        id: '4252', amount: 100.to_d, remaining_amount: 90.to_d, price: 4_200.to_d, status: 'executing',
-        orderbook_code: 'btc_usd', created_at: '2018-08-15 13:19:59 -0300'
-      )
-    }
-
-    let(:ask) {
-      wrapper.client.asks.new(
-        id: '1591', amount: 3.to_d, remaining_amount: 3.to_d, price: 5_000.to_d, status: 'executing',
-        orderbook_code: 'btc_usd', created_at: '2018-08-15 11:54:19 -0300'
-      )
-    }
-
     it { is_expected.to all(be_a(BitexApiWrapper::Order)) }
+
+    it 'orders belong to setuped orderbook' do
+      expect(orders.map(&:orderbook_code)).to all(eq(taker_settings.order_book))
+    end
 
     context 'about sample' do
       subject(:sample) { orders.sample }
