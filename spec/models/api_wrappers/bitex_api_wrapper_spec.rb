@@ -40,29 +40,38 @@ describe BitexApiWrapper do
     expect(wrapper.quote).to eq('usd')
   end
 
-  it 'balance' do
-    coin_wallet = double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd')
-    allow_any_instance_of(BitexApiWrapper).to receive(:cash_wallet).and_return(coin_wallet)
+  context '#balance' do
+    subject(:balance) { wrapper.balance }
 
-    cash_wallet = double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc')
-    allow_any_instance_of(BitexApiWrapper).to receive(:coin_wallet).and_return(cash_wallet)
+    before(:each) do
+      allow_any_instance_of(BitexApiWrapper).to receive(:cash_wallet).and_return(coin_wallet)
+      allow_any_instance_of(BitexApiWrapper).to receive(:coin_wallet).and_return(cash_wallet)
+    end
 
-    balance = wrapper.balance
-    balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.crypto.should be_a(ApiWrapper::Balance)
-    balance.fiat.should be_a(ApiWrapper::Balance)
+    let(:coin_wallet) { double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd') }
+    let(:cash_wallet) { double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc') }
 
-    crypto = balance.crypto
-    crypto.total.should be_a(BigDecimal)
-    crypto.reserved.should be_a(BigDecimal)
-    crypto.available.should be_a(BigDecimal)
+    it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
 
-    fiat = balance.fiat
-    fiat.total.should be_a(BigDecimal)
-    fiat.reserved.should be_a(BigDecimal)
-    fiat.available.should be_a(BigDecimal)
+    its(:crypto) { is_expected.to be_a(ApiWrapper::Balance) }
+    its(:fiat) { is_expected.to be_a(ApiWrapper::Balance) }
+    its(:fee) { is_expected.to be_a(BigDecimal) }
 
-    balance.fee.should be_a(BigDecimal)
+    context 'about crypto balance' do
+      subject(:crypto) { balance.crypto }
+
+      its(:total) { is_expected.to be_a(BigDecimal) }
+      its(:reserved) { is_expected.to be_a(BigDecimal) }
+      its(:available) { is_expected.to be_a(BigDecimal) }
+    end
+
+    context 'about fiat balance' do
+      subject(:fiat) { balance.crypto }
+
+      its(:total) { is_expected.to be_a(BigDecimal) }
+      its(:reserved) { is_expected.to be_a(BigDecimal) }
+      its(:available) { is_expected.to be_a(BigDecimal) }
+    end
   end
 
 =begin
