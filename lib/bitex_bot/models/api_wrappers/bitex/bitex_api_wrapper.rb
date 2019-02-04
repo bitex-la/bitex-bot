@@ -120,7 +120,17 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def transactions
-    Bitex::Trade.all.map { |t| transaction_parser(t) }
+    client.transactions.all(orderbook: orderbook).map { |t| transaction_parser(t) }
+  end
+
+  # <Bitex::Resources::Transaction:
+  #   @attributes={
+  #     "type"=>"transactions", "id"=>"1654", "timestamp"=>1549294667, "price"=>0.44e4, "amount"=>0.22727e-3,
+  #     "orderbook_code"=>"btc_usd"
+  #   }
+  # >
+  def transaction_parser(transaction)
+    Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.timestamp, transaction)
   end
 
   def user_transactions
@@ -137,14 +147,6 @@ class BitexApiWrapper < ApiWrapper
 
   def last_order_by(price)
     orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
-  end
-
-  # [
-  #   [1492795215, 80310, 1243.51657154, 4.60321971],
-  #   [UNIX timestamp, Transaction ID, Price Paid, Amound Sold]
-  # ]
-  def transaction_parser(transaction)
-    Transaction.new(transaction.id, transaction.price.to_d, transaction.amount.to_d, transaction.created_at.to_i, transaction)
   end
 
   # <Bitex::Buy:0x007ff9a2979390

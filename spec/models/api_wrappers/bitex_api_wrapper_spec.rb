@@ -4,8 +4,7 @@ describe BitexApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       {
-       #api_key: 'your_magic_api_key',
-        api_key: '468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a',
+        api_key: 'your_magic_api_key',
         sandbox: true,
         order_book: 'btc_usd',
         trading_fee: 0
@@ -149,19 +148,24 @@ describe BitexApiWrapper do
       expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound)
     end
   end
+=end
 
-  it '#transactions' do
-    stub_bitex_transactions
+  context '#transactions', vcr: { cassette_name: 'bitex/transactions' }do
+    subject(:transactions) { wrapper.transactions }
 
-    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    it { is_expected.to all(be_a(ApiWrapper::Transaction)) }
 
-    transaction = wrapper.transactions.sample
-    transaction.id.should be_a(Integer)
-    transaction.price.should be_a(BigDecimal)
-    transaction.amount.should be_a(BigDecimal)
-    transaction.timestamp.should be_a(Integer)
+    context 'about sample' do
+      subject(:sample) { transactions.sample }
+
+      its(:id) { is_expected.to be_a(Integer) }
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:amount) { is_expected.to be_a(BigDecimal) }
+      its(:timestamp) { is_expected.to be_a(Integer) }
+    end
   end
 
+=begin
   it '#user_transaction' do
     stub_bitex_trades
 
