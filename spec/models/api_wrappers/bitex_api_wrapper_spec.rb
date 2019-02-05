@@ -14,18 +14,23 @@ describe BitexApiWrapper do
 
   let(:wrapper) { BitexApiWrapper.new(taker_settings) }
 
-=begin
-  #TODO
-  it 'Sends User-Agent header' do
-    url = "https://bitex.la/api-v1/rest/private/profile?api_key=#{BitexBot::Robot.taker.api_key}"
-    stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
+=begin TODO make client to receive a UserAgent
+  context 'Sends User-Agent header', vcr: { cassette_name: 'bitex/user_agent' } do
+    let(:url) { 'https://sandbox.bitex.la/api/markets/btc_usd?include=asks,bids' }
 
-    # we don't care about the response
-    wrapper.balance rescue nil
+    it do
+      stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
-    expect(stub_stuff).to have_been_requested
+      # we don't care about the response
+      robot.taker.market
+      expect(stub_stuff).to have_been_requested
+    end
   end
 =end
+
+  it '#currency_pair' do
+    expect(wrapper.currency_pair).to eq({ name: 'btc_usd', base: 'btc', quote: 'usd'})
+  end
 
   it '#base_quote' do
     expect(wrapper.base_quote).to eq('btc_usd')
@@ -139,18 +144,31 @@ describe BitexApiWrapper do
     end
   end
 
-=begin
   context '#place_order' do
-    it 'raises OrderNotFound error on Bitex errors' do
-      Bitex::Bid.stub(create!: nil)
-      Bitex::Ask.stub(create!: nil)
-      wrapper.stub(find_lost: nil)
+    context 'raises OrderNotFound error on Bitex errors' do
+      before(:each) do
+        allow_any_instance_of(Bitex::Client).to receive_message_chain(:asks, :create).and_return(nil)
+        allow_any_instance_of(Bitex::Client).to receive_message_chain(:bids, :create).and_return(nil)
+        allow_any_instance_of(BitexApiWrapper).to receive(:find_lost).and_return(nil)
+      end
 
-      expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound)
-      expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound)
+      it { expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound) }
+      it { expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound) }
+    end
+
+    context 'sucessfull', vcr: { cassette_name: 'bitex/place_bid' } do
+      subject(:order) { wrapper.send_order(:buy, 3_500, 2) }
+
+      it { is_expected.to be_a(ApiWrapper::Order) }
+
+      its(:id) { is_expected.to be_present }
+      its(:type) { is_expected.to eq(:buy) }
+      its(:price) { is_expected.to eq(3_500) }
+      its(:amount) { is_expected.to eq(2) }
+      its(:timestamp) { is_expected.to be_present }
+      its(:raw) { is_expected.to be_a(Bitex::Resources::Orders::Bid) }
     end
   end
-=end
 
   context '#transactions', vcr: { cassette_name: 'bitex/transactions' }do
     subject(:transactions) { wrapper.transactions }
@@ -167,23 +185,25 @@ describe BitexApiWrapper do
     end
   end
 
-=begin
-  it '#user_transaction' do
-    stub_bitex_trades
+  context '#user_transaction', vcr: { cassette_name: 'bitex/user_transactions' } do
+    subject(:user_transactions) { wrapper.user_transactions }
 
-    wrapper.user_transactions.should be_a(Array)
-    wrapper.user_transactions.all? { |o| o.should be_a(ApiWrapper::UserTransaction) }
+    it { is_expected.to all(be_a(ApiWrapper::UserTransaction)) }
 
-    user_transaction = wrapper.user_transactions.sample
-    user_transaction.order_id.should be_a(Integer)
-    user_transaction.fiat.should be_a(BigDecimal)
-    user_transaction.crypto.should be_a(BigDecimal)
-    user_transaction.crypto_fiat.should be_a(BigDecimal)
-    user_transaction.fee.should be_a(BigDecimal)
-    user_transaction.type.should be_a(Integer)
-    user_transaction.timestamp.should be_a(Integer)
+    context 'about sample' do
+      subject(:sample) { user_transactions.sample }
+
+      its(:order_id) { is_expected.to be_a(String) }
+      its(:fiat) { is_expected.to be_a(BigDecimal) }
+      its(:crypto) { is_expected.to be_a(BigDecimal) }
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:fee) { is_expected.to be_a(BigDecimal) }
+      its(:type) { is_expected.to be_a(Integer) }
+      its(:timestamp) { is_expected.to be_a(Integer) }
+    end
   end
 
+=begin
   it '#find_lost' do
     stub_bitex_orders
 

@@ -31,22 +31,6 @@ module BitexBot
   end
 end
 
-module Bitex
-  # Set bitex-bot user-agent on request.
-  module WithUserAgent
-    def grab_curl
-      super.tap { |curl| curl.headers['User-Agent'] = BitexBot.user_agent }
-    end
-  end
-
-  # Mixing to include request behaviour and set user-agent.
-  class Api
-    class << self
-      prepend WithUserAgent
-    end
-  end
-end
-
 module RestClient
   # On Itbit and Bitstamp, the mechanism to set bitex-bot user-agent are different.
   module WithUserAgent

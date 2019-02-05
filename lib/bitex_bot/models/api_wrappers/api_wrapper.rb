@@ -56,7 +56,7 @@ class ApiWrapper
     :order_id,    # Integer
     :fiat,        # Decimal
     :crypto,      # Decimal
-    :crypto_fiat, # Decimal
+    :price,       # Decimal
     :fee,         # Decimal
     :type,        # Integer
     :timestamp    # Epoch Integer
@@ -91,7 +91,16 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 
+  # @param [String] order_id.
+  #
   # @return [UserTransaction]
+  def amount_and_quantity(order_id)
+    closes = user_transactions.select { |t| t.order_id == order_id }
+
+    [closes.sum(&:fiat).abs, closes.sum(&:crypto).abs]
+  end
+
+  # @return [Array<UserTransaction>]
   def user_transactions
     raise 'self subclass responsibility'
   end

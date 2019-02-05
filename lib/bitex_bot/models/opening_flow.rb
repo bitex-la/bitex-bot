@@ -199,7 +199,7 @@ module BitexBot
 
     def do_cancel(order)
       Robot.log(:info, "Opening: #{order_class} ##{order_id} canceled.")
-      order.cancel!
+      Robot.maker.cancel_order(order)
       settling! unless settling?
     end
     # end: finalise! helpers
