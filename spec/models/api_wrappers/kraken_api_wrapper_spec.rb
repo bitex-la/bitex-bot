@@ -1,11 +1,11 @@
 require 'spec_helper'
 
 describe KrakenApiWrapper do
-  let(:api_wrapper) { BitexBot::Robot.taker }
-  let(:api_client) { api_wrapper.client }
+  before(:each) { BitexBot::Settings.stub(taker: BitexBot::SettingsClass.new(kraken: taker_settings)) }
+
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      kraken: {
+      {
         api_key: 'your_api_key',
         api_secret: 'your_api_secret',
         order_book: 'xbtusd'
@@ -13,10 +13,8 @@ describe KrakenApiWrapper do
     )
   end
 
-  before(:each) do
-    BitexBot::Settings.stub(taker: taker_settings)
-    BitexBot::Robot.setup
-  end
+  let(:wrapper) { KrakenApiWrapper.new(taker_settings) }
+  let(:api_client) { wrapper.client }
 
   def stub_request_helper(method:, path: '', status: 200, result: {}, error: [], header_params: {})
     stub_request(method, "https://api.kraken.com/0#{path}")
@@ -80,7 +78,7 @@ describe KrakenApiWrapper do
     stub_stuff = stub_order_book
 
     # We don't care about the response
-    api_wrapper.order_book
+    wrapper.market
 
     stub_stuff.should have_been_requested
   end
@@ -89,7 +87,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/Balance',
-      header_params: { 'Api-Key': api_wrapper.api_key },
+      header_params: { 'Api-Key': wrapper.api_key },
       result: { XXBT: '1433.0939', ZUSD: '1230.0233', ETH: '99.7497224800' }
     )
   end
@@ -98,7 +96,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/TradeVolume',
-      header_params: { 'Api-Key': api_wrapper.api_key },
+      header_params: { 'Api-Key': wrapper.api_key },
       result: {
         currency: 'ZUSD',
         volume: '3878.8703',
@@ -132,7 +130,7 @@ describe KrakenApiWrapper do
     stub_orders
     stub_trade_volume
 
-    balance = api_wrapper.balance
+    balance = wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
     balance.crypto.should be_a(ApiWrapper::Balance)
     balance.fiat.should be_a(ApiWrapper::Balance)
@@ -150,10 +148,12 @@ describe KrakenApiWrapper do
     balance.fee.should be_a(BigDecimal)
   end
 
-  it '#cancel' do
-    stub_orders
+  describe '#cancel', vcr: { cassette_name: 'kraken/cancel_order' } do
+    subject { wrapper.cancel_order(order) }
 
-    api_wrapper.orders.sample.should respond_to(:cancel!)
+    let(:order) { double(id: 'ODEC3J-QAMVD-NSF7XD') }
+
+    its([:count]) { is_expected.to eq(1) }
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)
@@ -169,11 +169,11 @@ describe KrakenApiWrapper do
     )
   end
 
-  it '#order_book' do
+  it '#market' do
     stub_assets
     stub_order_book
 
-    order_book = api_wrapper.order_book
+    order_book = wrapper.market
     order_book.should be_a(ApiWrapper::OrderBook)
     order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
     order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
@@ -192,7 +192,7 @@ describe KrakenApiWrapper do
     stub_request_helper(
       method: :post,
       path: '/private/OpenOrders',
-      header_params: { 'Api-Key': api_wrapper.api_key },
+      header_params: { 'Api-Key': wrapper.api_key },
       result: {
         open: {
           'O5TDV2-WDYB2-XXXXXX': {
@@ -230,9 +230,9 @@ describe KrakenApiWrapper do
   it '#orders' do
     stub_orders
 
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
-    order = api_wrapper.orders.sample
+    order = wrapper.orders.sample
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
@@ -257,9 +257,9 @@ describe KrakenApiWrapper do
     stub_assets
     stub_transactions
 
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
-    transaction = api_wrapper.transactions.sample
+    transaction = wrapper.transactions.sample
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
@@ -267,21 +267,20 @@ describe KrakenApiWrapper do
   end
 
   it '#user_transaction' do
-    api_wrapper.user_transactions.should be_a(Array)
-    api_wrapper.user_transactions.empty?.should be_truthy
+    expect { wrapper.user_transactions }.to raise_error('self subclass responsibility')
   end
 
   it '#find_lost' do
     stub_orders
 
-    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
+    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 
   it '#currency_pair' do
     stub_assets
-    BitexBot::Settings.taker.kraken.order_book.should eq taker_settings.kraken.order_book
 
-    api_wrapper.currency_pair.should be_a(HashWithIndifferentAccess)
-    api_wrapper.currency_pair.keys.should include(*%w[altname base quote name])
+    expect(wrapper.currency_pair[:altname]).to eq(taker_settings.order_book.upcase)
+    expect(wrapper.currency_pair).to be_a(HashWithIndifferentAccess)
+    expect(wrapper.currency_pair.keys).to include(*%w[altname base quote name])
   end
 end
