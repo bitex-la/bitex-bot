@@ -3,7 +3,7 @@ require 'spec_helper'
 describe ItbitApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      itbit: {
+      {
         client_key: 'client-key',
         secret: 'secret',
         user_id: 'user-id',
@@ -14,12 +14,7 @@ describe ItbitApiWrapper do
     )
   end
 
-  before(:each) do
-    BitexBot::Settings.stub(taker: taker_settings)
-    BitexBot::Robot.setup
-  end
-
-  let(:wrapper) { BitexBot::Robot.taker }
+  let(:wrapper) { ItbitApiWrapper.new(taker_settings) }
 
   it 'Sends User-Agent header' do
     url = "https://api.itbit.com/v1/markets/#{wrapper.currency_pair[:name].upcase}/order_book"
