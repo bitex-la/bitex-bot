@@ -20,10 +20,9 @@ GIT
 
 GIT
   remote: git://github.com/bitex-la/itbit.git
-  revision: 1e34d3a3180c177cd408ac546e0f35c19e99697a
-  branch: admit-extra-order-fields
+  revision: 9fded75e50cf42cdcf77f3197cdb4ebf0b0cb9d6
   specs:
-    itbit (0.0.7)
+    itbit (0.0.8)
       activesupport
       rest-client
 
