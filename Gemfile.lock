@@ -18,6 +18,15 @@ GIT
       rest-client (= 2.0.2)
       ruby-hmac
 
+GIT
+  remote: git://github.com/bitex-la/itbit.git
+  revision: 1e34d3a3180c177cd408ac546e0f35c19e99697a
+  branch: admit-extra-order-fields
+  specs:
+    itbit (0.0.7)
+      activesupport
+      rest-client
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -73,9 +82,6 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (1.5.2)
       concurrent-ruby (~> 1.0)
-    itbit (0.0.7)
-      activesupport
-      rest-client
     jaro_winkler (1.5.2)
     kraken_client (1.2.1)
       activesupport (>= 3.2)
@@ -171,7 +177,7 @@ DEPENDENCIES
   factory_bot
   faker
   hashie (~> 3.5.4)
-  itbit
+  itbit!
   kraken_client (~> 1.2.1)
   mail
   mysql2
@@ -188,4 +194,4 @@ DEPENDENCIES
   webmock
 
 BUNDLED WITH
-   1.16.1
+   2.0.1
