@@ -8,7 +8,7 @@ gem 'mysql2'
 gem 'sqlite3'
 gem 'bitex', github: 'bitex-la/bitex-ruby', branch: 'bitcoin-cash-market'
 gem 'bitstamp', github: 'bitex-la/bitstamp', branch: 'update-lib'
-gem 'itbit'
+gem 'itbit', github: 'bitex-la/itbit'
 gem 'kraken_client', '~> 1.2.1'
 
 group :test, :development do
