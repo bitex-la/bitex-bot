@@ -193,6 +193,7 @@ module BitexBot
 
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
+      last_log << "Last run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
       logs = last_log.join("\n")
       last_log.clear
       store.update(

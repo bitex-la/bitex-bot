@@ -165,6 +165,10 @@ module BitexBot
     def self.expected_order_book?(maker_transaction)
       maker_transaction.raw.order_book.to_s == Robot.maker.base_quote
     end
+
+    def self.resume
+      active.map { |flow| "#{order_class}: #{flow.order_id}, price: #{flow.price}, amount: #{flow.value_to_use * fx_rate}" }
+    end
     # end: sought_transaction helpers
 
     validates :status, presence: true, inclusion: { in: statuses }

@@ -1,6 +1,6 @@
 module BitexBot
   module Database
-    ActiveRecord::Base.establish_connection(Settings.database)
+    ActiveRecord::Base.establish_connection(Settings.database.merge(reconnect: true))
 
     ActiveRecord::Schema.define(version: 1) do
       if ActiveRecord::Base.connection.tables.empty?
