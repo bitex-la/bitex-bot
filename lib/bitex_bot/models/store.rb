@@ -1,4 +1,5 @@
 module BitexBot
+  # Stores all robot settings and state to be shared with other applications.
   class Store < ActiveRecord::Base
     before_save :sanitize_log
 
