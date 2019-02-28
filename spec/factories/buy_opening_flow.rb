@@ -3,15 +3,15 @@ FactoryBot.define do
     price                   { 300.0 }
     value_to_use            { 600.0 }
     suggested_closing_price { 310.0 }
-    status                  { 'executing' }
-    order_id                { 12_345 }
+    status                  { :executing }
+    order_id                { 123 }
   end
 
   factory :other_buy_opening_flow, class: BitexBot::BuyOpeningFlow do
     price                   { 400.0 }
     value_to_use            { 400.0 }
     suggested_closing_price { 410.0 }
-    status                  { 'executing' }
+    status                  { :executing }
     order_id                { 2 }
   end
 end

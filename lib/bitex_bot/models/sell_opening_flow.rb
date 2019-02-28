@@ -28,56 +28,54 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
     # of USD on the other exchange.
-    def self.create_for_market(taker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee, store)
+    def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee, store)
       super
-    end
-
-    # sync_open_positions helpers
-    def self.transaction_order_id(transaction)
-      transaction.raw.ask_id
     end
 
     def self.open_position_class
       OpenSell
     end
-    # end: sync_open_positions helpers
 
-    # sought_transaction helpers
-    def self.transaction_class
-      Bitex::Sell
+    def self.expected_kind_trade?(trade)
+      trade.type.inquiry.sells?
     end
-    # end: sought_transaction helpers
 
-    # create_for_market helpers
     def self.maker_price(fiat_to_spend_re_buying)
       fiat_to_spend_re_buying * fx_rate / value_to_use * (1 + profit / 100)
     end
 
-    def self.order_class
-      Bitex::Ask
+    # Find order on maker asks.
+    #
+    # @param [String] order_id.
+    #
+    # @return [ApiWrapper::Order]
+    def find_maker_order(order_id)
+      Robot.maker.ask_by_id(order_id)
     end
-    def_delegator self, :order_class
 
-    def self.order_type
+    def self.trade_type
       :sell
     end
 
+    def self.order_type
+      :ask
+    end
+
     def self.profit
-      store.selling_profit || Settings.selling.profit
+      store.try(:selling_profit) || Settings.selling.profit
     end
 
     def self.remote_value_to_use(value_to_use_needed, safest_price)
       value_to_use_needed * safest_price
     end
 
-    def self.safest_price(transactions, taker_asks, bitcoins_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, transactions, taker_asks, nil, bitcoins_to_use, nil)
+    def self.safest_price(taker_transactions, taker_asks, cryptos_to_use)
+      OrderBookSimulator.run(Settings.time_to_live, taker_transactions, taker_asks, nil, cryptos_to_use, nil)
     end
 
     def self.value_to_use
-      store.selling_quantity_to_sell_per_order || Settings.selling.quantity_to_sell_per_order
+      store.try(:selling_quantity_to_sell_per_order) || Settings.selling.quantity_to_sell_per_order
     end
-    # end: create_for_market helpers
 
     def self.fx_rate
       Settings.selling_fx_rate
@@ -97,18 +95,6 @@ module BitexBot
 
     def self.taker_specie_to_spend
       Robot.taker.quote.upcase
-    end
-
-    def self.taker_specie_to_obtain
-      Robot.taker.base.upcase
-    end
-
-    def self.maker_balance
-      store.maker_crypto
-    end
-
-    def self.available_maker_balance
-      Robot.maker.balance.crypto.available
     end
   end
 end

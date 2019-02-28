@@ -30,142 +30,155 @@ module BitexBot
     #   #remote_value_to_use
     #   #safest_price
     #   #value_to_use
-    # rubocop:disable Metrics/AbcSize
-    def self.create_for_market(taker_balance, taker_orders, taker_transactions, maker_fee, taker_fee, store)
+    def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee, store)
       self.store = store
 
-      remote_value, safest_price = calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
+      unless enough_funds?(maker_balance, value_per_order)
+        raise CannotCreateFlow,
+          "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on #{Robot.maker.name} maker to place this "\
+          "#{order_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
+      end
+
+      taker_amount, safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
+
+      price = maker_price(taker_amount)
+      maker_order = Robot.maker.send_order(trade_type, price, value_per_order)
+
+      create_flow!(price, safest_price, taker_amount, maker_order)
+    rescue StandardError => e
+      raise CannotCreateFlow, e.message
+    end
+
+    # Checks if you have necessary funds for the amount you want to execute in the order.
+    #   If BuyOpeningFlow, they must be in relation to the amounts and crypto funds.
+    #   If SellOpeningFlow, they must be in relation to the amounts and fiat funds.
+    #
+    # @param[BigDecimal] balance. Funds of the species corresponding to the Flow you wish to open.
+    # @param [BigDecimal] amount. Order size to open.
+    #
+    # @return [Booolean]
+    def self.enough_funds?(funds, amount)
+      funds >= amount
+    end
+
+    # Flow knows the amount of your orders (from Settings buying/selling per order).
+    # You just only need provide described params.
+    #
+    # @param [BigDecimal] minimun_price. Minimun price to execute order.
+    # @param [BigDecimal] safest price. Best price to execute order.
+    # @param [String] order_id. The order ID placed in the maker market.
+    # @param [BigDecimal] taker_amount. Amount on which the minimum price was calculated.
+    #
+    # @return [OpeningFlow]
+    def self.create_flow!(minimun_price, safest_price, taker_amount, order)
+      create!(
+        price: minimun_price,
+        value_to_use: value_to_use,
+        suggested_closing_price: safest_price,
+        status: :executing,
+        order_id: order.id
+      ).tap do |flow|
+        Robot.log(
+          :info,
+          "Opening: Placed #{order.type} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @"\
+            " #{flow.price.truncate(2)} (#{maker_specie_to_obtain} #{taker_amount})."\
+            " #{name.demodulize}##{flow.id} suggests closing price #{Robot.taker.quote.upcase}"\
+            " #{flow.suggested_closing_price}."
+        )
+      end
+    end
+
+    # Calculates the size of the order and its best price in relation to the order size configured for the purchase and
+    # for the sale and with taker market information.
+    #
+    # @param [BigDecimal] taker_balance. Its represent available amountn on crypto/fiat.
+    # @param [BigDecimal] maker_fee.
+    # @param [BigDecimal] taker_fee.
+    # @param [Array<ApiWrapper::Order>] taker_orders. List of taker bids/asks.
+    # @param [Array<ApiWrapper::Transaction>] taker_orders. List of taker transactions.
+    #
+    # @return [Array[BigDecimal, BigDecimal]]
+    def self.calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
+      value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
+      price = safest_price(taker_transactions, taker_orders, value_to_use_needed)
+      amount = remote_value_to_use(value_to_use_needed, price)
+
       Robot.log(
         :info,
-        "Opening: Need #{taker_specie_to_spend} #{remote_value.truncate(8)} on #{Robot.taker.name} taker,"\
+        "Opening: Need #{taker_specie_to_spend} #{amount.truncate(8)} on #{Robot.taker.name} taker,"\
         " has #{taker_balance.truncate(8)}."
       )
 
-      unless enough_remote_funds?(taker_balance, remote_value)
+      unless enough_funds?(taker_balance, amount)
         raise CannotCreateFlow,
-              "Needed #{remote_value} but you only have #{taker_specie_to_spend} #{taker_balance} on your taker market."
+              "Needed #{amount.truncate(8)}"\
+              " but you only have #{taker_specie_to_spend} #{taker_balance.truncate(8)} on your taker market."
       end
 
-      price = maker_price(remote_value)
-
-      order = create_order!(price)
-      unless enough_funds?(order)
-        raise CannotCreateFlow,
-              "Needed #{maker_specie_to_spend} #{value_per_order} on #{Robot.maker.name} maker to place this #{order_class}"\
-              " but you only have #{maker_specie_to_spend} #{available_maker_balance}."
-      end
-
-      flow = create!(
-        price: price,
-        value_to_use: value_to_use,
-        suggested_closing_price: safest_price,
-        status: 'executing',
-        order_id: order.id
-      )
-
-      Robot.log(
-        :info,
-        "Opening: Placed #{order_class} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @ #{price.truncate(2)}."\
-        " (#{maker_specie_to_obtain} #{remote_value})."\
-        " #{name.demodulize}##{flow.id} suggests closing price #{Robot.taker.quote.upcase}"\
-        " #{flow.suggested_closing_price}."
-      )
-      flow
-    rescue StandardError => e
-      raise CannotCreateFlow, e.message
-    end
-    # rubocop:enable Metrics/AbcSize
-
-    # create_for_market helpers
-    def self.calc_remote_value(maker_fee, taker_fee, taker_orders, taker_transactions)
-      value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
-      safest_price = safest_price(taker_transactions, taker_orders, value_to_use_needed)
-      remote_value = remote_value_to_use(value_to_use_needed, safest_price)
-
-      [remote_value, safest_price]
-    end
-
-    def self.create_order!(maker_price)
-      Robot.maker.send_order(order_type, maker_price, value_per_order, true)
-    rescue StandardError => e
-      raise CannotCreateFlow, e.message
-    end
-
-    def self.enough_funds?(order)
-      !order.reason.to_s.inquiry.not_enough_funds?
-    end
-
-    def self.enough_remote_funds?(taker_balance, remote_value)
-      taker_balance >= remote_value
+      [amount, price]
     end
 
     def self.maker_plus(fee)
       value_to_use * fee / 100
     end
-    # end: create_for_market helpers
 
     # Buys on bitex represent open positions, we mirror them locally so that we can plan on how to close them.
-    # This use hooks methods, these must be defined in the subclass:
-    #   #transaction_order_id(transaction)
-    #   #open_position_class
     def self.sync_open_positions
-      threshold = open_position_class.order('created_at DESC').first.try(:created_at)
-      Robot.maker.transactions.map do |transaction|
-        next unless sought_transaction?(threshold, transaction)
+      threshold = open_position_class.last.try(:created_at)
 
-        flow = find_by_order_id(transaction_order_id(transaction))
+      Robot.maker.trades.map do |user_transaction|
+        # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta?
+        next unless sought_transaction?(user_transaction, threshold)
+
+        # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta y ademas no tiene un opening flow?
+        flow = find_by_order_id(user_transaction.order_id)
         next unless flow.present?
 
-        create_open_position!(transaction, flow)
+        create_open_position!(user_transaction, flow)
       end.compact
     end
 
-    # sync_open_positions helpers
-    # rubocop:disable Metrics/AbcSize
-    def self.create_open_position!(transaction, flow)
+    def self.create_open_position!(trade, flow)
       Robot.log(
         :info,
-        "Opening: #{self} ##{flow.id} was hit for #{Robot.maker.base.upcase} #{transaction.raw.quantity}"\
-        " @ #{Robot.maker.quote.upcase} #{transaction.price}. Creating #{open_position_class}..."
+        "Opening: ##{flow.id} was hit for #{Robot.maker.base.upcase} #{trade.crypto.truncate(8)}"\
+        " @ #{Robot.maker.quote.upcase} #{trade.price.truncate(8)}. Creating #{open_position_class.name.demodulize}..."
       )
 
       open_position_class.create!(
-        transaction_id: transaction.id,
-        price: transaction.price,
-        amount: transaction.amount,
-        quantity: transaction.raw.quantity,
-        opening_flow: flow
+        transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
       )
     end
-    # rubocop:enable Metrics/AbcSize
 
-    # This use hooks methods, these must be defined in the subclass:
-    #   #transaction_class
-    def self.sought_transaction?(threshold, transaction)
-      expected_kind_transaction?(transaction) &&
-        !active_transaction?(transaction, threshold) &&
-        !open_position?(transaction) &&
-        expected_order_book?(transaction)
-    end
-    # end: sync_open_positions helpers
-
-    # sought_transaction helpers
-    def self.expected_kind_transaction?(transaction)
-      transaction.raw.is_a?(transaction_class)
+    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Time] threshold.
+    #
+    # @return [Boolean]
+    def self.sought_transaction?(trade, threshold)
+      expected_kind_trade?(trade) && !active_trade?(trade, threshold) && !position_syncronized?(trade) && expected_orderbook?(trade)
     end
 
-    def self.active_transaction?(transaction, threshold)
-      threshold.present? && transaction.timestamp < (threshold - 30.minutes).to_i
+    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Time] threshold.
+    #
+    # @return [Boolean]
+    def self.active_trade?(trade, threshold)
+      threshold.present? && trade.timestamp < (threshold - 30.minutes).to_i
     end
 
-    def self.open_position?(transaction)
-      open_position_class.find_by_transaction_id(transaction.id)
+    # @param [ApiWrapper::UserTransaction] trade.
+    #
+    # @return [Boolean]
+    def self.position_syncronized?(trade)
+      open_position_class.find_by_transaction_id(trade.order_id).present?
     end
 
-    def self.expected_order_book?(maker_transaction)
-      maker_transaction.raw.order_book.to_s == Robot.maker.base_quote
+    # @param [ApiWrapper::UserTransaction] trade.
+    #
+    # @return [Boolean]
+    def self.expected_orderbook?(trade)
+      trade.raw.orderbook_code.to_s == Robot.maker.base_quote
     end
-    # end: sought_transaction helpers
 
     validates :status, presence: true, inclusion: { in: statuses }
     validates :order_id, presence: true
@@ -173,7 +186,7 @@ module BitexBot
 
     # Statuses:
     #   executing: The Bitex order has been placed, its id stored as order_id.
-    #   setting: In process of cancelling the Bitex order and any other outstanding order in the other exchange.
+    #   settling: In process of cancelling the Bitex order and any other outstanding order in the other exchange.
     #   finalised: Successfully settled or finished executing.
     statuses.each do |status_name|
       define_method("#{status_name}?") { status == status_name }
@@ -181,28 +194,23 @@ module BitexBot
     end
 
     def finalise!
-      order = order_class.find(order_id)
-      canceled_or_completed?(order) ? do_finalize : do_cancel(order)
+      finalizable? ? finalised! : cancel!
     end
 
     private
 
-    # finalise! helpers
-    def canceled_or_completed?(order)
+    def finalizable?
       %i[cancelled completed].any? { |status| order.status == status }
     end
 
-    def do_finalize
-      Robot.log(:info, "Opening: #{order_class} ##{order_id} finalised.")
-      finalised!
-    end
-
-    def do_cancel(order)
-      Robot.log(:info, "Opening: #{order_class} ##{order_id} canceled.")
+    def cancel!
       Robot.maker.cancel_order(order)
       settling! unless settling?
     end
-    # end: finalise! helpers
+
+    def order
+      @order ||= find_maker_order(order_id)
+    end
   end
 
   class CannotCreateFlow < StandardError; end
