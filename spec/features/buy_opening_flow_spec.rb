@@ -145,7 +145,7 @@ describe BitexBot::BuyOpeningFlow do
     before(:each) { stub_bitex_transactions }
 
     it 'does not register buys from unknown bids' do
-      expect { described_class.sync_open_positions.should be_empty }.not_to change { BitexBot::OpenBuy.count }
+      expect { described_class.sync_positions.should be_empty }.not_to change { BitexBot::OpenBuy.count }
     end
 
     context 'with known bid' do
@@ -158,7 +158,7 @@ describe BitexBot::BuyOpeningFlow do
 
       it 'only gets buys' do
         expect do
-          described_class.sync_open_positions.first.tap do |open_trade|
+          described_class.sync_positions.first.tap do |open_trade|
             expect(open_trade.transaction_id).to eq(123)
             expect(open_trade.amount).to eq(600)
             expect(open_trade.quantity).to eq(2)
@@ -169,7 +169,7 @@ describe BitexBot::BuyOpeningFlow do
       end
 
       it 'does not register the same buy twice' do
-        expect { described_class.sync_open_positions }.to change { BitexBot::OpenBuy.count }.by(1)
+        expect { described_class.sync_positions }.to change { BitexBot::OpenBuy.count }.by(1)
 
         Timecop.travel(1.second.from_now)
 
@@ -178,7 +178,7 @@ describe BitexBot::BuyOpeningFlow do
         stub_bitex_transactions(trade)
 
         expect do
-          described_class.sync_open_positions.first do |new_open_trade|
+          described_class.sync_positions.first do |new_open_trade|
             expect(new_open_trade.transaction_id).to eq(789)
           end
         end.to change { BitexBot::OpenBuy.count }.by(1)
@@ -188,7 +188,7 @@ describe BitexBot::BuyOpeningFlow do
         trade = build_bitex_user_transaction(:buy, 777, 600, 2, 300, 0.05, :boo_shit)
         allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
 
-        expect { expect(described_class.sync_open_positions).to be_empty }.not_to change { BitexBot::OpenBuy.count }
+        expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenBuy.count }
       end
     end
   end
