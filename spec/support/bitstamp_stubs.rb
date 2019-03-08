@@ -38,9 +38,9 @@ module BitstampStubs
     end
   end
 
-  def stub_bitstamp_transactions(price: 0.2, amount: 1)
+  def stub_bitstamp_transactions(price: 30, amount: 1, count: 5)
     allow_any_instance_of(BitstampApiWrapper).to receive(:transactions) do
-      5.times.map { |i| BitstampApiWrapper::Transaction.new(i, price.to_d, amount.to_d, (i+1).seconds.ago.to_i, double) }
+      count.times.map { |i| build_bitstamp_transaction(i, price, amount, (i+1).seconds.ago) }
     end
   end
 
@@ -97,6 +97,16 @@ module BitstampStubs
     # TODO add orderbook and status to parsed orders
     order_type = type == :buy ? :bid : :ask
     ApiWrapper::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, raw)
+  end
+
+  # @param [Numeric] id. IDs trade.
+  # @param [Numeric] price.
+  # @param [Numeric] amount.
+  # @param [Time] created_at. UTC.
+  #
+  # return [BitexApiWrapper::Order]
+  def build_bitstamp_transaction(id, price, amount, created_at = Time.now.utc)
+    BitstampApiWrapper::Transaction.new(id.to_s, price.to_d, amount.to_d, created_at.to_i, double)
   end
 
   def stub_bitstamp_reset
