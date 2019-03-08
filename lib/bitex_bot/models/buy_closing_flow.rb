@@ -21,7 +21,7 @@ module BitexBot
     end
 
     # Scale price subtracting price variation.
-    # Scañe quantity taken new price.
+    # Scale quantity taken new price.
     #
     # @return [Array[BigDecimal, BigDecimal]]
     def next_quantity_and_price
