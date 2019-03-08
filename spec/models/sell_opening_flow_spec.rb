@@ -3,6 +3,18 @@ require 'spec_helper'
 describe BitexBot::SellOpeningFlow do
   it_behaves_like 'OpeningFlows'
 
+  describe '.maker_price' do
+    before(:each) do
+      allow(described_class).to receive(:fx_rate).and_return(10.to_d)
+      allow(described_class).to receive(:value_to_use).and_return(2.to_d)
+      allow(described_class).to receive(:profit).and_return(1.to_d)
+    end
+
+    subject(:price) { described_class.maker_price(2.to_d) }
+
+    it { is_expected.to eq(10.1) }
+  end
+
   describe '.open_position_class' do
     subject { described_class.open_position_class }
 
@@ -31,12 +43,6 @@ describe BitexBot::SellOpeningFlow do
     subject(:type) { described_class.trade_type }
 
     it { is_expected.to eq(:sell) }
-  end
-
-  describe '.order_type' do
-    subject(:type) { described_class.order_type }
-
-    it { is_expected.to eq(:ask) }
   end
 
   describe '.profit' do
@@ -70,14 +76,13 @@ describe BitexBot::SellOpeningFlow do
       # Here no need fx_rate
     end
 
-    after(:each) { described_class.safest_price(transactions, orders, quantity_target) }
-
-    let(:quantity_target) { 100 }
     let(:transactions) { double }
     let(:orders) { double }
 
     it 'forward to OrderBookSimulator with nil quantity_target' do
-      expect(BitexBot::OrderBookSimulator).to receive(:run).with(30, transactions, orders, nil, quantity_target, nil)
+      expect(BitexBot::OrderBookSimulator).to receive(:run).with(30, transactions, orders, nil, 100, nil)
+
+      described_class.safest_price(transactions, orders, 100.to_d)
     end
   end
 
@@ -93,7 +98,7 @@ describe BitexBot::SellOpeningFlow do
     context 'without store' do
       before(:each) do
         allow(described_class).to receive(:store).and_return(nil)
-        allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(20)
+        allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(20.to_d)
       end
 
       it { is_expected.to eq(20) }
@@ -101,7 +106,7 @@ describe BitexBot::SellOpeningFlow do
   end
 
   describe '.fx_rate' do
-    before(:each) { allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(100) }
+    before(:each) { allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(100.to_d) }
 
     subject(:fx_rate) { described_class.fx_rate }
 
@@ -110,7 +115,7 @@ describe BitexBot::SellOpeningFlow do
 
   describe '.value_per_order' do
     before(:each) do
-      allow(described_class).to receive(:value_to_use).and_return(100)
+      allow(described_class).to receive(:value_to_use).and_return(100.to_d)
       # Here no need fx_rate
     end
 
@@ -187,34 +192,24 @@ describe BitexBot::SellOpeningFlow do
     end
   end
 
-  describe '.create_open_position' do
-    before(:each) do
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return(:fuck)
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return(:yeah)
+  describe '.syncronized?' do
+    subject(:syncronized?) { described_class.syncronized?(trade) }
+
+    let(:trade) { build_bitex_user_transaction(:dont_care, '999_999', 11, 11, 111, 11, :dont_care) }
+
+    context 'is syncronized' do
+      before(:each) { create(:open_sell, transaction_id: trade.order_id) }
+
+      it { is_expected.to be_truthy }
     end
 
-    let(:flow) { create(:sell_opening_flow, order_id: 999) }
-    let(:trade) { build_bitex_user_transaction(:sell, '999', 100, 2, 50, 0.05, :dont_care) }
-
-    subject(:open_position) { described_class.create_open_position!(trade, flow) }
-
-    context 'logs' do
-      after(:each) { open_position }
-
-      it 'on creation' do
-        expect(BitexBot::Robot).to receive(:log).with(:info, 'Opening: #1 was hit for FUCK 2.0 @ YEAH 50.0. Creating OpenSell...')
-      end
+    context 'non syncronized' do
+      it { is_expected.to be_falsey }
     end
-
-    its(:transaction_id) { is_expected.to eq(trade.order_id.to_i) }
-    its(:price) { is_expected.to eq(trade.price) }
-    its(:amount) { is_expected.to eq(trade.fiat) }
-    its(:quantity) { is_expected.to eq(trade.crypto) }
-    its(:opening_flow) { is_expected.to be(flow) }
   end
 
-  describe '.sync_open_positions' do
-    subject(:sync) { described_class.sync_open_positions }
+  describe '.sync_positions' do
+    subject(:sync) { described_class.sync_positions }
 
     context 'not have open positions' do
       before(:each) { allow(BitexBot::Robot).to receive_message_chain(:maker, :trades).and_return([]) }
@@ -275,6 +270,49 @@ describe BitexBot::SellOpeningFlow do
             end
           end.to change { BitexBot::OpenSell.count }.by(1)
         end
+      end
+    end
+  end
+
+  describe '#finalise!'do 
+    before(:each) { allow_any_instance_of(described_class).to receive(:order).and_return(order) }
+
+    let(:order) { BitexApiWrapper::Order.new('12', :fuck, 1, 1, Time.now.to_i, status, double) }
+
+    subject(:flow) { create(:sell_opening_flow) }
+
+    context 'finalizable' do
+      context 'order cancelled' do
+        let(:status) { :cancelled }
+
+        it do
+          flow.finalise!
+
+          expect(flow.finalised?).to be_truthy
+        end
+      end
+
+      context 'order completed' do
+        let(:status) { :completed }
+
+        it do
+          flow.finalise!
+
+          expect(flow.finalised?).to be_truthy
+        end
+      end
+    end
+
+    context 'non finalizable' do
+      let(:status) { :another_status }
+
+      it do
+        expect(BitexBot::Robot).to receive_message_chain(:maker, :cancel_order).with(order)
+
+        flow.finalise!
+
+        expect(flow.finalised?).to be_falsey
+        expect(flow.settling?).to be_truthy
       end
     end
   end

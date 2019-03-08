@@ -35,37 +35,26 @@ shared_examples_for 'OpeningFlows' do
   end
 
   describe '.maker_plus' do
-    before(:each) { allow(described_class).to receive(:value_to_use).and_return(20) }
-    subject(:plus) { described_class.maker_plus(10) }
+    before(:each) { allow(described_class).to receive(:value_to_use).and_return(20.to_d) }
+
+    subject(:plus) { described_class.maker_plus(10.to_d) }
 
     it { is_expected.to eq(2) }
-  end
-
-  describe '.maker_price' do
-    before(:each) do
-      allow(described_class).to receive(:fx_rate).and_return(10)
-      allow(described_class).to receive(:value_to_use).and_return(2)
-      allow(described_class).to receive(:profit).and_return(1)
-    end
-
-    subject(:price) { described_class.maker_price(2) }
-
-    it { is_expected.to eq(10) }
   end
 
   describe '.enough_funds?' do
     subject { described_class.enough_funds?(funds, amount) }
 
     context 'have funds' do
-      let(:funds) { 100 }
-      let(:amount) { 10 }
+      let(:funds) { 100.to_d }
+      let(:amount) { 10.to_d }
 
       it { is_expected.to be_truthy }
     end
 
     context 'have not funds' do
-      let(:funds) { 10 }
-      let(:amount) { 100 }
+      let(:funds) { 10.to_d }
+      let(:amount) { 100.to_d }
 
       it { is_expected.to be_falsey }
     end
@@ -73,25 +62,23 @@ shared_examples_for 'OpeningFlows' do
 
   describe '.calc_taker_amount' do
     before(:each) do
-      allow(described_class).to receive(:value_to_use).and_return(10)
-      allow(described_class).to receive(:maker_plus).and_return(20)
-      allow(described_class).to receive(:safest_price).and_return(price)
-      allow(described_class).to receive(:remote_value_to_use).and_return(amount)
+      allow(described_class).to receive(:value_to_use).and_return(10.to_d)
+      allow(described_class).to receive(:maker_plus).and_return(20.to_d)
+      allow(described_class).to receive(:safest_price).and_return(30.to_d)
+      allow(described_class).to receive(:remote_value_to_use).and_return(100.to_d)
       allow(described_class).to receive(:taker_specie_to_spend).and_return('SPECIE_TO_SPEND')
       allow(BitexBot::Robot).to receive_message_chain(:taker, :name).and_return('TAKER_NAME')
     end
 
     let(:order) { build_bitex_order(:dont_care_type, '111_111', 300, 10, :dont_care_orderbook) }
     let(:trade) { build_bitex_user_transaction(:dont_care, '7_891_011', 11, 11, 11, 11, :dont_care_orderbook) }
-    let(:amount) { 100 }
-    let(:price) { 30 }
 
-    subject(:amount_and_price) { described_class.calc_taker_amount(1_000, 5, 10, [order], [trade]) }
+    subject(:amount_and_price) { described_class.calc_taker_amount(1_000.to_d, 5.to_d, 10.to_d, [order], [trade]) }
 
     it { is_expected.to be_a(Array) }
 
-    its(:first) { is_expected.to eq(amount) }
-    its(:last) { is_expected.to eq(price) }
+    its(:first) { is_expected.to eq(100) }
+    its(:last) { is_expected.to eq(30) }
 
     context 'taker market not enough funds' do
       before(:each) { allow(described_class).to receive(:remote_value_to_use).and_return(100_000) }
@@ -106,11 +93,11 @@ shared_examples_for 'OpeningFlows' do
     end
   end
 
-  describe 'create for market' do
+  describe 'open market' do
     before(:each) do
       allow(described_class).to receive(:value_to_use).and_return(10_000.to_d)
       allow(described_class).to receive(:fx_rate).and_return(1.to_d)
-      allow(described_class).to receive(:calc_taker_amount).and_return([100, closing_price])
+      allow(described_class).to receive(:calc_taker_amount).and_return([100.to_d, closing_price])
       allow(described_class).to receive(:maker_price).and_return(minimun_price)
       allow(described_class).to receive(:trade_type).and_return(:dont_care_trade_type)
 
@@ -120,15 +107,16 @@ shared_examples_for 'OpeningFlows' do
     end
 
     let(:order_id) { '111111' }
-    let(:minimun_price) { 300 }
-    let(:closing_price) { 200 }
+    let(:minimun_price) { 300.to_d }
+    let(:closing_price) { 200.to_d }
 
     let(:taker_orders) { [ApiWrapper::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')] }
     let(:taker_transactions) { [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')] }
     let(:store) { BitexBot::Store.create }
 
-    # args: taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee, store
-    subject(:open_market) { described_class.open_market(1000, 2000, taker_orders, taker_transactions, 0.25, 0.50, store) }
+    subject(:open_market) do
+      described_class.open_market(1_000.to_d, 2_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d, store)
+    end
 
     context 'succesful' do
       before(:each) do
@@ -149,8 +137,8 @@ shared_examples_for 'OpeningFlows' do
 
     context 'cannot create' do
       before(:each) do
-        allow(described_class).to receive(:enough_funds?).and_return(true)
-        allow(described_class).to receive(:create_flow!) { raise StandardError, 'any reason'}
+        allow(described_class).to receive(:enough_funds?).with(2_000, 10_000).and_return(true)
+        allow(described_class).to receive(:create!) { raise StandardError, 'any reason'}
       end
 
       context 'by some reason' do
@@ -161,7 +149,7 @@ shared_examples_for 'OpeningFlows' do
         before(:each) do
           allow(described_class).to receive(:enough_funds?).and_return(false)
           allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE')
-          allow(described_class).to receive(:order_type).and_return('ORDER_TYPE')
+          allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
           allow(BitexBot::Robot).to receive_message_chain(:maker, :name).and_return('MAKER_NAME')
         end
 
@@ -169,7 +157,7 @@ shared_examples_for 'OpeningFlows' do
           expect { open_market }
             .to raise_error(
               BitexBot::CannotCreateFlow,
-              'Needed SPECIE 10000.0 on MAKER_NAME maker to place this ORDER_TYPE but you only have SPECIE 2000.0.'
+              'Needed SPECIE 10000.0 on MAKER_NAME maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
           )
         end
       end
@@ -220,85 +208,6 @@ shared_examples_for 'OpeningFlows' do
 
         it { is_expected.to be_falsey }
       end
-    end
-  end
-
-  describe '.create_flow!' do
-    before(:each) do
-      allow(described_class).to receive(:value_to_use).and_return(15)
-      allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE_TO_SPEND')
-      allow(described_class).to receive(:maker_specie_to_obtain).and_return('SPECIE_TO_OBTAIN')
-      allow(BitexBot::Robot).to receive_message_chain(:taker, :quote).and_return('taker_crypto_specie')
-    end
-
-    subject(:flow) { described_class.create_flow!(100, 200, 2, order) }
-
-    let(:order) { build_bitex_order(:dont_care, 111, 111, :dont_care, :executing, Time.now.utc, '123456') }
-
-    it { is_expected.to be_a(BitexBot::OpeningFlow) }
-
-    its(:id) { is_expected.to be_present }
-    its(:price) { is_expected.to eq(100) }
-    its(:value_to_use) { is_expected.to eq(15) }
-    its(:suggested_closing_price) { is_expected.to eq(200) }
-    its(:status) { is_expected.to eq('executing') }
-    its(:order_id) { is_expected.to eq(123456) }
-  end
-
-  describe '#finalise!' do
-    before(:each) do
-      allow_any_instance_of(described_class).to receive(:finalizable?).and_return(finalizable)
-      allow_any_instance_of(described_class).to receive(:cancel!).and_return(:we_dont_care)
-    end
-
-    subject(:flow) do
-      create(described_class.name.demodulize.underscore.to_sym).tap do |opening|
-        opening.finalise!
-      end
-    end
-
-    context 'finalizable' do
-      let(:finalizable) { true }
-
-      its(:finalised?) { is_expected.to be_truthy }
-    end
-
-    context 'non finalizable' do
-      let(:finalizable) { false }
-
-      its(:finalised?) { is_expected.to be_falsey }
-    end
-  end
-
-  describe '#cancel!' do
-    before(:each) do
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :cancel_order).and_return(:we_dont_care)
-      allow_any_instance_of(described_class).to receive(:order).and_return(:we_dont_care)
-    end
-
-    subject(:flow) do
-      create(described_class.name.demodulize.underscore.to_sym, status: status).tap do |opening|
-        opening.send(:cancel!)
-      end
-    end
-
-    # Allways flows will be setttled
-    context 'if finalised' do
-      let(:status) { :finalised }
-
-      its(:settling?) { is_expected.to be_truthy }
-    end
-
-    context 'if executing' do
-      let(:status) { :executing }
-
-      its(:settling?) { is_expected.to be_truthy }
-    end
-
-    context 'if settling' do
-      let(:status) { :settling }
-
-      its(:settling?) { is_expected.to be_truthy }
     end
   end
 end

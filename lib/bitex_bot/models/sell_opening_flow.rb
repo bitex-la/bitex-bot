@@ -32,33 +32,22 @@ module BitexBot
       super
     end
 
-    def self.open_position_class
-      OpenSell
-    end
-
-    def self.expected_kind_trade?(trade)
-      trade.type.inquiry.sells?
-    end
-
+    # @param [BigDecimal] crypto_to_resell.
     def self.maker_price(fiat_to_spend_re_buying)
       fiat_to_spend_re_buying * fx_rate / value_to_use * (1 + profit / 100)
     end
 
-    # Find order on maker asks.
-    #
-    # @param [String] order_id.
-    #
-    # @return [ApiWrapper::Order]
-    def find_maker_order(order_id)
-      Robot.maker.ask_by_id(order_id)
+    # @param [ApiWrapper::UserTransaction] trade.
+    def self.expected_kind_trade?(trade)
+      trade.type.inquiry.sells?
+    end
+
+    def self.open_position_class
+      OpenSell
     end
 
     def self.trade_type
       :sell
-    end
-
-    def self.order_type
-      :ask
     end
 
     def self.profit
@@ -95,6 +84,15 @@ module BitexBot
 
     def self.taker_specie_to_spend
       Robot.taker.quote.upcase
+    end
+
+    # Find order on maker asks.
+    #
+    # @param [String] order_id.
+    #
+    # @return [ApiWrapper::Order]
+    def find_maker_order(order_id)
+      Robot.maker.ask_by_id(order_id)
     end
   end
 end

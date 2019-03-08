@@ -46,13 +46,8 @@ module BitexBot
       OpenBuy
     end
 
-    # TODO normalizar el uso de trade_type vs order_type
     def self.trade_type
       :buy
-    end
-
-    def self.order_type
-      :bid
     end
 
     def self.profit

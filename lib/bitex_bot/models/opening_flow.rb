@@ -35,16 +35,22 @@ module BitexBot
 
       unless enough_funds?(maker_balance, value_per_order)
         raise CannotCreateFlow,
-          "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on #{Robot.maker.name} maker to place this "\
-          "#{order_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
+              "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on #{Robot.maker.name} maker to place this "\
+              "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
       end
 
       taker_amount, safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
 
       price = maker_price(taker_amount)
-      maker_order = Robot.maker.send_order(trade_type, price, value_per_order)
+      order = Robot.maker.send_order(trade_type, price, value_per_order)
 
-      create_flow!(price, safest_price, taker_amount, maker_order)
+      create!(
+        price: price,
+        value_to_use: value_to_use,
+        suggested_closing_price: safest_price,
+        status: :executing,
+        order_id: order.id
+      )
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
@@ -59,33 +65,6 @@ module BitexBot
     # @return [Booolean]
     def self.enough_funds?(funds, amount)
       funds >= amount
-    end
-
-    # Flow knows the amount of your orders (from Settings buying/selling per order).
-    # You just only need provide described params.
-    #
-    # @param [BigDecimal] minimun_price. Minimun price to execute order.
-    # @param [BigDecimal] safest price. Best price to execute order.
-    # @param [String] order_id. The order ID placed in the maker market.
-    # @param [BigDecimal] taker_amount. Amount on which the minimum price was calculated.
-    #
-    # @return [OpeningFlow]
-    def self.create_flow!(minimun_price, safest_price, taker_amount, order)
-      create!(
-        price: minimun_price,
-        value_to_use: value_to_use,
-        suggested_closing_price: safest_price,
-        status: :executing,
-        order_id: order.id
-      ).tap do |flow|
-        Robot.log(
-          :info,
-          "Opening: Placed #{order.type} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @"\
-            " #{flow.price.truncate(2)} (#{maker_specie_to_obtain} #{taker_amount})."\
-            " #{name.demodulize}##{flow.id} suggests closing price #{Robot.taker.quote.upcase}"\
-            " #{flow.suggested_closing_price}."
-        )
-      end
     end
 
     # Calculates the size of the order and its best price in relation to the order size configured for the purchase and
@@ -123,31 +102,24 @@ module BitexBot
     end
 
     # Buys on bitex represent open positions, we mirror them locally so that we can plan on how to close them.
-    def self.sync_open_positions
+    def self.sync_positions
       threshold = open_position_class.last.try(:created_at)
 
-      Robot.maker.trades.map do |user_transaction|
+      Robot.maker.trades.map do |trade|
         # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta?
-        next unless sought_transaction?(user_transaction, threshold)
+        next unless sought_transaction?(trade, threshold)
 
         # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta y ademas no tiene un opening flow?
-        flow = find_by_order_id(user_transaction.order_id)
+        flow = find_by_order_id(trade.order_id)
         next unless flow.present?
 
-        create_open_position!(user_transaction, flow)
+        open_position_class.create!(
+          transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
+        )
       end.compact
     end
 
     def self.create_open_position!(trade, flow)
-      Robot.log(
-        :info,
-        "Opening: ##{flow.id} was hit for #{Robot.maker.base.upcase} #{trade.crypto.truncate(8)}"\
-        " @ #{Robot.maker.quote.upcase} #{trade.price.truncate(8)}. Creating #{open_position_class.name.demodulize}..."
-      )
-
-      open_position_class.create!(
-        transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
-      )
     end
 
     # @param [ApiWrapper::UserTransaction] trade.
@@ -155,7 +127,7 @@ module BitexBot
     #
     # @return [Boolean]
     def self.sought_transaction?(trade, threshold)
-      expected_kind_trade?(trade) && !active_trade?(trade, threshold) && !position_syncronized?(trade) && expected_orderbook?(trade)
+      expected_kind_trade?(trade) && !active_trade?(trade, threshold) && !syncronized?(trade) && expected_orderbook?(trade)
     end
 
     # @param [ApiWrapper::UserTransaction] trade.
@@ -169,7 +141,7 @@ module BitexBot
     # @param [ApiWrapper::UserTransaction] trade.
     #
     # @return [Boolean]
-    def self.position_syncronized?(trade)
+    def self.syncronized?(trade)
       open_position_class.find_by_transaction_id(trade.order_id).present?
     end
 
@@ -194,22 +166,20 @@ module BitexBot
     end
 
     def finalise!
-      finalizable? ? finalised! : cancel!
-    end
+      # make api wrapper order status inquirable
+      return finalised! if order.status == :cancelled || order.status == :completed
 
-    private
-
-    def finalizable?
-      %i[cancelled completed].any? { |status| order.status == status }
-    end
-
-    def cancel!
       Robot.maker.cancel_order(order)
       settling! unless settling?
     end
 
+    private
+
+   # TODO standarize about get orders with status, this is empotred as bitex order
     def order
-      @order ||= find_maker_order(order_id)
+      @order ||= Robot.with_cooldown do
+        find_maker_order(order_id)
+      end
     end
   end
 
