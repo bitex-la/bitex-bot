@@ -59,7 +59,7 @@ module BitexBot
     end
 
     def self.safest_price(taker_transactions, taker_bids, fiat_to_use)
-      OrderBookSimulator.run(Settings.time_to_live, taker_transactions, taker_bids, fiat_to_use, nil, fx_rate)
+      OrderbookSimulator.run(Settings.time_to_live, taker_transactions, taker_bids, fiat_to_use, nil, fx_rate)
     end
 
     def self.value_to_use

@@ -79,8 +79,8 @@ describe BitexBot::SellOpeningFlow do
     let(:transactions) { double }
     let(:orders) { double }
 
-    it 'forward to OrderBookSimulator with nil quantity_target' do
-      expect(BitexBot::OrderBookSimulator).to receive(:run).with(30, transactions, orders, nil, 100, nil)
+    it 'forward to OrderbookSimulator with nil quantity_target' do
+      expect(BitexBot::OrderbookSimulator).to receive(:run).with(30, transactions, orders, nil, 100, nil)
 
       described_class.safest_price(transactions, orders, 100.to_d)
     end
