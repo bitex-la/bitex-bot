@@ -37,10 +37,13 @@ module BitexStubs
 
     allow_any_instance_of(BitexApiWrapper).to receive(:cancel_order) do |order|
       if order.type == :bid
-        BitexStubs.bids
+        [BitexStubs.bids, BitexStubs.active_bids]
       else
-        BitexStubs.asks
-      end.find { |o| o.id == order.id  }.status = :cancelled
+        [BitexStubs.asks, BitexStubs.active_asks]
+      end.tap do |all_orders, active_orders|
+        all_orders.find { |o| o.id == order.id  }.status = :cancelled
+        active_orders.delete_if { |o| o.id == order.id }
+      end
       []
     end
   end
@@ -52,6 +55,29 @@ module BitexStubs
     sell = build_bitex_user_transaction(:sell, 246, 600, 2, 300, 0.05, orderbook_code)
 
     allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return(extra_trades + [buy, sell])
+  end
+
+  # @param [Hash] crypto. {:total, :availabe}
+  # @param [Hash] fiat. {:total, :availabe}
+  # @param [Numeric] trading_fee.
+  #
+  # return [BitexApiWrapper::BalanceSummary]
+  def stub_bitex_balance(crypto: {}, fiat: {}, trading_fee: 0.05)
+    allow_any_instance_of(BitexApiWrapper).to receive(:balance) do
+      BitexApiWrapper::BalanceSummary.new(
+        build_bitex_balance(crypto),
+        build_bitex_balance(fiat),
+        trading_fee.to_d
+      )
+    end
+  end
+
+  def build_bitex_balance(balance)
+    BitexApiWrapper::Balance.new(
+      balance[:total].to_d,
+      (balance[:total] - balance[:available]).to_d,
+      balance[:available].to_d
+    )
   end
 
   # @param [Symbol] type. <:buy|:sell>

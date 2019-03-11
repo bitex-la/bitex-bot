@@ -88,8 +88,8 @@ module BitexBot
 
       unless enough_funds?(taker_balance, amount)
         raise CannotCreateFlow,
-              "Needed #{amount.truncate(8)}"\
-              " but you only have #{taker_specie_to_spend} #{taker_balance.truncate(8)} on your taker market."
+              "Needed #{taker_specie_to_spend} #{amount.truncate(8)} on #{Robot.taker.name} taker to close this "\
+              "#{trade_type} position but you only have #{taker_specie_to_spend} #{taker_balance.truncate(8)}."
       end
 
       [amount, price]
@@ -165,7 +165,6 @@ module BitexBot
     end
 
     def finalise!
-      # TODO: make api wrapper order status inquirable
       return finalised! if order.status == :cancelled || order.status == :completed
 
       Robot.maker.cancel_order(order)

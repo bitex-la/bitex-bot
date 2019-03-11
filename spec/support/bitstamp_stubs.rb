@@ -38,7 +38,7 @@ module BitstampStubs
     end
   end
 
-  def stub_bitstamp_transactions(price: 30, amount: 1, count: 5)
+  def stub_bitstamp_transactions(price: 0.2, amount: 1, count: 5)
     allow_any_instance_of(BitstampApiWrapper).to receive(:transactions) do
       count.times.map { |i| build_bitstamp_transaction(i, price, amount, (i+1).seconds.ago) }
     end

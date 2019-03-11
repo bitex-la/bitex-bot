@@ -67,6 +67,7 @@ shared_examples_for 'OpeningFlows' do
       allow(described_class).to receive(:safest_price).and_return(30.to_d)
       allow(described_class).to receive(:remote_value_to_use).and_return(100.to_d)
       allow(described_class).to receive(:taker_specie_to_spend).and_return('SPECIE_TO_SPEND')
+      allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
       allow(BitexBot::Robot).to receive_message_chain(:taker, :name).and_return('TAKER_NAME')
     end
 
@@ -87,7 +88,8 @@ shared_examples_for 'OpeningFlows' do
         expect { amount_and_price }
           .to raise_error(
             BitexBot::CannotCreateFlow,
-            "Needed 100000.0 but you only have SPECIE_TO_SPEND 1000.0 on your taker market."
+            "Needed SPECIE_TO_SPEND 100000.0 on TAKER_NAME taker to close this TRADE_TYPE position but you only have"\
+            " SPECIE_TO_SPEND 1000.0."
         )
       end
     end
