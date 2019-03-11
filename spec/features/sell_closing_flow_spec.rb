@@ -248,7 +248,11 @@ describe BitexBot::SellClosingFlow do
       open_trade = create(:open_sell, id: 162)
 
       expect(described_class.count).to be_zero
-      expect { described_class.close_market }.to raise_exception(OrderNotFound)
+
+      expect do
+        described_class.close_market
+      end.to raise_error(BitexBot::CannotCreateFlow, 'Closing: buy order not found for BTC 2.0 @ USD 290.0.')
+
       expect(described_class.count).to be_zero
 
       # No deberia crear un flow ante un intento erroneo de crear una order
