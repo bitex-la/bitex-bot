@@ -1,5 +1,6 @@
 module BitexBot
-  module CloseTrade
+  # Shared behaviour for position clousure.
+  module CloseableTrade
     extend ActiveSupport::Concern
 
     included do

@@ -30,16 +30,14 @@ module BitexBot
     #   #remote_value_to_use
     #   #safest_price
     #   #value_to_use
-    def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee, store)
-      self.store = store
-
+    def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       unless enough_funds?(maker_balance, value_per_order)
         raise CannotCreateFlow,
               "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on #{Robot.maker.name} maker to place this "\
               "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
       end
 
-      taker_amount, safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
+      taker_amount, taker_safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
 
       price = maker_price(taker_amount)
       order = Robot.maker.send_order(trade_type, price, value_per_order)
@@ -47,7 +45,7 @@ module BitexBot
       create!(
         price: price,
         value_to_use: value_to_use,
-        suggested_closing_price: safest_price,
+        suggested_closing_price: taker_safest_price,
         status: :executing,
         order_id: order.id
       )
@@ -78,9 +76,9 @@ module BitexBot
     #
     # @return [Array[BigDecimal, BigDecimal]]
     def self.calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
-      value_to_use_needed = (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
-      price = safest_price(taker_transactions, taker_orders, value_to_use_needed)
-      amount = remote_value_to_use(value_to_use_needed, price)
+      value = value_needed(maker_fee, taker_fee)
+      price = safest_price(taker_transactions, taker_orders, value)
+      amount = remote_value_to_use(value, price)
 
       Robot.log(
         :info,
@@ -97,6 +95,10 @@ module BitexBot
       [amount, price]
     end
 
+    def self.value_needed(maker_fee, taker_fee)
+      (value_to_use + maker_plus(maker_fee)) / (1 - taker_fee / 100)
+    end
+
     def self.maker_plus(fee)
       value_to_use * fee / 100
     end
@@ -106,10 +108,10 @@ module BitexBot
       threshold = open_position_class.last.try(:created_at)
 
       Robot.maker.trades.map do |trade|
-        # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta?
+        # TODO: cual es el caso en el que encuentro un trade que no tiene una posicion abierta?
         next unless sought_transaction?(trade, threshold)
 
-        # TODO cual es el caso en el que encuentro un trade que no tiene una posicion abierta y ademas no tiene un opening flow?
+        # TODO: cual es el caso en el que encuentro un trade que no tiene una posicion abierta y ademas no tiene un opening flow?
         flow = find_by_order_id(trade.order_id)
         next unless flow.present?
 
@@ -117,9 +119,6 @@ module BitexBot
           transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
       end.compact
-    end
-
-    def self.create_open_position!(trade, flow)
     end
 
     # @param [ApiWrapper::UserTransaction] trade.
@@ -166,7 +165,7 @@ module BitexBot
     end
 
     def finalise!
-      # make api wrapper order status inquirable
+      # TODO: make api wrapper order status inquirable
       return finalised! if order.status == :cancelled || order.status == :completed
 
       Robot.maker.cancel_order(order)
@@ -175,7 +174,6 @@ module BitexBot
 
     private
 
-   # TODO standarize about get orders with status, this is empotred as bitex order
     def order
       @order ||= Robot.with_cooldown do
         find_maker_order(order_id)

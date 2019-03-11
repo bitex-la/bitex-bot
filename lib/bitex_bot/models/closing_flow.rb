@@ -22,6 +22,8 @@ module BitexBot
       create!(desired_price: price, quantity: quantity, amount: amount, open_positions: positions).tap do |flow|
         flow.close_positions.create!(order_id: order.id)
       end
+    rescue StandardError => e
+      raise CannotCreateFlow, e.message
     end
 
     # In this steps if exist anyone active closing flow, asume that also will has a anyone close position.

@@ -115,7 +115,7 @@ shared_examples_for 'OpeningFlows' do
     let(:store) { BitexBot::Store.create }
 
     subject(:open_market) do
-      described_class.open_market(1_000.to_d, 2_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d, store)
+      described_class.open_market(1_000.to_d, 2_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d)
     end
 
     context 'succesful' do
@@ -142,7 +142,7 @@ shared_examples_for 'OpeningFlows' do
       end
 
       context 'by some reason' do
-        it { expect { open_market }.to raise_error(BitexBot::CannotCreateFlow, 'any reason') }
+        it { expect { open_market }.to raise_error(StandardError, 'any reason') }
       end
 
       context 'by not enough funds' do

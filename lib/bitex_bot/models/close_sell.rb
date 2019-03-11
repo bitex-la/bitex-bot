@@ -3,6 +3,6 @@ module BitexBot
   class CloseSell < ActiveRecord::Base
     belongs_to :closing_flow, class_name: 'SellClosingFlow', foreign_key: :closing_flow_id
 
-    include CloseTrade
+    include CloseableTrade
   end
 end

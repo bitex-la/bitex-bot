@@ -17,11 +17,29 @@ require 'itbit'
 # BitexBot Models
 require 'bitex_bot/settings'
 require 'bitex_bot/database'
-require 'bitex_bot/models/api_wrappers/api_wrapper.rb'
+
+require 'bitex_bot/models/api_wrappers/api_wrapper'
 Dir[File.dirname(__FILE__) + '/bitex_bot/models/api_wrappers/**/*.rb'].each { |file| require file }
-require 'bitex_bot/models/opening_flow.rb'
-require 'bitex_bot/models/closing_flow.rb'
-Dir[File.dirname(__FILE__) + '/bitex_bot/models/*.rb'].each { |file| require file }
+
+require 'bitex_bot/models/opening_flow'
+require 'bitex_bot/models/sell_opening_flow'
+require 'bitex_bot/models/buy_opening_flow'
+
+require 'bitex_bot/models/closing_flow'
+require 'bitex_bot/models/sell_closing_flow'
+require 'bitex_bot/models/buy_closing_flow'
+
+require 'bitex_bot/models/openable_trade'
+require 'bitex_bot/models/open_buy'
+require 'bitex_bot/models/open_sell'
+
+require 'bitex_bot/models/closeable_trade'
+require 'bitex_bot/models/close_buy'
+require 'bitex_bot/models/close_sell'
+
+require 'bitex_bot/models/orderbook_simulator'
+require 'bitex_bot/models/store'
+
 require 'bitex_bot/robot'
 
 # Get version and bitex-bot as user-agent

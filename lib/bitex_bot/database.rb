@@ -8,7 +8,7 @@ module BitexBot
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id,                null: false,
+          t.integer    :order_id,                null: false
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
           t.timestamps null: true
@@ -19,7 +19,7 @@ module BitexBot
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id,                null: false,
+          t.integer    :order_id,                null: false
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
           t.timestamps null: true

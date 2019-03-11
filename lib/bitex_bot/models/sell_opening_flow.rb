@@ -23,12 +23,11 @@ module BitexBot
     #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BTC transacted.
     # @param maker_fee [BigDecimal] the transaction fee to pay on our maker exchange.
     # @param taker_fee [BigDecimal] the transaction fee to pay on the taker exchange.
-    # @param store [Store] An updated config for this robot, mainly to use for profit.
     #
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
     # of USD on the other exchange.
-    def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee, store)
+    def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
       super
     end
 

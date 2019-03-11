@@ -6,12 +6,13 @@ describe BitexBot::Settings do
       described_class.to_hash.should eq(
         log: { file: 'bitex_bot.log', level: :info },
         time_to_live: 20,
+        close_time_to_live: 30,
         buying: { amount_to_spend_per_order: 10, profit: 0.5 },
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
         buying_foreign_exchange_rate: 1,
         selling_foreign_exchange_rate: 1,
 
-        maker: { bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', order_book: 'btc_usd', sandbox: false, trading_fee: 0 } },
+        maker: { bitex: { api_key: 'your_bitex_api_key', orderbook_code: 'btc_usd', sandbox: true, trading_fee: 0 } },
         # By default Bitstamp is taker market.
         taker: {
           bitstamp: {

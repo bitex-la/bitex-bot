@@ -10,7 +10,11 @@ describe BitexBot::BuyOpeningFlow do
     allow(BitexBot::Robot)
       .to receive(:taker)
       .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
+
+    described_class.store = store
   end
+
+  let(:store) { create(:store) }
 
   let(:maker) { BitexBot::Robot.maker }
   let(:taker) { BitexBot::Robot.taker }
@@ -28,11 +32,10 @@ describe BitexBot::BuyOpeningFlow do
 
     subject(:flow) do
       described_class.open_market(
-        taker_balance, maker_balance, taker.market.bids, taker.transactions, 0.5.to_d , 0.25.to_d, store
+        taker_balance, maker_balance, taker.market.bids, taker.transactions, 0.5.to_d , 0.25.to_d
       )
     end
 
-    let(:store) { create(:store) }
     let(:taker_balance) { 1_000.to_d }
     let(:maker_balance) { 1_000.to_d }
 

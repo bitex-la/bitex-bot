@@ -62,6 +62,16 @@ module BitstampStubs
     allow_any_instance_of(BitstampApiWrapper).to receive(:user_transactions).and_return(BitstampStubs.user_transactions)
   end
 
+   def stub_bitstamp_balance(fiat = nil, crypto = nil, fee = nil)
+     allow_any_instance_of(BitstampApiWrapper).to receive(:balance) do
+      ApiWrapper::BalanceSummary.new(
+        ApiWrapper::Balance.new((crypto || 10).to_d, 0, (crypto || 10).to_d),
+        ApiWrapper::Balance.new((fiat || 100).to_d, 0, (fiat || 100).to_d),
+        (fee || 0.5).to_d
+      )
+    end
+  end
+
   def stub_bitstamp_market
     allow_any_instance_of(BitstampApiWrapper).to receive(:market) do
       ApiWrapper::OrderBook.new(
