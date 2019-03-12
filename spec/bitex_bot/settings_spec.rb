@@ -12,7 +12,7 @@ describe BitexBot::Settings do
         buying_foreign_exchange_rate: 1,
         selling_foreign_exchange_rate: 1,
 
-        maker: { bitex: { api_key: 'your_bitex_api_key', orderbook_code: 'btc_usd', sandbox: true, trading_fee: 0 } },
+        maker: { bitex: { api_key: 'your_bitex_api_key', orderbook_code: 'btc_usd', sandbox: false, trading_fee: 0.05 } },
         # By default Bitstamp is taker market.
         taker: {
           bitstamp: {

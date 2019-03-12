@@ -51,7 +51,7 @@ buying_foreign_exchange_rate 1.to_d
 #   api_key: it's passed in to the bitex gem: https://github.com/bitex-la/bitex-ruby.
 #   sandbox: Use sandbox environments instead of live environments.
 #   order_book: order book with which you will operate.
-maker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0 }
+maker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0.05 }
 
 # These are the configurations we need for the markets currently supported.
 # Turn on and off the chosen Bitex, Bitstamp, Itbit or Kraken market with comments.

@@ -7,7 +7,7 @@ describe BitexApiWrapper do
         api_key: 'your_magic_api_key',
         sandbox: true,
         orderbook_code: 'btc_usd',
-        trading_fee: 0
+        trading_fee: 0.05
       }
     )
   end
