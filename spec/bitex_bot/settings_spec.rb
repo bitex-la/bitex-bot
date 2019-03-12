@@ -66,7 +66,7 @@ describe BitexBot::Settings do
 
     context 'maker' do
       {
-        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', sandbox: false, order_book: 'btc_usd', trading_fee: 0 }
+        bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0 }
       }.each do |market, market_settings|
         before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
 
@@ -83,7 +83,7 @@ describe BitexBot::Settings do
         bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME' },
         itbit: { client_key: 'client-key', secret: 'secret', user_id: 'user-id',  default_wallet_id: 'wallet-000', sandbox: false },
         kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret' },
-        bitex: { api_key: 'your_magic_api_key', sandbox: true, order_book: 'btc_usd', trading_fee: 0 }
+        bitex: { api_key: 'your_magic_api_key', sandbox: true, orderbook_code: 'btc_usd', trading_fee: 0 }
       }.each do |market, market_settings|
         before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
 

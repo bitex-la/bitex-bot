@@ -68,7 +68,6 @@ shared_examples_for 'OpeningFlows' do
       allow(described_class).to receive(:remote_value_to_use).and_return(100.to_d)
       allow(described_class).to receive(:taker_specie_to_spend).and_return('SPECIE_TO_SPEND')
       allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
-      allow(BitexBot::Robot).to receive_message_chain(:taker, :name).and_return('TAKER_NAME')
     end
 
     let(:order) { build_bitex_order(:dont_care_type, '111_111', 300, 10, :dont_care_orderbook) }
@@ -88,8 +87,7 @@ shared_examples_for 'OpeningFlows' do
         expect { amount_and_price }
           .to raise_error(
             BitexBot::CannotCreateFlow,
-            "Needed SPECIE_TO_SPEND 100000.0 on TAKER_NAME taker to close this TRADE_TYPE position but you only have"\
-            " SPECIE_TO_SPEND 1000.0."
+            "Needed SPECIE_TO_SPEND 100000.0 on taker to close this TRADE_TYPE position but you only have SPECIE_TO_SPEND 1000.0."
         )
       end
     end
@@ -139,6 +137,8 @@ shared_examples_for 'OpeningFlows' do
 
     context 'cannot create' do
       before(:each) do
+        allow(described_class).to receive(:maker_specie_to_spend).and_return('MAKER_SPECIE_TO_SPEND')
+        allow(described_class).to receive(:maker_specie_to_obtain).and_return('MAKER_SPECIE_TO_OBTAIN')
         allow(described_class).to receive(:enough_funds?).with(2_000, 10_000).and_return(true)
         allow(described_class).to receive(:create!) { raise StandardError, 'any reason'}
       end
@@ -152,14 +152,13 @@ shared_examples_for 'OpeningFlows' do
           allow(described_class).to receive(:enough_funds?).and_return(false)
           allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE')
           allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
-          allow(BitexBot::Robot).to receive_message_chain(:maker, :name).and_return('MAKER_NAME')
         end
 
         it do
           expect { open_market }
             .to raise_error(
               BitexBot::CannotCreateFlow,
-              'Needed SPECIE 10000.0 on MAKER_NAME maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
+              'Needed SPECIE 10000.0 on maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
           )
         end
       end

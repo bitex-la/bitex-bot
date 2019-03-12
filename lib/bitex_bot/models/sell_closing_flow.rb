@@ -1,5 +1,5 @@
 module BitexBot
-  # It bought at Bitex and needs to close (sell) in the other market.
+  # It bought at maker market and needs to close (sell) on the taker market.
   class SellClosingFlow < ClosingFlow
     has_many :open_positions, class_name: 'OpenSell', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseSell', foreign_key: :closing_flow_id

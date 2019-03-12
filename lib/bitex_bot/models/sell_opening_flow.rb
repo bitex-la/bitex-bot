@@ -1,32 +1,32 @@
 module BitexBot
-  # A workflow for selling bitcoin in Bitex and buying on another exchange. The SellOpeningFlow factory function estimates how
-  # much you could buy on the other exchange and calculates a reasonable price taking into account the remote order book and the
-  # recent operated volume.
+  # A workflow for selling crypto specie in maker market and buying on taker market. The SellOpeningFlow factory function
+  # estimates how much you could buy on the other exchange and calculates a reasonable price taking into account the remote
+  # orderbook and the recent operated volume.
   #
-  # When created, a SellOpeningFlow places an Ask on Bitex for the calculated quantity and price, when the Ask is matched on
-  # Bitex an OpenSell is created to buy the same quantity for a lower price on the other exchange.
+  # When created, a SellOpeningFlow places an Ask on maker market for the calculated quantity and price, when the Ask is matched
+  # on maker market an OpenSell is created to buy the same quantity for a lower price on taker market.
   #
-  # A SellOpeningFlow can be cancelled at any point, which will cancel the Bitex order and any orders on the remote exchange
+  # A SellOpeningFlow can be cancelled at any point, which will cancel the maker maket order and any orders on taker market
   # created from its OpenSell's
   #
-  # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on Bitex, this is its unique id.
+  # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on maker market, this is its unique id.
   class SellOpeningFlow < OpeningFlow
-    # Start a workflow for selling bitcoin on bitex and buying on the other exchange. The quantity to be sold on bitex is
-    # retrieved from Settings, if there is not enough BTC on bitex or USD on the other exchange then no order will be placed and
-    # an exception will be raised instead.
+    # Start a workflow for selling crypto specie on maker market and buying on taker market. The quantity to be sold on maker
+    # market is retrieved from Settings, if there is not enough CRYPTO on maker market or FIAT on the taker market no order will
+    # be placed and an exception will be raised instead.
     #
     # The amount a SellOpeningFlow will try to sell and the price it will try to charge are derived from these parameters:
     #
-    # @param usd_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
+    # @param taker_fiat_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
     # @param order_book [[price, quantity]] a list of lists representing an ask order book in the other exchange.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
-    #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the BTC transacted.
+    #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the CRYPTO transacted.
     # @param maker_fee [BigDecimal] the transaction fee to pay on our maker exchange.
     # @param taker_fee [BigDecimal] the transaction fee to pay on the taker exchange.
     #
     # @return [SellOpeningFlow] The newly created flow.
-    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of BTC on bitex or out
-    # of USD on the other exchange.
+    # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of CRYPTO on maker market
+    # or out of FIAT on taker market.
     def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
       super
     end

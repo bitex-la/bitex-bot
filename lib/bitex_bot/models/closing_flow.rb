@@ -7,7 +7,7 @@ module BitexBot
 
     cattr_reader(:close_time_to_live) { Settings.close_time_to_live }
 
-    # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
+    # Start a new CloseBuy that closes existing OpenBuy's by selling on taker market what was just bought on maker market.
     # rubocop:disable Metrics/AbcSize
     def self.close_market
       return unless open_position_class.open.any?
@@ -18,6 +18,8 @@ module BitexBot
       return unless Robot.taker.enough_order_size?(quantity, price)
 
       order = Robot.taker.place_order(trade_type, price, quantity)
+      Robot.log(:info, "Closing: placed #{trade_type} with price: #{order.price} @ quantity #{order.amount}.")
+
       amount = positions.sum(&:amount) / fx_rate
 
       create!(desired_price: price, quantity: quantity, amount: amount, open_positions: positions).tap do |flow|
@@ -59,6 +61,11 @@ module BitexBot
     private_class_method :suggested_amount
 
     def finalise!
+      Robot.log(
+        :info,
+        "Closing: Finished #{self.class} ##{id} earned"\
+        " fiat profit: #{estimate_fiat_profit} and crypto profit: #{estimate_crypto_profit}."
+      )
       update(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
     end
 

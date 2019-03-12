@@ -1,6 +1,6 @@
 module BitexBot
   # Any arbitrage workflow has 2 stages, opening positions and then closing them.
-  # The OpeningFlow stage places an order on bitex, detecting and storing all transactions spawn from that order as
+  # The OpeningFlow stage places an order on maker market, detecting and storing all transactions spawn from that order as
   # Open positions.
   class OpeningFlow < ActiveRecord::Base
     extend Forwardable
@@ -28,7 +28,7 @@ module BitexBot
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       unless enough_funds?(maker_balance, value_per_order)
         raise CannotCreateFlow,
-              "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on #{Robot.maker.name} maker to place this "\
+              "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on maker to place this "\
               "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
       end
 
@@ -36,6 +36,11 @@ module BitexBot
 
       price = maker_price(taker_amount)
       order = Robot.maker.send_order(trade_type, price, value_per_order)
+      Robot.log(
+        :info,
+        "Opening: Placed #{trade_type} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @ #{price.truncate(2)}."\
+        " (#{maker_specie_to_obtain} #{taker_amount})."
+      )
 
       create!(
         price: price,
@@ -76,15 +81,9 @@ module BitexBot
       price = safest_price(taker_transactions, taker_orders, value)
       amount = remote_value_to_use(value, price)
 
-      Robot.log(
-        :info,
-        "Opening: Need #{taker_specie_to_spend} #{amount.truncate(8)} on #{Robot.taker.name} taker,"\
-        " has #{taker_balance.truncate(8)}."
-      )
-
       unless enough_funds?(taker_balance, amount)
         raise CannotCreateFlow,
-              "Needed #{taker_specie_to_spend} #{amount.truncate(8)} on #{Robot.taker.name} taker to close this "\
+              "Needed #{taker_specie_to_spend} #{amount.truncate(8)} on taker to close this "\
               "#{trade_type} position but you only have #{taker_specie_to_spend} #{taker_balance.truncate(8)}."
       end
 
@@ -99,7 +98,8 @@ module BitexBot
       value_to_use * fee / 100
     end
 
-    # Buys on bitex represent open positions, we mirror them locally so that we can plan on how to close them.
+    # Buys on maker market represent open positions, we mirror them locally so that we can plan on how to close them.
+    # rubocop:disable Metrics/AbcSize
     def self.sync_positions
       threshold = open_position_class.last.try(:created_at)
 
@@ -109,11 +109,18 @@ module BitexBot
         flow = find_by_order_id(trade.order_id)
         next unless flow.present?
 
+        Robot.log(
+          :info,
+          "Opening: #{self} ##{flow.id} was hit for #{Robot.maker.base.upcase} #{trade.crypto}"\
+        " @ #{Robot.maker.quote.upcase} #{trade.price}."
+        )
+
         open_position_class.create!(
           transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
       end.compact
     end
+    # rubocop:enable Metrics/AbcSize
 
     # @param [ApiWrapper::UserTransaction] trade.
     # @param [Time] threshold.

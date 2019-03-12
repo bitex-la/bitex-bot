@@ -31,6 +31,7 @@ module BitexBot
           "#{format('%-6s', severity)} #{date}: #{msg}\n"
         end
       end
+      nil
     end
 
     def self.setup
