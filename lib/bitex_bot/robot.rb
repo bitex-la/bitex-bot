@@ -197,8 +197,10 @@ module BitexBot
       [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.active.where('created_at > ?', threshold).first }
     end
 
+    # rubocop:disable Metrics/AbcSize
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
+      last_log << "Last run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
       logs = last_log.join("\n")
       last_log.clear
       store.update(
@@ -208,7 +210,6 @@ module BitexBot
       )
     end
 
-    # rubocop:disable Metrics/AbcSize
     def log_balances(header)
       log(
         :info,

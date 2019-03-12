@@ -19,6 +19,14 @@ GIT
       rest-client (= 2.0.2)
       ruby-hmac
 
+GIT
+  remote: git://github.com/bitex-la/itbit.git
+  revision: 9fded75e50cf42cdcf77f3197cdb4ebf0b0cb9d6
+  specs:
+    itbit (0.0.8)
+      activesupport
+      rest-client
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -78,9 +86,6 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (1.6.0)
       concurrent-ruby (~> 1.0)
-    itbit (0.0.7)
-      activesupport
-      rest-client
     jaro_winkler (1.5.2)
     json_api_client (1.9.0)
       activemodel (>= 3.2.0)
@@ -188,7 +193,7 @@ DEPENDENCIES
   factory_bot
   faker
   hashie (~> 3.5.4)
-  itbit
+  itbit!
   kraken_client (~> 1.2.1)
   mail
   mysql2
@@ -205,4 +210,4 @@ DEPENDENCIES
   webmock
 
 BUNDLED WITH
-   1.16.1
+   1.16.1 

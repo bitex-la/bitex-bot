@@ -152,6 +152,10 @@ module BitexBot
       trade.raw.orderbook_code.to_s == Robot.maker.base_quote
     end
 
+    def self.resume
+      active.map { |flow| "#{order_class}: #{flow.order_id}, price: #{flow.price}, amount: #{flow.value_to_use * fx_rate}" }
+    end
+
     validates :status, presence: true, inclusion: { in: statuses }
     validates :order_id, presence: true
     validates_presence_of :price, :value_to_use
