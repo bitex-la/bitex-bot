@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/bitex-la/bitex-sdk-ruby.git
+  remote: https://github.com/bitex-la/bitex-sdk-ruby
   revision: e473e7d6644b2884f15bc8ce1dfbb095ed39abd8
   specs:
     bitex (1.0.0)
@@ -9,7 +9,7 @@ GIT
       static_models
 
 GIT
-  remote: git://github.com/bitex-la/bitstamp.git
+  remote: https://github.com/bitex-la/bitstamp
   revision: e769a73d0410fab07769abc46c3fa3422606c191
   branch: update-lib
   specs:
