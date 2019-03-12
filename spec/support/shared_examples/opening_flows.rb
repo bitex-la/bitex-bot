@@ -30,7 +30,7 @@ shared_examples_for 'OpeningFlows' do
       subject(:old_active) { described_class.old_active }
 
       its(:count) { is_expected.to eq(1) }
-      its(:'take.created_at') { is_expected.to eq(old_date) }
+      its(:'take.created_at') { is_expected.to eq(old_date.utc) }
     end
   end
 
