@@ -76,7 +76,7 @@ taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id:
 #   'xbtgbp.d', 'xbtjpy', ''xbtjpy.d'', 'xbtusd', ''xbtusd.d'', 'xdgxbt', 'xlmeur', 'xlmusd', 'xlmxbt', 'xmreur', 'xmrusd',
 #   'xmrxbt', 'xrpcad', 'xrpeur', 'xrpjpy', 'xrpusd', 'xrpxbt', 'zeceur', 'zecjpy', 'zecusd', 'zecxbt']
 #
-# taker kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', order_book: 'xbtusd', trading_fee: 0 }
+# taker kraken: { api_key: 'your_api_key', api_secret: 'your_api_secret', order_book: 'xbtusd' }
 
 # These are passed in to the Bitex gem: see https://github.com/bitex-la/bitex-ruby.
 # Supported values for order_book: 'btc_usd', 'bch_usd', 'bct_ars', 'bct_clp', 'bct_pyg', 'btc_uyu'
