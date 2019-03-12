@@ -153,7 +153,7 @@ module BitexBot
     end
 
     def self.resume
-      active.map { |flow| "#{order_class}: #{flow.order_id}, price: #{flow.price}, amount: #{flow.value_to_use * fx_rate}" }
+      active.map { |flow| "#{trade_type}: #{flow.order_id}, price: #{flow.price}, amount: #{flow.value_to_use * fx_rate}" }
     end
 
     validates :status, presence: true, inclusion: { in: statuses }
