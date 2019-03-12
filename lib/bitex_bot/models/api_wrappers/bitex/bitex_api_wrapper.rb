@@ -121,11 +121,15 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def bid_by_id(bid_id)
-    client.bids.find(bid_id)
+    order_parser(client.bids.find(bid_id))
+  rescue StandardError => e
+    raise OrderNotFound, e.message
   end
 
   def ask_by_id(ask_id)
-    client.asks.find(ask_id)
+    order_parser(client.asks.find(ask_id))
+  rescue StandardError => e
+    raise OrderNotFound, e.message
   end
 
   # [

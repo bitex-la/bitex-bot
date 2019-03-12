@@ -183,10 +183,10 @@ module BitexBot
       OpeningFlow.store = store
       args = [taker_transactions, maker_balance.fee, taker_balance.fee]
 
-      buying_args = [taker_balance.crypto.available, maker_balance.crypto.available, taker_market.bids] + args
+      buying_args = [taker_balance.crypto.available, maker_balance.fiat.available, taker_market.bids] + args
       BuyOpeningFlow.open_market(*buying_args) unless recent_buying
 
-      selling_args = [taker_balance.fiat.available, maker_balance.fiat.available, taker_market.asks] + args
+      selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + args
       SellOpeningFlow.open_market(*selling_args) unless recent_selling
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity

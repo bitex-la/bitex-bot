@@ -4,6 +4,7 @@
 *.swo
 .bundle
 .config
+.shared
 .yardoc
 InstalledFiles
 _yardoc
