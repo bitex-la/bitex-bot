@@ -81,7 +81,7 @@ taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id:
 # These are passed in to the Bitex gem: see https://github.com/bitex-la/bitex-ruby.
 # Supported values for order_book: 'btc_usd', 'bch_usd', 'bct_ars', 'bct_clp', 'bct_pyg', 'btc_uyu'
 #
-# taker bitex: { api_key: 'your_bitex_api_key', sandbox: true, orderbook_code: 'btc_usd', trading_fee: 0 }
+# taker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0.05 }
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:
