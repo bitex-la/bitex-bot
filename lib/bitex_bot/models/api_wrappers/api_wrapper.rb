@@ -14,7 +14,7 @@ class ApiWrapper
 
   Order = Struct.new(
     :id,        # String
-    :type,      # Symbol
+    :type,      # Symbol <:bid|:ask>
     :price,     # Decimal
     :amount,    # Decimal
     :timestamp, # Integer
@@ -58,8 +58,9 @@ class ApiWrapper
     :crypto,      # Decimal
     :price,       # Decimal
     :fee,         # Decimal
-    :type,        # Integer
-    :timestamp    # Epoch Integer
+    :type,        # String <buys|sells>
+    :timestamp,   # Epoch Integer
+    :raw
   )
 
   def name
@@ -91,68 +92,68 @@ class ApiWrapper
     raise 'self subclass responsibility'
   end
 
-  # @param [String] order_id.
-  #
-  # @return [UserTransaction]
-  def amount_and_quantity(order_id)
-    closes = user_transactions.select { |t| t.order_id == order_id }
-
-    [closes.sum(&:fiat).abs, closes.sum(&:crypto).abs]
-  end
-
   # @return [Array<UserTransaction>]
   def user_transactions
     raise 'self subclass responsibility'
   end
 
-  # @param type
-  # @param price
-  # @param quantity
+  # @param [Symbol] trade_type. <:buy|:sell>
+  # @param [BigDecimal] price.
+  # @param [BigDecimal] quantity. Crypto amount.
+  #
+  # @return [Order|OrderNotFound]
   # rubocop:disable Metrics/AbcSize
-  def place_order(type, price, quantity)
-    order = send_order(type, price, quantity)
+  def place_order(trade_type, price, quantity)
+    order = send_order(trade_type, price, quantity)
     return order unless order.nil? || order.id.nil?
 
-    BitexBot::Robot.log(:debug, "Captured error when placing order on #{name}")
+    BitexBot::Robot.log(:error, "Captured error when placing order on #{name}")
     # Order may have gone through and be stuck somewhere in Wrapper's pipeline.
     # We just sleep for a bit and then look for the order.
     5.times do |i|
       BitexBot::Robot.log(
         :info,
-        "#{name} cauldn't place #{type} order #{i} times for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}.\n"\
-        "Going to sleep 10 seconds.\n"
+        "#{name} cauldn't place #{trade_type} order #{i} times for #{base.upcase}"\
+        " #{quantity.truncate(8)} @ #{quote.upcase} #{price.truncate(8)}. Going to sleep 10 seconds."
       )
+
       BitexBot::Robot.sleep_for(15)
-      order = find_lost(type, price, quantity)
+      order = find_lost(trade_type, price, quantity)
       return order if order.present?
     end
-    raise OrderNotFound, "Closing: #{type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
+
+    raise OrderNotFound, "Closing: #{trade_type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
   end
   # rubocop:enable Metrics/AbcSize
 
-  # Hook Method - arguments could not be used in their entirety by the subclasses
-  def send_order(_type, _price, _quantity)
+  # Arguments could not be used in their entirety by the subclasses
+  #
+  # @param [Symbol] trade_type. <:buy|:sell>
+  # @param [BigDecimal] price.
+  # @param [BigDecimal] quantity. Crypto amount.
+  #
+  # @return [Order|nil]
+  def send_order(_trade_type, _price, _quantity)
     raise 'self subclass responsibility'
   end
 
-  # @param order_type [String] buy|sell
-  # @param price [Decimal]
-  # @param quantity [Decimal]
+  # Arguments could not be used in their entirety by the subclasses
   #
-  # Hook Method - arguments could not be used in their entirety by the subclasses
+  # @param [Symbol] trade_type. <:buy|:sell>
+  # @param [BigDecimal] price.
+  # @param [BigDecimal] quantity. Crypto amount.
+  #
+  # @return [Order|OrderNotFound]
   def find_lost(_type, _price, _quantity)
     raise 'self subclass responsibility'
   end
 
-  # From an order when you buy or sell, when you place an order and it matches, you can match more than one order.
-  # @param order_id
-  # @param transactions: all matches for a purchase or sale order.
+  # Respont to minimun order size to place order.
   #
-  # @return [Array<Decimal, Decimal>]
-  def amount_and_quantity(_order_id)
-    raise 'self subclass responsibility'
-  end
-
+  # @param [BigDecimal] quantity.
+  # @param [BigDecimal] price.
+  #
+  # @return [Boolean]
   def enough_order_size?(quantity, price)
     quantity * price > MIN_AMOUNT
   end

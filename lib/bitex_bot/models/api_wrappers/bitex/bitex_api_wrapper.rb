@@ -3,29 +3,66 @@
 class BitexApiWrapper < ApiWrapper
   attr_accessor :client, :trading_fee
 
+  Order = Struct.new(
+    :id,        # String
+    :type,      # Symbol <:bid|:ask>
+    :price,     # Decimal
+    :amount,    # Decimal
+    :timestamp, # Integer
+    :status,    # :executing, :completed, :cancelled
+    :raw        # Actual order object
+  ) do
+    def method_missing(method_name, *args, &block)
+      raw.respond_to?(method_name) ? raw.send(method_name, *args, &block) : super
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      raw.respond_to?(method_name) || super
+    end
+  end
+
   def initialize(settings)
-    self.client = Bitex::Client.new(api_key: '468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a', sandbox: settings.sandbox)
-    #self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox, user_agent: BitexBot.user_agent)
-    self.trading_fee = settings.trading_fee.to_s.to_d
-    currency_pair(settings.order_book)
+    self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
+    self.trading_fee = settings.trading_fee.to_d
+    currency_pair(settings.orderbook_code)
   end
 
   def user_transactions
-    client.trades.all(orderbook: orderbook, days: 30) .map { |trade| user_transaction_parser(trade) }
+    client.trades.all(orderbook: orderbook, days: 30).map { |trade| user_transaction_parser(trade) }
   end
 
-  # <Bitex::Buy:0x007ff9a2979390
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
-  #   @price=0.3e3, @bid_id=123
-  # >
+  def amount_and_quantity(order_id)
+    trades = user_transactions.select { |t| t.order_id.to_s == order_id }
+
+    [trades.sum(&:fiat).abs, trades.sum(&:crypto).abs]
+  end
+
+  def trades
+    client.trades.all(orderbook: orderbook, days: 1).map { |trade| user_transaction_parser(trade) }
+  end
+
+  # <Bitex::Resources::Trades::Trade:
+  #   @attributes={
+  #     "type"=>"buys",
+  #     "id"=>"161265",
+  #     "created_at"=>2019-01-14 13:47:47 UTC,
+  #     "coin_amount"=>0.280668e-2,
+  #     "cash_amount"=>0.599e5,
+  #     "fee"=>0.703e-5,
+  #     "price"=>0.2128856417806563e8,
+  #     "fee_currency"=>"BTC",
+  #     "fee_decimals"=>8,
+  #     "orderbook_code"=>:btc_pyg
+  #   }
   #
-  # <Bitex::Sell:0x007ff9a2978710
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
-  #   @price=0.3e3, @ask_id=456i
+  #   @relationships={
+  #     "order"=>{"data"=>{"id"=>"35985296", "type"=>"bids"}}
+  #   }
   # >
+  # TODO: symbolize and singularize trade type
   def user_transaction_parser(trade)
     UserTransaction.new(
-      order_id(trade), trade.cash_amount, trade.coin_amount, trade.price, trade.fee, trade_type(trade), DateTime.parse(trade.created_at).to_i
+      order_id(trade), trade.cash_amount, trade.coin_amount, trade.price, trade.fee, trade.type, trade.created_at.to_i, trade
     )
   end
 
@@ -33,15 +70,10 @@ class BitexApiWrapper < ApiWrapper
     trade.relationships.order[:data][:id]
   end
 
-  def trade_type(trade)
-    # ask: 0, bid: 1
-    trade.type == 'sells' ? 0 : 1
-  end
-
   def balance
     BalanceSummary.new(
-      balance_parser(coin_wallet),
-      balance_parser(cash_wallet),
+      balance_parser(client.coin_wallets.find(base)),
+      balance_parser(client.cash_wallets.find(quote)),
       trading_fee
     )
   end
@@ -81,28 +113,38 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def orders
-    client.orders.all
-      .select { |o| o.orderbook_code == orderbook.code.to_s }
+    client
+      .orders
+      .all
+      .select { |o| o.orderbook_code == orderbook.code }
       .map { |o| order_parser(o) }
+  end
+
+  def bid_by_id(bid_id)
+    client.bids.find(bid_id)
+  end
+
+  def ask_by_id(ask_id)
+    client.asks.find(ask_id)
   end
 
   # [
   #   <Bitex::Resources::Orders::Order:
   #     @attributes={
-  #       "type"=>"bids", "id"=>"4252", "amount"=>1000000.0, "remaining_amount"=>917014.99993, "price"=>4200.0,
-  #       "status"=>"executing", "orderbook_code"=>"btc_usd", "timestamp": 1534349999
+  #       "type"=>"bids", "id"=>"4252", "amount"=>0.1e7, "remaining_amount"=>0.91701499993e6, "price"=>0.42e4,
+  #       "status"=>:executing, "orderbook_code"=>:btc_usd, "created_at": 2000-01-03 00:00:00 UTC
   #     }
   #   >,
   #   <Bitex::Resources::Orders::Order:
   #     @attributes={
-  #       "type"=>"asks", "id"=>"1591", "amount"=>3.0, "remaining_amount"=>3.0, "price"=>5000.0,
-  #       "status"=>"executing", "orderbook_code"=>"btc_usd", "timestamp": 1534344859
+  #       "type"=>"asks", "id"=>"1591", "amount"=>0.3e1, "remaining_amount"=>0.3e1, "price"=>0.5e4,
+  #       "status"=>:executing, "orderbook_code"=>:btc_usd, "created_at": 2000-01-03 00:00:00 UTC
   #     }
   #   >
   # }
   def order_parser(order)
-    type = order.type == 'bids' ? :buy : :sell
-    Order.new(order.id, type, order.price, order.amount, DateTime.parse(order.created_at).to_i, order)
+    type = order.type.singularize.to_sym
+    Order.new(order.id, type, order.price, order.amount, order.created_at.to_i, order.status, order)
   end
 
   def transactions
@@ -115,6 +157,7 @@ class BitexApiWrapper < ApiWrapper
   #     "orderbook_code"=>"btc_usd"
   #   }
   # >
+  # TODO all IDs parsed jsonapi must be string
   def transaction_parser(transaction)
     Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.timestamp, transaction)
   end
@@ -122,30 +165,25 @@ class BitexApiWrapper < ApiWrapper
   # @param [ApiWrapper::Order]
   def cancel_order(order)
     client.send(order.raw.type).cancel(id: order.id)
-  end
-
-  def cash_wallet
-    client.cash_wallets.find(currency_pair[:quote])
-  end
-
-  def coin_wallet
-    client.coin_wallets.all.find { |wallet| wallet.currency == currency_pair[:base] }
+  rescue StandardError => e
+    # just pass, we'll keep on trying until it's not in orders anymore.
+    BitexBot::Robot.log(:error, e.message)
   end
 
   def last_order_by(price)
     orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
   end
 
-  def currency_pair(order_book = '_')
+  def currency_pair(orderbook_code = '_')
     @currency_pair ||= {
-      name: order_book,
-      base: order_book.split('_').first,
-      quote: order_book.split('_').last
+      name: orderbook_code,
+      base: orderbook_code.split('_').first,
+      quote: orderbook_code.split('_').last
     }
   end
 
   def send_order(type, price, amount)
-    order = { sell: client.asks, buy: client.bids}[type].create(orderbook: orderbook, amount: amount, price: price)
+    order = { sell: client.asks, buy: client.bids }[type].create(orderbook: orderbook, amount: amount, price: price)
     order_parser(order) if order.present?
   end
 

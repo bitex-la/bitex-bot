@@ -24,12 +24,7 @@ module BitexBot
     end
     # @!endgroup
 
-    # This use hooks methods, these must be defined in the subclass:
-    #   #maker_price
-    #   #order_class
-    #   #remote_value_to_use
-    #   #safest_price
-    #   #value_to_use
+    # rubocop:disable Metrics/AbcSize
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       unless enough_funds?(maker_balance, value_per_order)
         raise CannotCreateFlow,
@@ -52,6 +47,7 @@ module BitexBot
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
+    # rubocop:enable Metrics/AbcSize
 
     # Checks if you have necessary funds for the amount you want to execute in the order.
     #   If BuyOpeningFlow, they must be in relation to the amounts and crypto funds.
@@ -108,10 +104,8 @@ module BitexBot
       threshold = open_position_class.last.try(:created_at)
 
       Robot.maker.trades.map do |trade|
-        # TODO: cual es el caso en el que encuentro un trade que no tiene una posicion abierta?
         next unless sought_transaction?(trade, threshold)
 
-        # TODO: cual es el caso en el que encuentro un trade que no tiene una posicion abierta y ademas no tiene un opening flow?
         flow = find_by_order_id(trade.order_id)
         next unless flow.present?
 

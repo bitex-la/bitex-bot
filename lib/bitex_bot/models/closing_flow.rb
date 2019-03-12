@@ -8,6 +8,7 @@ module BitexBot
     cattr_reader(:close_time_to_live) { Settings.close_time_to_live }
 
     # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
+    # rubocop:disable Metrics/AbcSize
     def self.close_market
       return unless open_position_class.open.any?
 
@@ -25,8 +26,10 @@ module BitexBot
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
+    # rubocop:enable Metrics/AbcSize
 
     # In this steps if exist anyone active closing flow, asume that also will has a anyone close position.
+    # rubocop:disable Metrics/AbcSize
     def self.sync_positions
       active.each do |flow|
         latest = flow.close_positions.last
@@ -44,6 +47,7 @@ module BitexBot
         end
       end
     end
+    # rubocop:enable Metrics/AbcSize
 
     # @param [Array<OpenBuy>|Array<OpenSell>]
     #

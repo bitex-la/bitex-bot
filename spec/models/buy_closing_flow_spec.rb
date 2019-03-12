@@ -341,26 +341,3 @@ describe BitexBot::BuyClosingFlow do
     it { is_expected.to all(be_a(BigDecimal)) }
   end
 end
-
-# TODO close buy spec 
-# describe '#expired_position?' do
-#   before(:each) { allow(described_class).to receive(:close_time_to_live).and_return(10) }
-
-#   let(:flow) { create(:buy_closing_flow) }
-
-#   let(:position) { create(:close_buy, created_at: created_at) }
-
-#   subject { flow.send(:expired_position?, position) }
-
-#   context 'active' do
-#     let(:created_at) { Time.now }
-
-#     it { is_expected.to be_falsey }
-#   end
-
-#   context 'expired' do
-#     let(:created_at) { 11.seconds.ago }
-
-#     it { is_expected.to be_truthy }
-#   end
-# end

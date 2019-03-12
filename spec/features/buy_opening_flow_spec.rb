@@ -138,7 +138,10 @@ describe BitexBot::BuyOpeningFlow do
           expect do
             expect(flow).to be_nil
             expect(described_class.count).to be_zero
-          end.to raise_exception(BitexBot::CannotCreateFlow, 'Needed 6.71679197 but you only have BTC 1.0 on your taker market.')
+          end.to raise_exception(
+            BitexBot::CannotCreateFlow,
+            'Needed BTC 6.71679197 on Bitstamp taker to close this buy position but you only have BTC 1.0.'
+          )
         end
       end
     end

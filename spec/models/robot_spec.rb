@@ -102,7 +102,14 @@ describe BitexBot::Robot do
     2.times { bot.trade! }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
-    Timecop.travel(5.seconds.from_now)
+    allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
+      [
+        build_bitex_user_transaction(:buy, 3, 600, 2, 300, 0.05, :btc_usd),
+        build_bitex_user_transaction(:sell, 4, 600, 2, 300, 0.05, :btc_usd)
+      ]
+    end
+
+    Timecop.travel(10.seconds.from_now)
     2.times { bot.trade! }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(0)
   end

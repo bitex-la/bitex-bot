@@ -1,0 +1,67 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/trades?filter%5Bdays%5D=1&filter%5Borderbook_code%5D=btc_usd
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - 468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Thu, 07 Feb 2019 20:08:10 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d8aab4ad2af6f8dfff937aa89cd317dd31549570089; expires=Fri, 07-Feb-20
+        20:08:09 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=YTJWd2gzVUVoRHFFR054SmQ1QUJKVS9HUWJjdTRybHo3RE5yUVFlU1FMd1Bwdk5ZZGk3NWtpbDhqNjRoT3Bya0dHR0pBWEhHQXo5U0Q1SnE3dUlnbTcwSXNjSjhVeWRnSURUV212Tk9xbDRsK2hHUmMrZnVrRWxJTmErL0t0ZFJxTW9nNEV0L21KdkViTXNpbnZxUHlOUHBvK3hwZ0prdFZJYWlLS085UDBBPS0tWldGQmlkbnFTb2hFcUt2eGR6TDhHdz09--e4cea24122e9e6bad5c199c82ba21b7524f444c0;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"113359e9595cfa4a74508919ada43eb9"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - '025815e3-1987-40a3-9a40-323f69fec37f'
+      X-Runtime:
+      - '0.302397'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4a587ca3e9b94a78-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"id":"1658","type":"buys","attributes":{"created_at":"2019-02-07T20:07:46.073Z","coin_amount":0.00022671,"cash_amount":1.0,"fee":0.00000056,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4260","type":"bids"}}}},{"id":"1657","type":"sells","attributes":{"created_at":"2019-02-07T20:07:33.919Z","coin_amount":1.0,"cash_amount":4089.75,"fee":10.25,"price":4100.0,"fee_currency":"USD","fee_decimals":2,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"1600","type":"asks"}}}}]}'
+    http_version: 
+  recorded_at: Thu, 07 Feb 2019 20:08:07 GMT
+recorded_with: VCR 4.0.0

@@ -138,7 +138,10 @@ describe BitexBot::SellOpeningFlow do
           expect do
             expect(flow).to be_nil
             expect(described_class.count).to be_zero
-          end.to raise_exception(BitexBot::CannotCreateFlow, 'Needed 100.75187969 but you only have USD 1.0 on your taker market.')
+          end.to raise_exception(
+            BitexBot::CannotCreateFlow,
+            'Needed USD 100.75187969 on Bitstamp taker to close this sell position but you only have USD 1.0.'
+          )
         end
       end
     end

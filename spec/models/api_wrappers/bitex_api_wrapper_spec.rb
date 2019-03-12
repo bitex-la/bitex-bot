@@ -6,27 +6,13 @@ describe BitexApiWrapper do
       {
         api_key: 'your_magic_api_key',
         sandbox: true,
-        order_book: 'btc_usd',
+        orderbook_code: 'btc_usd',
         trading_fee: 0
       }
     )
   end
 
   let(:wrapper) { BitexApiWrapper.new(taker_settings) }
-
-=begin TODO make client to receive a UserAgent
-  context 'Sends User-Agent header', vcr: { cassette_name: 'bitex/user_agent' } do
-    let(:url) { 'https://sandbox.bitex.la/api/markets/btc_usd?include=asks,bids' }
-
-    it do
-      stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
-
-      # we don't care about the response
-      robot.taker.market
-      expect(stub_stuff).to have_been_requested
-    end
-  end
-=end
 
   it '#currency_pair' do
     expect(wrapper.currency_pair).to eq({ name: 'btc_usd', base: 'btc', quote: 'usd'})
@@ -48,12 +34,13 @@ describe BitexApiWrapper do
     subject(:balance) { wrapper.balance }
 
     before(:each) do
-      allow_any_instance_of(BitexApiWrapper).to receive(:cash_wallet).and_return(coin_wallet)
-      allow_any_instance_of(BitexApiWrapper).to receive(:coin_wallet).and_return(cash_wallet)
-    end
+      cash_wallet = double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc')
+      allow_any_instance_of(Bitex::Client).to receive_message_chain(:cash_wallets, :find).with('usd') { cash_wallet }
 
-    let(:coin_wallet) { double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd') }
-    let(:cash_wallet) { double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc') }
+
+      coin_wallet = double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd')
+      allow_any_instance_of(Bitex::Client).to receive_message_chain(:coin_wallets, :find).with('btc') { coin_wallet }
+    end
 
     it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
 
@@ -108,7 +95,7 @@ describe BitexApiWrapper do
     it { is_expected.to all(be_a(BitexApiWrapper::Order)) }
 
     it 'orders belong to setuped orderbook' do
-      expect(orders.map(&:orderbook_code)).to all(eq(taker_settings.order_book))
+      expect(orders.map(&:orderbook_code)).to all(eq(taker_settings.orderbook_code.to_sym))
     end
 
     context 'about sample' do
@@ -119,6 +106,8 @@ describe BitexApiWrapper do
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:amount) { is_expected.to be_a(BigDecimal) }
       its(:timestamp) { is_expected.to be_a(Integer) }
+      its(:status) { is_expected.to be_a(Symbol) }
+      its(:raw) { is_expected.to be_a(Bitex::Resources::Orders::Order) }
     end
   end
 
@@ -159,10 +148,10 @@ describe BitexApiWrapper do
     context 'sucessfull', vcr: { cassette_name: 'bitex/place_bid' } do
       subject(:order) { wrapper.send_order(:buy, 3_500, 2) }
 
-      it { is_expected.to be_a(ApiWrapper::Order) }
+      it { is_expected.to be_a(BitexApiWrapper::Order) }
 
       its(:id) { is_expected.to be_present }
-      its(:type) { is_expected.to eq(:buy) }
+      its(:type) { is_expected.to eq(:bid) }
       its(:price) { is_expected.to eq(3_500) }
       its(:amount) { is_expected.to eq(2) }
       its(:timestamp) { is_expected.to be_present }
@@ -198,8 +187,38 @@ describe BitexApiWrapper do
       its(:crypto) { is_expected.to be_a(BigDecimal) }
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:fee) { is_expected.to be_a(BigDecimal) }
-      its(:type) { is_expected.to be_a(Integer) }
+      its(:type) { is_expected.to be_a(String) }
       its(:timestamp) { is_expected.to be_a(Integer) }
+      its(:raw) { is_expected.to be_present }
+    end
+  end
+
+  context '#amount_and_quantity', vcr: { cassette_name: 'bitex/user_transactions' } do
+    subject(:amount_and_quantity) { wrapper.amount_and_quantity('4255') }
+
+    # fiat amount
+    its(:first) { is_expected.to eq(1) }
+
+    # crypto quantity
+    its(:last) { is_expected.to eq(0.00_022_671) }
+  end
+
+  context '#trades', vcr: { cassette_name: 'bitex/trades' } do
+    subject(:trades) { wrapper.trades }
+
+    it { is_expected.to all(be_a(ApiWrapper::UserTransaction)) }
+
+    context 'about sample' do
+      subject(:sample) { trades.sample }
+
+      its(:order_id) { is_expected.to be_a(String) }
+      its(:fiat) { is_expected.to be_a(BigDecimal) }
+      its(:crypto) { is_expected.to be_a(BigDecimal) }
+      its(:price) { is_expected.to be_a(BigDecimal) }
+      its(:fee) { is_expected.to be_a(BigDecimal) }
+      its(:type) { is_expected.to be_a(String) }
+      its(:timestamp) { is_expected.to be_a(Integer) }
+      its(:raw) { is_expected.to be_present }
     end
   end
 
