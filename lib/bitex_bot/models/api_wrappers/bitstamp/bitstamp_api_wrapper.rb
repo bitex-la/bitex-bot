@@ -20,9 +20,9 @@ class BitstampApiWrapper < ApiWrapper
   end
 
   def amount_and_quantity(order_id)
-    closes = user_transactions.select { |t| t.order_id.to_s == order_id }
-    amount = closes.sum(&:fiat).abs
-    quantity = closes.sum(&:crypto).abs
+    trades = user_transactions.select { |t| t.order_id == order_id }
+    amount = trades.sum(&:fiat).abs
+    quantity = trades.sum(&:crypto).abs
 
     [amount, quantity]
   end
@@ -37,22 +37,20 @@ class BitstampApiWrapper < ApiWrapper
     orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
-  # rubocop:disable Metrics/AbcSize
-  def order_book(retries = 20)
+  def market(retries = 20)
     book = Bitstamp.order_book(currency_pair[:name]).deep_symbolize_keys
     age = Time.now.to_i - book[:timestamp].to_i
     return order_book_parser(book) if age <= 300
 
     BitexBot::Robot.log(:info, "Refusing to continue as orderbook is #{age} seconds old")
-    order_book(retries)
+    market(retries)
   rescue StandardError
     raise if retries.zero?
 
     BitexBot::Robot.log(:info, "Bitstamp order book failed, retrying #{retries} more times")
     BitexBot::Robot.sleep_for 1
-    order_book(retries - 1)
+    market(retries - 1)
   end
-  # rubocop:enable Metrics/AbcSize
 
   def orders
     Bitstamp.orders.all(currency_pair: currency_pair[:name]).map { |o| order_parser(o) }
@@ -107,14 +105,16 @@ class BitstampApiWrapper < ApiWrapper
     OrderBook.new(book[:timestamp].to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
   end
 
-  def order_is_done?(order)
-    order.nil?
-  end
-
   # <Bitstamp::Order @id='76', @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
   def order_parser(order)
-    type = order.type == '0' ? :buy : :sell
-    Order.new(order.id.to_s, type, order.price.to_d, order.amount.to_d, order.datetime.to_datetime.to_i, order)
+    Order.new(order.id.to_s, order_type(order), order.price.to_d, order.amount.to_d, order.datetime.to_datetime.to_i, order)
+  end
+
+  # @param [Bitstamp::Order] order.
+  #
+  # @return [Symbol]
+  def order_type(order)
+    order.type.zero? ? :bid : :ask
   end
 
   def order_summary_parser(orders)
@@ -132,7 +132,7 @@ class BitstampApiWrapper < ApiWrapper
   # >
   def user_transaction_parser(user_transaction)
     UserTransaction.new(
-      user_transaction.order_id,
+      user_transaction.order_id.to_s,
       user_transaction.send(quote).to_d,
       user_transaction.send(base).to_d,
       user_transaction.send(base_quote).to_d,
@@ -140,6 +140,10 @@ class BitstampApiWrapper < ApiWrapper
       user_transaction.type.to_i,
       Time.parse(user_transaction.datetime).to_i
     )
+  end
+
+  def cancel_order(order)
+    order.cancel!
   end
 
   def currency_pair(order_book = '')

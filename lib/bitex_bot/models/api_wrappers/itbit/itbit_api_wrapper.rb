@@ -39,8 +39,8 @@ class ItbitApiWrapper < ApiWrapper
     orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
-  def order_book
-    order_book_parser(market.orders)
+  def market
+    order_book_parser(current_market.orders)
   end
 
   def orders
@@ -70,12 +70,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def transactions
-    market.trades.map { |t| transaction_parser(t.symbolize_keys) }
-  end
-
-  # We don't need to fetch the list of transaction for itbit since we wont actually use them later.
-  def user_transactions
-    []
+    current_market.trades.map { |t| transaction_parser(t.symbolize_keys) }
   end
 
   # [
@@ -132,8 +127,12 @@ class ItbitApiWrapper < ApiWrapper
     Transaction.new(transaction[:tid], transaction[:price], transaction[:amount], transaction[:date], transaction)
   end
 
-  def market
+  def current_market
     "Itbit::#{currency_pair[:name].upcase}MarketData".constantize
+  end
+
+  def cancel_order(order)
+    order.cancel!
   end
 
   def currency_pair(order_book = '')

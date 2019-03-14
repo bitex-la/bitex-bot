@@ -1,0 +1,67 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://sandbox.bitex.la/api/bids
+    body:
+      encoding: UTF-8
+      string: '{"data":{"type":"bids","attributes":{"orderbook_code":"btc_usd","amount":2,"price":3500}}}'
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Tue, 05 Feb 2019 20:44:10 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=dd410a5e032c37dd4fdb314376db704981549399449; expires=Wed, 05-Feb-20
+        20:44:09 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=MDN0bnkwR0FzVExRcjhnZ2lQbWtueGsxUklsaWUvblZSNXVCQUNkMEFYaDhtcDFhM0FqRjhKbXRvdVA0dUpSdThQTHJ5bnM1alh3S3QrdW94TkFuUDFIaXhlU3pKYjI2dDZYQldBN2xqMElNR0FEZVlVRUZ4em1Ca3pNdkZsampLK3FlMzltN0FuWjJKZjBIRy9CZW5EZ1VWczIydmIvMml4dXpMbG1EWGc4PS0tdDBwN2NGRURXOG0yUTZVMmpKV25xdz09--1ec6fafd58ba02966a972fcbcce3347faac06ab5;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"d2d2fa79c7c22436e5cd6cdd35438f1e"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 584a6bff-f4fd-43ca-a559-a4d80d9ccb51
+      X-Runtime:
+      - '0.513871'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4a48369f8ba44b0f-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"4259","type":"bids","attributes":{"amount":2.0,"remaining_amount":2.0,"price":3500.0,"status":"pending","orderbook_code":"btc_usd","created_at":"2019-02-05T20:45:37.160Z"},"relationships":{"user":{"data":{"id":"571","type":"users"}}}}}'
+    http_version: 
+  recorded_at: Tue, 05 Feb 2019 20:44:07 GMT
+recorded_with: VCR 4.0.0

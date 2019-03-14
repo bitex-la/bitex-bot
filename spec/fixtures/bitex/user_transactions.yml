@@ -1,0 +1,67 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/trades?filter%5Bdays%5D=30&filter%5Borderbook_code%5D=btc_usd
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 04 Feb 2019 19:42:07 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=df38f2cb4083d19114827db84bc9c8fd01549309326; expires=Tue, 04-Feb-20
+        19:42:06 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=YzF2L3lmcWUvcE4rcUV5R2RYdDN3a3UvNUhld0Q0UXZ6aEl2dzR2YzFHVU5KUVJrSUprSHFmOHMrVmljMVEzR2pmaS9sdXFmWHhsTVdxcEk0SmZmRUJEVmkyTHhrS3dvVXJ1RGZKd1BieVZ2d1Mvb1VSbW9XWnRCV3NPUlpsQ3FQUWowN01NRDl2Y21QdW9hVkY0QjNraHNhRkdocVpZbE1yUGhicFZvVk9FPS0tTzBGNFEzRGFBZ0VINVcyWFhNMlFUUT09--69cdf4dfc0b2c02e24eb91e333d25ac48b6dee9c;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"9862418ead25a12250adbc7296f62eac"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 2861c2a2-8d84-4bbf-b151-14031747bec5
+      X-Runtime:
+      - '0.421426'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4a3f9e5a6ad64a5a-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"id":"1654","type":"buys","attributes":{"created_at":"2019-02-04T15:37:47.868Z","coin_amount":0.00022671,"cash_amount":1.0,"fee":0.00000056,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4255","type":"bids"}}}},{"id":"1653","type":"buys","attributes":{"created_at":"2019-02-04T15:37:42.669Z","coin_amount":0.00045341,"cash_amount":2.0,"fee":0.00000113,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4254","type":"bids"}}}},{"id":"1652","type":"sells","attributes":{"created_at":"2019-02-04T15:37:30.407Z","coin_amount":1.0,"cash_amount":4089.75,"fee":10.25,"price":4100.0,"fee_currency":"USD","fee_decimals":2,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"1597","type":"asks"}}}},{"id":"1651","type":"sells","attributes":{"created_at":"2019-02-04T15:37:18.621Z","coin_amount":0.666,"cash_amount":2723.7735,"fee":6.8265,"price":4100.0,"fee_currency":"USD","fee_decimals":2,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"1596","type":"asks"}}}},{"id":"1650","type":"sells","attributes":{"created_at":"2019-02-04T15:37:01.240Z","coin_amount":1.0,"cash_amount":4089.75,"fee":10.25,"price":4100.0,"fee_currency":"USD","fee_decimals":2,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"1595","type":"asks"}}}},{"id":"1649","type":"sells","attributes":{"created_at":"2019-02-04T15:36:49.064Z","coin_amount":2.0,"cash_amount":8179.5,"fee":20.5,"price":4100.0,"fee_currency":"USD","fee_decimals":2,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"1594","type":"asks"}}}},{"id":"1648","type":"buys","attributes":{"created_at":"2019-02-01T20:44:19.960Z","coin_amount":19.70893752,"cash_amount":82985.00007,"fee":0.04939583,"price":4200.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4252","type":"bids"}}}}]}'
+    http_version: 
+  recorded_at: Mon, 04 Feb 2019 19:42:04 GMT
+recorded_with: VCR 4.0.0

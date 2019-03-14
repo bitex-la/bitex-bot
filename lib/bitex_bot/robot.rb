@@ -119,7 +119,7 @@ module BitexBot
     private
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_open_positions)
+      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_positions)
     end
 
     def shutdable?
@@ -148,7 +148,7 @@ module BitexBot
     end
 
     def start_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each(&:close_open_positions)
+      [BuyClosingFlow, SellClosingFlow].each(&:close_market)
     end
 
     def open_positions?
@@ -156,7 +156,7 @@ module BitexBot
     end
 
     def sync_closing_flows
-      [BuyClosingFlow, SellClosingFlow].each { |kind| kind.active.each(&:sync_closed_positions) }
+      [BuyClosingFlow, SellClosingFlow].each(&:sync_positions)
     end
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
@@ -177,12 +177,17 @@ module BitexBot
       check_balance_warning if expired_last_warning?
       return if stop_opening_flows?
 
-      order_book = with_cooldown { taker.order_book }
-      transactions = with_cooldown { taker.transactions }
+      taker_market = with_cooldown { taker.market }
+      taker_transactions = with_cooldown { taker.transactions }
 
-      args = [transactions, maker_balance.fee, taker_balance.fee, store]
-      BuyOpeningFlow.create_for_market(*[taker_balance.crypto.available, order_book.bids] + args) unless recent_buying
-      SellOpeningFlow.create_for_market(*[taker_balance.fiat.available, order_book.asks] + args) unless recent_selling
+      OpeningFlow.store = store
+      args = [taker_transactions, maker_balance.fee, taker_balance.fee]
+
+      buying_args = [taker_balance.crypto.available, maker_balance.fiat.available, taker_market.bids] + args
+      BuyOpeningFlow.open_market(*buying_args) unless recent_buying
+
+      selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + args
+      SellOpeningFlow.open_market(*selling_args) unless recent_selling
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 

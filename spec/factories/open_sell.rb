@@ -16,4 +16,15 @@ FactoryBot.define do
     amount         { 4 }
     quantity       { 0.01 }
   end
+
+  factory :closing_open_sell, class: BitexBot::OpenSell do
+    association :opening_flow, factory: :sell_opening_flow
+    association :closing_flow, factory: :sell_closing_flow
+    sequence(:id)
+
+    transaction_id { 23_456_789 }
+    price          { 400 }
+    amount         { 4 }
+    quantity       { 0.01 }
+  end
 end

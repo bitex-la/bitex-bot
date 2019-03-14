@@ -17,33 +17,35 @@ require 'itbit'
 # BitexBot Models
 require 'bitex_bot/settings'
 require 'bitex_bot/database'
-require 'bitex_bot/models/api_wrappers/api_wrapper.rb'
+
+require 'bitex_bot/models/api_wrappers/api_wrapper'
 Dir[File.dirname(__FILE__) + '/bitex_bot/models/api_wrappers/**/*.rb'].each { |file| require file }
-require 'bitex_bot/models/opening_flow.rb'
-require 'bitex_bot/models/closing_flow.rb'
-Dir[File.dirname(__FILE__) + '/bitex_bot/models/*.rb'].each { |file| require file }
+
+require 'bitex_bot/models/opening_flow'
+require 'bitex_bot/models/sell_opening_flow'
+require 'bitex_bot/models/buy_opening_flow'
+
+require 'bitex_bot/models/closing_flow'
+require 'bitex_bot/models/sell_closing_flow'
+require 'bitex_bot/models/buy_closing_flow'
+
+require 'bitex_bot/models/openable_trade'
+require 'bitex_bot/models/open_buy'
+require 'bitex_bot/models/open_sell'
+
+require 'bitex_bot/models/closeable_trade'
+require 'bitex_bot/models/close_buy'
+require 'bitex_bot/models/close_sell'
+
+require 'bitex_bot/models/orderbook_simulator'
+require 'bitex_bot/models/store'
+
 require 'bitex_bot/robot'
 
 # Get version and bitex-bot as user-agent
 module BitexBot
   def self.user_agent
     "Bitexbot/#{VERSION} (https://github.com/bitex-la/bitex-bot)"
-  end
-end
-
-module Bitex
-  # Set bitex-bot user-agent on request.
-  module WithUserAgent
-    def grab_curl
-      super.tap { |curl| curl.headers['User-Agent'] = BitexBot.user_agent }
-    end
-  end
-
-  # Mixing to include request behaviour and set user-agent.
-  class Api
-    class << self
-      prepend WithUserAgent
-    end
   end
 end
 

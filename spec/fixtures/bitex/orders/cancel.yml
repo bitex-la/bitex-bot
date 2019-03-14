@@ -1,0 +1,61 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://sandbox.bitex.la/api/asks/1593/cancel
+    body:
+      encoding: UTF-8
+      string: "{}"
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 204
+      message: No Content
+    headers:
+      Date:
+      - Mon, 04 Feb 2019 17:16:05 GMT
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=daa62562c0ad439f72aa52e690aa3313a1549300564; expires=Tue, 04-Feb-20
+        17:16:04 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=aWdjTVoyV2ptRisrTE91ZUVLeFVKYTJndnZQVTIzamtiS2JrZzdPVHFpWUVsZDNrUUlsbTU5L1BiSFZFQ3pyWi9hbHQxR29yU3ZDODIwa091OWNpQjk3Vngzc2hOVGJTUGVQalVUcFRiQ010c0V3di9VT2R0VzRvVTFhSWE4UWU2L3Nmd1hBZ3Iyc01OUEFOdEY4WUU2VU1wTTMvdHBsclMxcXBQcGVIVk1rPS0tU0I4MUUyMm51eXFIY1JYUzBWcE5EUT09--21666ca0bdd0af0789f911ec2482719e05b0c191;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Cache-Control:
+      - no-cache
+      X-Request-Id:
+      - 620941a3-7a35-4ce4-9800-b40435d3fccc
+      X-Runtime:
+      - '0.036989'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4a3ec8708c1b4adf-GRU
+    body:
+      encoding: UTF-8
+      string: ''
+    http_version: 
+  recorded_at: Mon, 04 Feb 2019 17:16:02 GMT
+recorded_with: VCR 4.0.0

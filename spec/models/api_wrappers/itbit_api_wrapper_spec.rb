@@ -3,7 +3,7 @@ require 'spec_helper'
 describe ItbitApiWrapper do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
-      itbit: {
+      {
         client_key: 'client-key',
         secret: 'secret',
         user_id: 'user-id',
@@ -14,19 +14,14 @@ describe ItbitApiWrapper do
     )
   end
 
-  before(:each) do
-    BitexBot::Settings.stub(taker: taker_settings)
-    BitexBot::Robot.setup
-  end
-
-  let(:api_wrapper) { BitexBot::Robot.taker }
+  let(:wrapper) { ItbitApiWrapper.new(taker_settings) }
 
   it 'Sends User-Agent header' do
-    url = "https://api.itbit.com/v1/markets/#{api_wrapper.currency_pair[:name].upcase}/order_book"
+    url = "https://api.itbit.com/v1/markets/#{wrapper.currency_pair[:name].upcase}/order_book"
     stub_stuff = stub_request(:get, url).with(headers: { 'User-Agent': BitexBot.user_agent })
 
     # We don't care about the response
-    api_wrapper.order_book rescue nil
+    wrapper.market rescue nil
 
     expect(stub_stuff).to have_been_requested
   end
@@ -57,7 +52,7 @@ describe ItbitApiWrapper do
   it '#balance' do
     stub_balance
 
-    balance = api_wrapper.balance
+    balance = wrapper.balance
     balance.should be_a(ApiWrapper::BalanceSummary)
     balance.crypto.should be_a(ApiWrapper::Balance)
     balance.fiat.should be_a(ApiWrapper::Balance)
@@ -78,7 +73,7 @@ describe ItbitApiWrapper do
   it '#cancel' do
     stub_orders
 
-    expect(api_wrapper.orders.sample).to respond_to(:cancel!)
+    expect(wrapper.orders.sample).to respond_to(:cancel!)
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)
@@ -90,10 +85,10 @@ describe ItbitApiWrapper do
     end
   end
 
-  it '#order_book' do
+  it '#market' do
     stub_order_book
 
-    order_book = api_wrapper.order_book
+    order_book = wrapper.market
     order_book.should be_a(ApiWrapper::OrderBook)
     order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
     order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
@@ -134,9 +129,9 @@ describe ItbitApiWrapper do
   it '#orders' do
     stub_orders
 
-    api_wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
 
-    order = api_wrapper.orders.sample
+    order = wrapper.orders.sample
     order.id.should be_a(String)
     order.type.should be_a(Symbol)
     order.price.should be_a(BigDecimal)
@@ -160,9 +155,9 @@ describe ItbitApiWrapper do
   it '#transactions' do
     stub_transactions
 
-    api_wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
 
-    transaction = api_wrapper.transactions.sample
+    transaction = wrapper.transactions.sample
     transaction.id.should be_a(Integer)
     transaction.price.should be_a(BigDecimal)
     transaction.amount.should be_a(BigDecimal)
@@ -170,13 +165,12 @@ describe ItbitApiWrapper do
   end
 
   it '#user_transaction' do
-    api_wrapper.user_transactions.should be_a(Array)
-    api_wrapper.user_transactions.empty?.should be_truthy
+    expect { wrapper.user_transactions }.to raise_error('self subclass responsibility')
   end
 
   it '#find_lost' do
     stub_orders
 
-    api_wrapper.orders.all? { |o| api_wrapper.find_lost(o.type, o.price, o.amount).present? }
+    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount).present? }
   end
 end

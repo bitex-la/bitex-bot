@@ -113,12 +113,6 @@ class KrakenOrder
     self.avg_price = order_data[:price].to_d
   end
 
-  def cancel!
-    api_wrapper.client.private.cancel_order(txid: id)
-  rescue KrakenClient::ErrorResponse => e
-    e.message == 'EService:Unavailable' ? retry : raise
-  end
-
   def ==(other)
     if other.is_a?(self.class)
       other.id == id

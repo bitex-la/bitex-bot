@@ -2,7 +2,7 @@ Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
 Metrics/AbcSize:
-  Max: 18
+  Max: 20
 
 Metrics/ClassLength:
   Enabled: false
@@ -32,3 +32,4 @@ AllCops:
     - 'lib/capistrano/**/*'
     - 'lib/bitex_bot/database.rb'
     - 'lib/bitex_bot/version.rb'
+    - 'shared/**/*'

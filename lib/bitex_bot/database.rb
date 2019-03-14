@@ -8,7 +8,7 @@ module BitexBot
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id
+          t.integer    :order_id,                null: false
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
           t.timestamps null: true
@@ -19,7 +19,7 @@ module BitexBot
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id
+          t.integer    :order_id,                null: false
           t.string     :status,                  null: false,   default: 'executing'
           t.index      :status
           t.timestamps null: true
@@ -74,16 +74,16 @@ module BitexBot
           t.belongs_to :closing_flow
           t.decimal    :amount,      precision: 30, scale: 15
           t.decimal    :quantity,    precision: 30, scale: 15
-          t.string     :order_id
+          t.string     :order_id,    null: false
           t.timestamps null: true
         end
         add_index :close_buys, :order_id
 
         create_table :close_sells do |t|
           t.belongs_to :closing_flow
-          t.decimal    :amount,   precision: 30, scale: 15
-          t.decimal    :quantity, precision: 30, scale: 15
-          t.string     :order_id
+          t.decimal    :amount,      precision: 30, scale: 15
+          t.decimal    :quantity,    precision: 30, scale: 15
+          t.string     :order_id,    null: false
           t.timestamps null: true
         end
         add_index :close_sells, :order_id
@@ -97,11 +97,11 @@ module BitexBot
           t.decimal    :taker_crypto,                       precision: 20,   scale: 8
           t.decimal    :taker_fiat,                         precision: 20,   scale: 8
 
-          t.decimal    :crypto_stop,                  precision: 20,   scale: 8
-          t.decimal    :crypto_warning,               precision: 20,   scale: 8
+          t.decimal    :crypto_stop,                        precision: 20,   scale: 8
+          t.decimal    :crypto_warning,                     precision: 20,   scale: 8
 
-          t.decimal    :fiat_stop,                    precision: 20,   scale: 8
-          t.decimal    :fiat_warning,                 precision: 20,   scale: 8
+          t.decimal    :fiat_stop,                          precision: 20,   scale: 8
+          t.decimal    :fiat_warning,                       precision: 20,   scale: 8
 
           t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
           t.decimal    :buying_fx_rate,                     precision: 20,   scale: 8

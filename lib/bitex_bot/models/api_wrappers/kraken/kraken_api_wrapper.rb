@@ -36,7 +36,7 @@ class KrakenApiWrapper < ApiWrapper
     order_parser(order) if order.present?
   end
 
-  def order_book
+  def market
     order_book_parser(client.public.order_book(currency_pair[:altname])[currency_pair[:name]])
   rescue NoMethodError
     retry
@@ -55,11 +55,6 @@ class KrakenApiWrapper < ApiWrapper
     client.public.trades(currency_pair[:altname])[currency_pair[:name]].reverse.map { |t| transaction_parser(t) }
   rescue NoMethodError
     retry
-  end
-
-  # We don't need to fetch the list of transactions for Kraken
-  def user_transactions
-    []
   end
 
   # { ZEUR: '1433.0939', XXBT: '0.0000000000', 'XETH': '99.7497224800' }
@@ -115,6 +110,12 @@ class KrakenApiWrapper < ApiWrapper
   # ]
   def transaction_parser(transaction)
     Transaction.new(transaction[2].to_i, transaction[0].to_d, transaction[1].to_d, transaction[2].to_i)
+  end
+
+  def cancel_order(order)
+    client.private.cancel_order(txid: order.id)
+  rescue KrakenClient::ErrorResponse => e
+    e.message == 'EService:Unavailable' ? retry : raise
   end
 
   # {

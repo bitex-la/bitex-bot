@@ -1,10 +1,10 @@
 module BitexBot
-  # An OpenSell represents a Sell transaction on Bitex.
+  # An OpenSell represents a Sell transaction on maker market.
   # OpenSells are open sell positions that are closed by one SellClosingFlow.
   class OpenSell < ActiveRecord::Base
-    belongs_to :opening_flow, class_name: 'SellOpeningFlow', foreign_key: :opening_flow_id
-    belongs_to :closing_flow, class_name: 'SellClosingFlow', foreign_key: :closing_flow_id
+    cattr_accessor(:opening_flow_class) { SellOpeningFlow }
+    cattr_accessor(:closing_flow_class) { SellClosingFlow }
 
-    scope :open, -> { where(closing_flow: nil) }
+    include OpenableTrade
   end
 end

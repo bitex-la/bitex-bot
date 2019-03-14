@@ -1,12 +1,15 @@
 # Wrapper implementation for Bitex API.
 # https://bitex.la/developers
 class BitexApiWrapper < ApiWrapper
+  attr_accessor :client, :trading_fee
+
   Order = Struct.new(
     :id,        # String
-    :type,      # Symbol
+    :type,      # Symbol <:bid|:ask>
     :price,     # Decimal
     :amount,    # Decimal
     :timestamp, # Integer
+    :status,    # :executing, :completed, :cancelled
     :raw        # Actual order object
   ) do
     def method_missing(method_name, *args, &block)
@@ -18,162 +21,177 @@ class BitexApiWrapper < ApiWrapper
     end
   end
 
-  attr_accessor :api_key, :ssl_version, :debug, :sandbox
-
   def initialize(settings)
-    self.api_key = settings.api_key
-    self.ssl_version = settings.ssl_version
-    self.debug = settings.debug
-    self.sandbox = settings.sandbox
-    currency_pair(settings.order_book)
-    setup
-  end
-
-  def setup
-    Bitex.api_key = api_key
-    Bitex.ssl_version = ssl_version
-    Bitex.debug = debug
-    Bitex.sandbox = sandbox
-  end
-
-  def profile
-    Bitex::Profile.get
-  end
-
-  # rubocop:disable Metrics/AbcSize
-  def amount_and_quantity(order_id)
-    closes = user_transactions.select { |t| t.order_id.to_s == order_id }
-    amount = closes.map { |c| c.send(currency[:quote]).to_d }.sum.abs
-    quantity = closes.map { |c| c.send(currency[:base]).to_d }.sum.abs
-
-    [amount, quantity]
-  end
-  # rubocop:enable Metrics/AbcSize
-
-  def balance
-    balance_summary_parser(profile)
-  end
-
-  def find_lost(type, price, _quantity)
-    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
-  end
-
-  def order_book
-    order_book_parser(market.order_book)
-  end
-
-  def orders
-    Bitex::Order.all.map { |o| order_parser(o) }
-  end
-
-  def send_order(type, price, quantity, wait = false)
-    order = { sell: Bitex::Ask, buy: Bitex::Bid }[type].create!(base_quote.to_sym, quantity, price, wait)
-    order_parser(order) if order.present?
-  end
-
-  def transactions
-    Bitex::Trade.all.map { |t| transaction_parser(t) }
+    self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
+    self.trading_fee = settings.trading_fee.to_d
+    currency_pair(settings.orderbook_code)
   end
 
   def user_transactions
-    Bitex::Trade.all.map { |trade| user_transaction_parser(trade) }
+    client.trades.all(orderbook: orderbook, days: 30).map { |trade| user_transaction_parser(trade) }
   end
 
-  # {
-  #   usd_balance:               10000.00, # Total USD balance.
-  #   usd_reserved:               2000.00, # USD reserved in open orders.
-  #   usd_available:              8000.00, # USD available for trading.
-  #   btc_balance:            20.00000000, # Total BTC balance.
-  #   btc_reserved:            5.00000000, # BTC reserved in open orders.
-  #   btc_available:          15.00000000, # BTC available for trading.
-  #   fee:                            0.5, # Your trading fee (0.5 means 0.5%).
-  #   btc_deposit_address: "1XXXXXXXX..."  # Your BTC deposit address.
-  # }
-  def balance_summary_parser(balances)
+  def amount_and_quantity(order_id)
+    trades = user_transactions.select { |t| t.order_id.to_s == order_id }
+
+    [trades.sum(&:fiat).abs, trades.sum(&:crypto).abs]
+  end
+
+  def trades
+    client.trades.all(orderbook: orderbook, days: 1).map { |trade| user_transaction_parser(trade) }
+  end
+
+  # <Bitex::Resources::Trades::Trade:
+  #   @attributes={
+  #     "type"=>"buys",
+  #     "id"=>"161265",
+  #     "created_at"=>2019-01-14 13:47:47 UTC,
+  #     "coin_amount"=>0.280668e-2,
+  #     "cash_amount"=>0.599e5,
+  #     "fee"=>0.703e-5,
+  #     "price"=>0.2128856417806563e8,
+  #     "fee_currency"=>"BTC",
+  #     "fee_decimals"=>8,
+  #     "orderbook_code"=>:btc_pyg
+  #   }
+  #
+  #   @relationships={
+  #     "order"=>{"data"=>{"id"=>"35985296", "type"=>"bids"}}
+  #   }
+  # >
+  # TODO: symbolize and singularize trade type
+  def user_transaction_parser(trade)
+    UserTransaction.new(
+      order_id(trade), trade.cash_amount, trade.coin_amount, trade.price, trade.fee, trade.type, trade.created_at.to_i, trade
+    )
+  end
+
+  def order_id(trade)
+    trade.relationships.order[:data][:id]
+  end
+
+  def balance
     BalanceSummary.new(
-      balance_parser(balances, currency_pair[:base]),
-      balance_parser(balances, currency_pair[:quote]),
-      balances[:fee].to_d
+      balance_parser(client.coin_wallets.find(base)),
+      balance_parser(client.cash_wallets.find(quote)),
+      trading_fee
     )
   end
 
-  def balance_parser(balances, currency)
-    Balance.new(
-      balances["#{currency}_balance".to_sym].to_d,
-      balances["#{currency}_reserved".to_sym].to_d,
-      balances["#{currency}_available".to_sym].to_d
-    )
+  # <Bitex::Resources::Wallets::CoinWallet:
+  #   @attributes={
+  #     "type"=>"coin_wallets", "id"=>"7347", "balance"=>0.0, "available"=>0.0, "currency"=>"btc",
+  #     "address"=>"mu4DKZpadxMgHtRSLwQpaQ9eTTXDEjWZUF", "auto_sell_address"=>"msmet4V5WzBjCR4tr17cxqHKw1LJiRnhHH"
+  #   }
+  # >
+  #
+  # <Bitex::Resources::Wallets::CashWallet:
+  #   @attributes={
+  #     "type"=>"cash_wallets", "id"=>"usd", "balance"=>0.0, "available"=>0.0, "currency"=>"usd"  }
+  # >
+  def balance_parser(wallet)
+    Balance.new(wallet.balance, wallet.balance - wallet.available, wallet.available)
+  end
+
+  # <
+  #   Bitex::Resources::Market:
+  #     @attributes={"type"=>"markets", "id"=>"btc_usd"},
+  #     @relationships={:asks<OrderGroup>, :bids<OrderGroup>}
+  # >
+  def market
+    current_market = client.markets.find(orderbook, includes: %i[asks bids])
+    OrderBook.new(Time.now.to_i, order_summary(current_market.bids), order_summary(current_market.asks))
+  end
+
+  #  <Bitex::Resources::OrderGroup:@attributes={"type"=>"order_groups", "id"=>"4400.0", "price"=>4400.0, "amount"=>20.0}>,
+  def order_summary(summary)
+    summary.map { |order| OrderSummary.new(order.price, order.amount) }
+  end
+
+  def orderbook
+    @orderbook ||= client.orderbooks.find_by_code(currency_pair[:name])
+  end
+
+  def orders
+    client
+      .orders
+      .all
+      .select { |o| o.orderbook_code == orderbook.code }
+      .map { |o| order_parser(o) }
+  end
+
+  def bid_by_id(bid_id)
+    order_parser(client.bids.find(bid_id))
+  rescue StandardError => e
+    raise OrderNotFound, e.message
+  end
+
+  def ask_by_id(ask_id)
+    order_parser(client.asks.find(ask_id))
+  rescue StandardError => e
+    raise OrderNotFound, e.message
+  end
+
+  # [
+  #   <Bitex::Resources::Orders::Order:
+  #     @attributes={
+  #       "type"=>"bids", "id"=>"4252", "amount"=>0.1e7, "remaining_amount"=>0.91701499993e6, "price"=>0.42e4,
+  #       "status"=>:executing, "orderbook_code"=>:btc_usd, "created_at": 2000-01-03 00:00:00 UTC
+  #     }
+  #   >,
+  #   <Bitex::Resources::Orders::Order:
+  #     @attributes={
+  #       "type"=>"asks", "id"=>"1591", "amount"=>0.3e1, "remaining_amount"=>0.3e1, "price"=>0.5e4,
+  #       "status"=>:executing, "orderbook_code"=>:btc_usd, "created_at": 2000-01-03 00:00:00 UTC
+  #     }
+  #   >
+  # }
+  def order_parser(order)
+    type = order.type.singularize.to_sym
+    Order.new(order.id, type, order.price, order.amount, order.created_at.to_i, order.status, order)
+  end
+
+  def transactions
+    client.transactions.all(orderbook: orderbook).map { |t| transaction_parser(t) }
+  end
+
+  # <Bitex::Resources::Transaction:
+  #   @attributes={
+  #     "type"=>"transactions", "id"=>"1654", "timestamp"=>1549294667, "price"=>0.44e4, "amount"=>0.22727e-3,
+  #     "orderbook_code"=>"btc_usd"
+  #   }
+  # >
+  # TODO all IDs parsed jsonapi must be string
+  def transaction_parser(transaction)
+    Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.timestamp, transaction)
+  end
+
+  # @param [ApiWrapper::Order]
+  def cancel_order(order)
+    client.send(order.raw.type).cancel(id: order.id)
+  rescue StandardError => e
+    # just pass, we'll keep on trying until it's not in orders anymore.
+    BitexBot::Robot.log(:error, e.message)
   end
 
   def last_order_by(price)
     orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
   end
 
-  # {
-  #   bids: [[0.63921e3, 0.195e1], [0.637e3, 0.47e0], [0.63e3, 0.158e1]],
-  #   asks: [[0.6424e3, 0.4e0], [0.6433e3, 0.95e0], [0.6443e3, 0.25e0]]
-  # }
-  def order_book_parser(book)
-    OrderBook.new(Time.now.to_i, order_summary_parser(book[:bids]), order_summary_parser(book[:asks]))
-  end
-
-  def order_summary_parser(orders)
-    orders.map { |order| OrderSummary.new(order[0].to_d, order[1].to_d) }
-  end
-
-  # <Bitex::Bid
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @price=0.1e4, @status=:executing, @reason=nil,
-  #   @issuer=nil, @amount=0.1e3, @remaining_amount=0.1e2, @produced_quantity=0.0
-  # >
-  def order_parser(order)
-    Order.new(order.id.to_s, order_type(order), order.price, order_amount(order), order.created_at.to_i, order)
-  end
-
-  def order_type(order)
-    order.is_a?(Bitex::Bid) ? :buy : :sell
-  end
-
-  def order_amount(order)
-    order.is_a?(Bitex::Bid) ? order.amount : order.quantity
-  end
-
-  # [
-  #   [1492795215, 80310, 1243.51657154, 4.60321971],
-  #   [UNIX timestamp, Transaction ID, Price Paid, Amound Sold]
-  # ]
-  def transaction_parser(transaction)
-    Transaction.new(transaction.id, transaction.price.to_d, transaction.amount.to_d, transaction.created_at.to_i, transaction)
-  end
-
-  # <Bitex::Buy:0x007ff9a2979390
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
-  #   @price=0.3e3, @bid_id=123
-  # >
-  #
-  # <Bitex::Sell:0x007ff9a2978710
-  #   @id=12345678, @created_at=1999-12-31 21:10:00 -0300, @order_book=:btc_usd, @quantity=0.2e1, @amount=0.6e3, @fee=0.5e-1,
-  #   @price=0.3e3, @ask_id=456i
-  # >
-  def user_transaction_parser(trade)
-    UserTransaction.new(
-      trade.id, trade.amount, trade.quantity, trade.price, trade.fee, trade_type(trade), trade.created_at.to_i
-    )
-  end
-
-  def trade_type(trade)
-    # ask: 0, bid: 1
-    trade.is_a?(Bitex::Buy) ? 1 : 0
-  end
-
-  def market
-    @market ||= { btc: Bitex::BitcoinMarketData, bch: Bitex::BitcoinCashMarketData }[currency_pair[:base].to_sym]
-  end
-
-  def currency_pair(order_book = '_')
+  def currency_pair(orderbook_code = '_')
     @currency_pair ||= {
-      name: order_book,
-      base: order_book.split('_').first,
-      quote: order_book.split('_').last
+      name: orderbook_code,
+      base: orderbook_code.split('_').first,
+      quote: orderbook_code.split('_').last
     }
+  end
+
+  def send_order(type, price, amount)
+    order = { sell: client.asks, buy: client.bids }[type].create(orderbook: orderbook, amount: amount, price: price)
+    order_parser(order) if order.present?
+  end
+
+  def find_lost(type, price, _quantity)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 end

@@ -1,249 +1,343 @@
 require 'spec_helper'
 
 describe BitexBot::SellClosingFlow do
-  let(:taker_settings) do
-    BitexBot::SettingsClass.new(
-      bitstamp: {
-        api_key: 'YOUR_API_KEY',
-        secret: 'YOUR_API_SECRET',
-        client_id: 'YOUR_BITSTAMP_USERNAME',
-        order_book: 'btcusd'
-      }
-    )
-  end
-
-  before(:each) do
-    BitexBot::Settings.stub(taker: taker_settings)
-    BitexBot::Robot.setup
-  end
-
-  it 'closes a single open position completely' do
-    stub_bitstamp_buy
-    open = create :open_sell
-    BitexBot::SellClosingFlow.close_open_positions
-    flow = BitexBot::SellClosingFlow.last
-
-    open.reload.closing_flow.should == flow
-
-    flow.open_positions.should == [open]
-    flow.desired_price.should == 290
-    flow.quantity.should == 2
-    flow.amount.should == 600
-    flow.crypto_profit.should be_nil
-    flow.fiat_profit.should be_nil
-
-    close = flow.close_positions.first
-    close.order_id.should == '1'
-    close.amount.should be_nil
-    close.quantity.should be_nil
-  end
-
-  it 'closes an aggregate of several open positions' do
-    stub_bitstamp_buy
-    open_one = create :tiny_open_sell
-    open_two = create :open_sell
-    BitexBot::SellClosingFlow.close_open_positions
-    flow = BitexBot::SellClosingFlow.last
-
-    close = flow.close_positions.first
-
-    open_one.reload.closing_flow.should == flow
-    open_two.reload.closing_flow.should == flow
-
-    flow.open_positions.should == [open_one, open_two]
-    flow.desired_price.round(10).should == '290.4975124378'.to_d
-    flow.quantity.should == 2.01
-    flow.amount.should == 604
-    flow.crypto_profit.should be_nil
-    flow.fiat_profit.should be_nil
-
-    close.order_id.should == '1'
-    close.amount.should be_nil
-    close.quantity.should be_nil
-  end
-
-  describe 'when there are errors placing the closing order' do
-    it 'keeps trying to place a closed position on bitstamp errors' do
-      BitstampApiWrapper.any_instance.stub(send_order: nil)
-      BitstampApiWrapper.any_instance.stub(find_lost: nil)
-
-      open = create :open_sell
-      expect do
-        flow = BitexBot::SellClosingFlow.close_open_positions
-      end.to raise_exception(OrderNotFound)
-      flow = BitexBot::SellClosingFlow.last
-
-      open.reload.closing_flow.should == flow
-
-      flow.open_positions.should == [open]
-      flow.desired_price.should == 290
-      flow.quantity.should == 2
-      flow.crypto_profit.should be_nil
-      flow.fiat_profit.should be_nil
-      flow.close_positions.should be_empty
-    end
-
-    it 'retries until it finds the lost order' do
-      BitstampApiWrapper.any_instance.stub(send_order: nil)
-      BitstampApiWrapper.any_instance.stub(:orders) do
-        [ApiWrapper::Order.new(1, :buy, 290, 2, 1.minute.ago.to_i)]
-      end
-
-      open = create(:open_sell)
-      BitexBot::SellClosingFlow.close_open_positions
-      flow = BitexBot::SellClosingFlow.last
-
-      flow.close_positions.should_not be_empty
-      flow.close_positions.first do |position|
-        position.id.should eq 1234
-        position.type.should eq 1
-        position.amount.should eq 1000
-        position.price.should eq 2000
-      end
-    end
-  end
-
-  it 'does not try to close if the amount is too low' do
-    open = create :tiny_open_sell
-    expect do
-      BitexBot::SellClosingFlow.close_open_positions.should be_nil
-    end.not_to change{ BitexBot::SellClosingFlow.count }
-  end
-
-  it 'does not try to close if there are no open positions' do
-    expect do
-      BitexBot::SellClosingFlow.close_open_positions.should be_nil
-    end.not_to change{ BitexBot::SellClosingFlow.count }
-  end
-
-  describe 'when sync executed orders' do
+  describe '.active' do
     before(:each) do
-      stub_bitstamp_buy
-      stub_bitstamp_empty_user_transactions
-      create :tiny_open_sell
-      create :open_sell
+      create(:sell_closing_flow, id: 1, done: true)
+      create(:sell_closing_flow, id: 2, done: false)
     end
 
-    it 'syncs the executed orders, calculates profit' do
-      BitexBot::SellClosingFlow.close_open_positions
-      flow = BitexBot::SellClosingFlow.last
-      stub_bitstamp_orders_into_transactions
+    subject(:active) { described_class.active }
 
-      flow.sync_closed_positions
+    its(:count) { is_expected.to eq(1) }
+    its(:'take.id') { is_expected.to eq(2) }
+  end
 
-      close = flow.close_positions.last
-      close.amount.should == '583.905'.to_d
-      close.quantity.should == 2.01
+  describe '.open_position_class' do
+    subject(:klass) { described_class.open_position_class }
 
-      flow.should be_done
-      flow.crypto_profit.should == 0
-      flow.fiat_profit.should == '20.095'.to_d
+    it { is_expected.to eq(BitexBot::OpenSell) }
+  end
+
+  describe '.fx_rate' do
+    before(:each) { allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(10.to_d) }
+
+    subject(:klass_rate) { described_class.fx_rate }
+
+    it { is_expected.to eq(10) }
+    it { is_expected.to be_a(BigDecimal) }
+
+    context '#fx_rate' do
+      subject(:instance_rate) { create(:sell_closing_flow).fx_rate }
+
+      it { is_expected.to eq(10) }
+      it { is_expected.to be_a(BigDecimal) }
+    end
+  end
+
+  describe '.trade_type' do
+    subject(:type) { described_class.trade_type }
+
+    it { is_expected.to eq(:buy) }
+  end
+
+  describe '.close_market' do
+    subject { described_class.close_market }
+
+    it 'not new closing flows' do
+      expect { described_class.close_market }.not_to change { described_class.count }
     end
 
-    context 'with other fx rate and closed open positions' do
-      let(:fx_rate) { 10.to_d }
-      let(:flow) { subject.class.last }
-      let(:positions_balance_amount) { flow.open_positions.sum(:amount) - flow.positions_balance_amount }
-
+    context 'with open positions' do
       before(:each) do
-        BitexBot::Settings.stub(fx_rate: fx_rate)
-        subject.class.close_open_positions
+        create(:open_sell, id: 800, quantity: 4, amount: 11)
+        create(:open_sell, id: 900, quantity: 6, amount: 89)
 
-        stub_bitstamp_orders_into_transactions
-        flow.sync_closed_positions
+        allow(described_class).to receive(:suggested_amount).and_return(20.to_d)
+
+        allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 2).and_return(enough_order_size)
       end
 
-      it 'syncs the executed orders, calculates profit with other fx rate' do
-        flow.should be_done
-        flow.crypto_profit.should be_zero
-        flow.fiat_profit.should eq positions_balance_amount
+      context 'not enough order size for taker' do
+        let(:enough_order_size) { false }
+
+        it 'not new closing flows' do
+          expect { described_class.close_market }.not_to change { described_class.count }
+        end
+      end
+
+      context 'enough order size for taker' do
+        let(:enough_order_size) { true }
+
+        before(:each) do
+          allow(described_class).to receive(:fx_rate).and_return(2.to_d)
+          allow(BitexBot::Robot).to receive_message_chain(:taker, :place_order).with(:buy, 2, 10).and_return(ApiWrapper::Order.new('65'))
+        end
+
+        let(:flow) { described_class.last }
+        let(:positions) { BitexBot::OpenSell.where(id: [800, 900]) }
+
+        it 'creates a new closing flow with open positions data' do
+          expect { described_class.close_market }.to change { described_class.count }.by(1)
+
+          expect(flow.desired_price).to eq(2)
+          expect(flow.quantity).to eq(10)
+          expect(flow.amount).to eq(50)
+
+          expect(flow.open_positions).to eq(positions)
+          expect(flow.close_positions.map(&:closing_flow)).to all(eq(flow))
+          expect(flow.close_positions.map(&:order_id)).to all(eq('65'))
+        end
+      end
+    end
+  end
+
+  describe '#sync_positions' do
+    context 'without active flows' do
+      before(:each) { create(:sell_closing_flow, id: 17, done: true) }
+
+      let(:flow) { described_class.last }
+
+      it 'active flow wasnt change'do
+        expect { described_class.sync_positions }.not_to change(flow, :updated_at)
       end
     end
 
-    it 'retries closing at a higher price every minute' do
-      BitexBot::SellClosingFlow.close_open_positions
-      flow = BitexBot::SellClosingFlow.last
+    context 'with active flows' do
+      before(:each) { create(:sell_closing_flow, id: 123, crypto_profit: 0, fiat_profit: 0, fx_rate: 0, done: false) }
 
-      expect { flow.sync_closed_positions }.not_to change{ BitexBot::CloseSell.count }
-      flow.should_not be_done
+      context 'with close positions' do
+        before(:each) do
+          create(:close_sell, id: 128, amount: 0, quantity: 0, order_id: '245', closing_flow: described_class.find(123))
+        end
 
-      # Immediately calling sync again does not try to cancel the ask.
-      flow.sync_closed_positions
-      Bitstamp.orders.all.size.should == 1
+        let(:order) { ApiWrapper::Order.new('245') }
 
-      # Partially executes order, and 61 seconds after that
-      # sync_closed_positions tries to cancel it.
-      stub_bitstamp_orders_into_transactions(ratio: 0.5)
-      Timecop.travel 61.seconds.from_now
-      Bitstamp.orders.all.size.should == 1
-      expect { flow.sync_closed_positions }.not_to change{ BitexBot::CloseSell.count }
+        context 'and cancellable position' do
+          before(:each) do
+            allow_any_instance_of(BitexBot::CloseSell).to receive(:cancellable?).and_return(true)
 
-      Bitstamp.orders.all.size.should == 0
-      flow.should_not be_done
+            allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(order)
+            allow(BitexBot::Robot).to receive_message_chain(:taker, :cancel_order).with(order).and_return([])
+          end
 
-      # Next time we try to sync_closed_positions the flow
-      # detects the previous close_buy was cancelled correctly so
-      # it syncs it's total amounts and tries to place a new one.
-      expect { flow.sync_closed_positions }.to change{ BitexBot::CloseSell.count }.by(1)
+          it 'cancel order was sent' do
+            expect(BitexBot::Robot).to receive_message_chain(:taker, :cancel_order).with(order).and_return([])
 
-      flow.close_positions.first.tap do |close|
-        close.amount.should == '291.9525'.to_d
-        close.quantity.should == 1.005
+            described_class.sync_positions
+          end
+        end
+
+        context 'and active position' do
+          before(:each) do
+            allow_any_instance_of(BitexBot::CloseSell).to receive(:cancellable?).and_return(false)
+            allow_any_instance_of(described_class).to receive(:next_quantity_and_price).and_return([10.to_d, 20.to_d])
+          end
+
+          context 'and not enough order size' do
+            before(:each) do
+              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 20).and_return(false)
+
+              allow_any_instance_of(described_class).to receive(:estimate_crypto_profit).and_return(1_000.to_d)
+              allow_any_instance_of(described_class).to receive(:estimate_fiat_profit).and_return(2_000.to_d)
+              allow_any_instance_of(described_class).to receive(:fx_rate).and_return(28.to_d)
+            end
+
+            context 'with executed order' do
+              before(:each) do
+                allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(nil)
+                allow(BitexBot::Robot).to receive_message_chain(:taker, :amount_and_quantity).with('245').and_return([123.to_d, 345.to_d])
+              end
+
+              it 'finalized flow, syncronized position, not new close position' do
+                expect { described_class.sync_positions }.not_to change { BitexBot::CloseSell.count }
+
+                described_class.find(123).tap do |flow|
+                  expect(flow.crypto_profit).to eq(1_000)
+                  expect(flow.fiat_profit).to eq(2_000)
+                  expect(flow.fx_rate).to eq(28)
+                  expect(flow.done).to be_truthy
+                end
+
+                BitexBot::CloseSell.find(128).tap do |position|
+                  expect(position.amount).to eq(123)
+                  expect(position.quantity).to eq(345)
+                end
+              end
+            end
+
+            context 'with active order' do
+              before(:each) { allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(order) }
+
+              it 'not finalized flow, nothing to sync, not new close position' do
+                expect { described_class.sync_positions }.not_to change { BitexBot::CloseSell.count }
+
+                described_class.find(123).tap do |flow|
+                  expect(flow.crypto_profit).to be_zero
+                  expect(flow.fiat_profit).to be_zero
+                  expect(flow.fx_rate).to eq(28)
+                  expect(flow.done).to be_falsey
+                end
+
+                BitexBot::CloseSell.find(128).tap do |position|
+                  expect(position.amount).to be_zero
+                  expect(position.quantity).to be_zero
+                end
+              end
+            end
+          end
+
+          context 'and enough order size' do
+            before(:each) do
+              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10.to_d, 20.to_d).and_return(true)
+
+              allow(BitexBot::Robot)
+                .to receive_message_chain(:taker, :place_order)
+                .with(:buy, 20.to_d, 10.to_d)
+                .and_return(ApiWrapper::Order.new('8787'))
+            end
+
+            context 'with executed order' do
+              before(:each) do
+                allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(nil)
+                allow(BitexBot::Robot).to receive_message_chain(:taker, :amount_and_quantity).with('245').and_return([123.to_d, 345.to_d])
+              end
+
+              it 'not finalized flow, sync with trade#245, and not new close poisition' do
+                expect { described_class.sync_positions }.to change { BitexBot::CloseSell.count }.by(1)
+
+                flow = described_class.find(123)
+                expect(flow.crypto_profit).to be_zero
+                expect(flow.fiat_profit).to be_zero
+                expect(flow.done).to be_falsey
+
+                close_trade = flow.close_positions.find(128)
+                expect(close_trade.amount).to eq(123)
+                expect(close_trade.quantity).to eq(345)
+                expect(close_trade.order_id).to eq('245')
+              end
+            end
+
+            context 'with active order' do
+              before(:each) { allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(order) }
+
+              it 'not finalized flow, nothing to sync, and not new close position' do
+                expect { described_class.sync_positions }.not_to change { BitexBot::CloseSell.count }
+
+                flow = described_class.find(123)
+                expect(flow.crypto_profit).to be_zero
+                expect(flow.fiat_profit).to be_zero
+                expect(flow.done).to be_falsey
+              end
+            end
+          end
+        end
       end
+    end
+  end
 
-      # The second ask is executed completely so we can wrap it up and consider
-      # this closing flow done.
-      stub_bitstamp_orders_into_transactions
+  describe '.suggested_amount' do
+    before(:each) do
+      opening_flow = create(:sell_opening_flow, suggested_closing_price: 10)
+      create(:open_sell, id: 77, quantity: 10, opening_flow: opening_flow)
 
-      flow.sync_closed_positions
-      flow.close_positions.last.tap do |close|
-        close.amount.should == '291.953597'.to_d
-        close.quantity.should == '1.0049'.to_d
-      end
-      flow.should be_done
-      flow.crypto_profit.should == '-0.0001'.to_d
-      flow.fiat_profit.should == '20.093903'.to_d
+      opening_flow = create(:sell_opening_flow, suggested_closing_price: 100)
+      create(:open_sell, id: 78, quantity: 100, opening_flow: opening_flow)
     end
 
-    it 'does not retry for an amount less than minimum_for_closing' do
-      BitexBot::SellClosingFlow.close_open_positions
-      flow = BitexBot::SellClosingFlow.last
+    subject(:amount) { described_class.send(:suggested_amount, BitexBot::OpenSell.where(id: [77, 78])) }
 
-      20.times do
-        Timecop.travel 60.seconds.from_now
-        flow.sync_closed_positions
-      end
+    it { is_expected.to eq(10100) }
+    it { is_expected.to be_a(BigDecimal) }
+  end
 
-      stub_bitstamp_orders_into_transactions(ratio: 0.999)
-      Bitstamp.orders.all.first.cancel!
+  describe '#finalise!' do
+    before(:each) do
+      allow_any_instance_of(described_class).to receive(:estimate_crypto_profit).and_return(200.to_d)
+      allow_any_instance_of(described_class).to receive(:estimate_fiat_profit).and_return(100.to_d)
+      allow_any_instance_of(described_class).to receive(:fx_rate).and_return(5.to_d)
 
-      expect { flow.sync_closed_positions }.not_to change{ BitexBot::CloseSell.count }
-
-      flow.should be_done
-      flow.crypto_profit.should == '-0.0224895'.to_d
-      flow.fiat_profit.should == '20.66566825'.to_d
+      create(:sell_closing_flow, id: 20, fiat_profit: 4, crypto_profit: 2)
     end
 
-    it 'can lose BTC if price had to be raised dramatically' do
-      # This flow is forced to spend the original USD amount paying more than
-      # expected, thus regaining less BTC than what was sold on bitex.
-      BitexBot::SellClosingFlow.close_open_positions
-      flow = BitexBot::SellClosingFlow.last
+    subject(:flow) { described_class.find(20).tap { |closing| closing.send(:finalise!) } }
 
-      60.times do
-        Timecop.travel 60.seconds.from_now
-        flow.sync_closed_positions
-      end
+    its(:id) { is_expected.to eq(20) }
+    its(:fiat_profit) { is_expected.to eq(100) }
+    its(:crypto_profit) { is_expected.to eq(200) }
+    its(:fx_rate) { is_expected.to eq(5) }
+    its(:done) { is_expected.to be_truthy }
+  end
 
-      stub_bitstamp_orders_into_transactions
+  describe '#positions_balance_amount' do
+    before(:each) do
+      allow_any_instance_of(described_class).to receive(:fx_rate).and_return(10.to_d)
 
-      flow.sync_closed_positions
-      flow.reload.should be_done
-      flow.crypto_profit.should == '-0.1709'.to_d
-      flow.fiat_profit.should == '20.08575'.to_d
-
-      close = flow.close_positions.last
-      (close.amount / close.quantity).should == '317.5'.to_d
+      create(:close_sell, amount: 10, closing_flow: flow)
+      create(:close_sell, amount: 20, closing_flow: flow)
     end
+
+    let(:flow) { create(:sell_closing_flow) }
+
+    subject(:amount_balance) { flow.send(:positions_balance_amount ) }
+
+    it { is_expected.to eq(300) }
+    it { is_expected.to be_a(BigDecimal) }
+  end
+
+  describe '#price_variation' do
+    before(:each) { create_list(:close_sell, 10, closing_flow: flow) }
+    subject { flow.send(:price_variation) }
+
+    let(:flow) { create(:sell_closing_flow) }
+
+    it { is_expected.to eq(3) }
+    it { is_expected.to be_a(BigDecimal) }
+  end
+
+  describe '#estimate_cryto_profit' do
+    before(:each) do
+      create(:close_sell, quantity: 100, closing_flow: flow)
+      create(:close_sell, quantity: 70, closing_flow: flow)
+    end
+
+    let(:flow) { create(:sell_closing_flow, quantity: 100) }
+
+    subject(:profit) { flow.send(:estimate_crypto_profit) }
+
+    it { is_expected.to eq(70) }
+    it { is_expected.to be_a(BigDecimal) }
+  end
+
+  describe '#estimate_fiat_profit' do
+    before(:each) do
+      allow_any_instance_of(described_class).to receive(:positions_balance_amount).and_return(100)
+
+      create(:open_sell, amount: 100, closing_flow: flow)
+      create(:open_sell, amount: 70, closing_flow: flow)
+    end
+
+    let(:flow) { create(:sell_closing_flow) }
+
+    subject(:profit) { flow.send(:estimate_fiat_profit) }
+
+    it { is_expected.to eq(70) }
+    it { is_expected.to be_a(BigDecimal) }
+  end
+
+  describe '#next_quantity_and_price' do
+    before(:each) do
+      allow_any_instance_of(described_class).to receive(:price_variation).and_return(1.to_d)
+
+      create(:close_sell, amount: 100, closing_flow: flow)
+      create(:close_sell, amount: 98, closing_flow: flow)
+    end
+
+    let(:flow) { create(:sell_closing_flow, quantity: 3, desired_price: 200) }
+
+    subject(:price_quantity) { flow.send(:next_quantity_and_price) }
+
+    it { is_expected.to eq([2, 201]) }
+    it { is_expected.to all(be_a(BigDecimal)) }
   end
 end

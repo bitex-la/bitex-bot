@@ -5,157 +5,82 @@ module BitexBot
 
     self.abstract_class = true
 
-    cattr_reader(:close_time_to_live) { 30 }
+    cattr_reader(:close_time_to_live) { Settings.close_time_to_live }
 
-    # Start a new CloseBuy that closes existing OpenBuy's by selling on another exchange what was just bought on bitex.
+    # Start a new CloseBuy that closes existing OpenBuy's by selling on taker market what was just bought on maker market.
     # rubocop:disable Metrics/AbcSize
-    def self.close_open_positions
-      return unless open_positions.any?
+    def self.close_market
+      return unless open_position_class.open.any?
 
-      positions = open_positions
+      positions = open_position_class.open
       quantity = positions.sum(&:quantity)
-      amount = positions.sum(&:amount) / fx_rate
-      price = suggested_amount(positions) / quantity
-      unless Robot.taker.enough_order_size?(quantity, price)
-        Robot.log(
-          :info,
-          "Closing: #{Robot.taker.name} - enough order size for #{Robot.taker.base.upcase} #{quantity}"\
-          " @ #{Robot.taker.quote.upcase} #{price}"
-        )
-        return
-      end
+      price = (suggested_amount(positions) / quantity)
+      return unless Robot.taker.enough_order_size?(quantity, price)
 
-      create_closing_flow!(price, quantity, amount, positions)
+      order = Robot.taker.place_order(trade_type, price, quantity)
+      Robot.log(:info, "Closing: placed #{trade_type} with price: #{order.price} @ quantity #{order.amount}.")
+
+      amount = positions.sum(&:amount) / fx_rate
+
+      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: positions).tap do |flow|
+        flow.close_positions.create!(order_id: order.id)
+      end
+    rescue StandardError => e
+      raise CannotCreateFlow, e.message
     end
     # rubocop:enable Metrics/AbcSize
 
-    def self.open_positions
-      open_position_class.open
-    end
+    # In this steps if exist anyone active closing flow, asume that also will has a anyone close position.
+    # rubocop:disable Metrics/AbcSize
+    def self.sync_positions
+      active.each do |flow|
+        latest = flow.close_positions.last
+        next Robot.taker.cancel_order(latest.order) if latest.cancellable?
 
-    # close_open_positions helpers
+        next unless latest.executed?
+
+        latest.sync
+
+        quantity, price = flow.next_quantity_and_price
+        next flow.finalise! unless Robot.taker.enough_order_size?(quantity, price)
+
+        Robot.taker.place_order(trade_type, price, quantity).tap do |order|
+          flow.close_positions.create!(order_id: order.id)
+        end
+      end
+    end
+    # rubocop:enable Metrics/AbcSize
+
+    # @param [Array<OpenBuy>|Array<OpenSell>]
+    #
+    # @return [BigDecimal]
     def self.suggested_amount(positions)
-      positions.map { |p| p.quantity * p.opening_flow.suggested_closing_price }.sum
+      positions.sum { |p| p.quantity * p.opening_flow.suggested_closing_price }
     end
 
-    def self.create_closing_flow!(price, quantity, amount, open_positions)
-      flow = create!(desired_price: price, quantity: quantity, amount: amount, open_positions: open_positions)
+    private_class_method :suggested_amount
+
+    def finalise!
       Robot.log(
         :info,
-        "Closing: created #{self}##{flow.id}, desired price: #{flow.desired_price}, quantity: #{flow.quantity}, "\
-        "amount: #{flow.amount}."
+        "Closing: Finished #{self.class} ##{id} earned"\
+        " fiat profit: #{estimate_fiat_profit} and crypto profit: #{estimate_crypto_profit}."
       )
-      flow.create_initial_order_and_close_position!
-      nil
-    end
-    # end: close_open_positions helpers
-
-    def create_initial_order_and_close_position!
-      create_order_and_close_position(quantity, desired_price)
+      update(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
     end
 
-    # TODO: should receive a order_ids and user_transaccions array, then each Wrapper should know how to search for them.
-    def sync_closed_positions
-      # Maybe we couldn't create the bitstamp order when this flow was created, so we try again when syncing.
-      latest_close.nil? ? create_initial_order_and_close_position! : create_or_cancel!
-    end
-
-    def estimate_fiat_profit
-      raise 'self subclass responsibility'
-    end
+    private
 
     def positions_balance_amount
       close_positions.sum(:amount) * fx_rate
     end
 
-    private
-
-    # sync_closed_positions helpers
-    # rubocop:disable Metrics/AbcSize
-    def create_or_cancel!
-      order_id = latest_close.order_id.to_s
-      order = Robot.with_cooldown { Robot.taker.orders.find { |o| o.id.to_s == order_id } }
-
-      # When order is nil it means the other exchange is done executing it so we can now have a look of all the sales that were
-      # spawned from it.
-      if order.nil?
-        sync_position(order_id)
-        create_next_position!
-      elsif latest_close.created_at < close_time_to_live.seconds.ago
-        cancel!(order)
-      end
+    # Used for progressive scale when trying to place a hitteable order on taker.
+    # Its use closes count as attempts count.
+    #
+    # @return [BigDecimal]
+    def price_variation
+      close_positions.count**2 * 0.03.to_d
     end
-    # rubocop:enable Metrics/AbcSize
-
-    def latest_close
-      close_positions.last
-    end
-    # end: sync_closed_positions helpers
-
-    # create_or_cancel! helpers
-    def cancel!(order)
-      Robot.with_cooldown do
-        Robot.log(:debug, "Finalising #{order.raw.class}##{order.id}")
-        order.cancel!
-        Robot.log(:debug, "Finalised #{order.raw.class}##{order.id}")
-      end
-    rescue StandardError => error
-      Robot.log(:debug, error)
-      nil # just pass, we'll keep on trying until it's not in orders anymore.
-    end
-
-    # This use hooks methods, these must be defined in the subclass:
-    #   estimate_crypto_profit
-    #   amount_positions_balance
-    #   next_price_and_quantity
-    # rubocop:disable Metrics/AbcSize
-    def create_next_position!
-      next_price, next_quantity = next_price_and_quantity
-      if Robot.taker.enough_order_size?(next_quantity, next_price)
-        create_order_and_close_position(next_quantity, next_price)
-      else
-        update!(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
-        Robot.log(
-          :info,
-          "Closing: Finished #{self.class} ##{id} earned"\
-          " #{Robot.maker.quote.upcase} #{fiat_profit} and #{Robot.maker.base.upcase} #{crypto_profit}."
-        )
-      end
-    end
-    # rubocop:enable Metrics/AbcSize
-
-    def sync_position(order_id)
-      latest = latest_close
-      latest.amount, latest.quantity = Robot.taker.amount_and_quantity(order_id)
-      latest.save!
-    end
-    # end: create_or_cancel! helpers
-
-    # next_price_and_quantity helpers
-    def price_variation(closes_count)
-      closes_count**2 * 0.03
-    end
-    # end: next_price_and_quantity helpers
-
-    # This use hooks methods, these must be defined in the subclass:
-    #   order_type
-    # rubocop:disable Metrics/AbcSize
-    def create_order_and_close_position(quantity, price)
-      # TODO: investigate how to generate an ID to insert in the fields of goals where possible.
-      Robot.log(
-        :info,
-        "Closing: Going to place #{order_type} order for #{self.class} ##{id}"\
-        " #{Robot.taker.base.upcase} #{quantity} @ #{Robot.taker.quote.upcase} #{price}"
-      )
-      order = Robot.taker.place_order(order_type, price, quantity)
-      Robot.log(
-        :info,
-        "Closing: #{Robot.taker.name} placed #{order.type} with price: #{order.price} @ quantity #{order.amount}.\n"\
-        "Closing: Going to create Close#{order.type.to_s.capitalize} position.\n"
-      )
-
-      close_positions.create!(order_id: order.id)
-    end
-    # rubocop:enable Metrics/AbcSize
   end
 end

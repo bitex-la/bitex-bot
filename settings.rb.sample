@@ -5,8 +5,13 @@ log file: 'bitex_bot.log', level: :info
 
 # Seconds to keep an order alive before recalculating the price and replacing it.
 # Given the way in which the robot tries to find the safest price to place an order, if the time to live is too long the price is
-#  not going to be competitive. About 20 seconds is a good number here.
+#  not going to be competitive.
+
+# To open market, about 20 seconds is a good number here.
 time_to_live 20
+
+# To close market, about 30 seconds is a good number here.
+close_time_to_live 30
 
 # Settings for buying on maker and selling on taker.
 # amount_to_spend_per_order:
@@ -46,7 +51,7 @@ buying_foreign_exchange_rate 1.to_d
 #   api_key: it's passed in to the bitex gem: https://github.com/bitex-la/bitex-ruby.
 #   sandbox: Use sandbox environments instead of live environments.
 #   order_book: order book with which you will operate.
-maker bitex: { api_key: 'your_bitex_api_key_which_should_be_kept_safe', sandbox: false, ssl_version: nil, debug: false, order_book: 'btc_usd' }
+maker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0.05 }
 
 # These are the configurations we need for the markets currently supported.
 # Turn on and off the chosen Bitex, Bitstamp, Itbit or Kraken market with comments.
@@ -76,7 +81,7 @@ taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id:
 # These are passed in to the Bitex gem: see https://github.com/bitex-la/bitex-ruby.
 # Supported values for order_book: 'btc_usd', 'bch_usd', 'bct_ars', 'bct_clp', 'bct_pyg', 'btc_uyu'
 #
-# taker bitex: { api_key: 'taker_api_key', sandbox: false, ssl_version: nil, debug: false, order_book: 'btc_usd' }
+# taker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'btc_usd', trading_fee: 0.05 }
 
 # Settings for the ActiveRecord Database to use.
 # sqlite is just fine. Check this link for more options:

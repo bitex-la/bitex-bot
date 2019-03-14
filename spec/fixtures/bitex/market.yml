@@ -1,0 +1,63 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/markets/btc_usd?include=asks,bids
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 04 Feb 2019 14:00:07 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d58b0b071ebc5a98d63f5f68daffe78ca1549288807; expires=Tue, 04-Feb-20
+        14:00:07 GMT; path=/; domain=.bitex.la; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"809768acfebfc9b441762a717606e31a"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - a97b673c-5a10-4147-8e6e-44ec4cf47d5c
+      X-Runtime:
+      - '0.057875'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4a3da964ead14bd5-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"btc_usd","type":"markets","relationships":{"candles":{"data":[]},"transactions":{"data":[]},"bids":{"data":[{"id":"4100.0","type":"order_groups"},{"id":"4050.0","type":"order_groups"},{"id":"4000.0","type":"order_groups"},{"id":"3185.0","type":"order_groups"},{"id":"3000.0","type":"order_groups"},{"id":"2200.0","type":"order_groups"},{"id":"235.5","type":"order_groups"},{"id":"210.0","type":"order_groups"},{"id":"200.0","type":"order_groups"},{"id":"56.0","type":"order_groups"},{"id":"33.0","type":"order_groups"},{"id":"32.0","type":"order_groups"},{"id":"5.0","type":"order_groups"},{"id":"4.0","type":"order_groups"},{"id":"3.0","type":"order_groups"},{"id":"2.0","type":"order_groups"},{"id":"1.0","type":"order_groups"}]},"asks":{"data":[{"id":"4400.0","type":"order_groups"},{"id":"5000.0","type":"order_groups"}]}}},"included":[{"id":"4100.0","type":"order_groups","attributes":{"price":4100.0,"amount":25.007783841463}},{"id":"4050.0","type":"order_groups","attributes":{"price":4050.0,"amount":2.962962962963}},{"id":"4000.0","type":"order_groups","attributes":{"price":4000.0,"amount":0.00375}},{"id":"3185.0","type":"order_groups","attributes":{"price":3185.0,"amount":438.218204784757}},{"id":"3000.0","type":"order_groups","attributes":{"price":3000.0,"amount":1.666666666667}},{"id":"2200.0","type":"order_groups","attributes":{"price":2200.0,"amount":4.000909090909}},{"id":"235.5","type":"order_groups","attributes":{"price":235.5,"amount":16.997362715372}},{"id":"210.0","type":"order_groups","attributes":{"price":210.0,"amount":5.0}},{"id":"200.0","type":"order_groups","attributes":{"price":200.0,"amount":20.0}},{"id":"56.0","type":"order_groups","attributes":{"price":56.0,"amount":0.017857142857}},{"id":"33.0","type":"order_groups","attributes":{"price":33.0,"amount":0.030303030303}},{"id":"32.0","type":"order_groups","attributes":{"price":32.0,"amount":0.03125}},{"id":"5.0","type":"order_groups","attributes":{"price":5.0,"amount":0.2}},{"id":"4.0","type":"order_groups","attributes":{"price":4.0,"amount":1.25}},{"id":"3.0","type":"order_groups","attributes":{"price":3.0,"amount":0.333333333333}},{"id":"2.0","type":"order_groups","attributes":{"price":2.0,"amount":0.5}},{"id":"1.0","type":"order_groups","attributes":{"price":1.0,"amount":1.0}},{"id":"4400.0","type":"order_groups","attributes":{"price":4400.0,"amount":20.0}},{"id":"5000.0","type":"order_groups","attributes":{"price":5000.0,"amount":4.0}}]}'
+    http_version: 
+  recorded_at: Mon, 04 Feb 2019 14:00:05 GMT
+recorded_with: VCR 4.0.0
