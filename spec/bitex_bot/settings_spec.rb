@@ -5,7 +5,7 @@ describe BitexBot::Settings do
     it 'returns a symbolized hash' do
       described_class.to_hash.should eq(
         log: { file: 'bitex_bot.log', level: :info },
-        time_to_live: 20,
+        time_to_live: 60,
         close_time_to_live: 30,
         buying: { amount_to_spend_per_order: 10, profit: 0.5 },
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },

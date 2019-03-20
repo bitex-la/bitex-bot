@@ -8,7 +8,7 @@ log file: 'bitex_bot.log', level: :info
 #  not going to be competitive.
 
 # To open market, about 20 seconds is a good number here.
-time_to_live 20
+time_to_live 60
 
 # To close market, about 30 seconds is a good number here.
 close_time_to_live 30
