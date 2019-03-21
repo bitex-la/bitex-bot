@@ -4,8 +4,6 @@ module BitexBot
     extend ActiveSupport::Concern
 
     included do
-      belongs_to :closing_flow, class_name: closing_flow_class.name, foreign_key: :closing_flow_id
-
       def sync
         trades_amount, trades_quantity = Robot.taker.amount_and_quantity(order_id)
 
