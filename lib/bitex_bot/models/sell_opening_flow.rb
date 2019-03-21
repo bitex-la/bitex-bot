@@ -11,13 +11,16 @@ module BitexBot
   #
   # @attr order_id The first thing a SellOpeningFlow does is placing an Ask on maker market, this is its unique id.
   class SellOpeningFlow < OpeningFlow
+    has_many :opening_orders, class_name: 'OpeningAsk', foreign_key: :opening_flow_id
+
     # Start a workflow for selling crypto specie on maker market and buying on taker market. The quantity to be sold on maker
     # market is retrieved from Settings, if there is not enough CRYPTO on maker market or FIAT on the taker market no order will
     # be placed and an exception will be raised instead.
     #
     # The amount a SellOpeningFlow will try to sell and the price it will try to charge are derived from these parameters:
     #
-    # @param taker_fiat_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this sale.
+    # @param taker_fiat_balance [BigDecimal] amount of usd available in the other exchange that can be spent to balance this
+    # sale.
     # @param order_book [[price, quantity]] a list of lists representing an ask order book in the other exchange.
     # @param transactions [Hash] a list of hashes representing all transactions in the other exchange:
     #   Each hash contains 'date', 'tid', 'price' and 'amount', where 'amount' is the CRYPTO transacted.
@@ -27,7 +30,7 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of CRYPTO on maker market
     # or out of FIAT on taker market.
-    def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
+    def self.open_market(taker_fiat_balance, maker_crypto_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
       super
     end
 
@@ -48,6 +51,7 @@ module BitexBot
     def self.trade_type
       :sell
     end
+    def_delegator self, :trade_type
 
     def self.profit
       store.try(:selling_profit) || Settings.selling.profit
@@ -68,9 +72,14 @@ module BitexBot
     def self.fx_rate
       Settings.selling_fx_rate
     end
+    def_delegator self, :fx_rate
 
     def self.value_per_order
       value_to_use
+    end
+
+    def self.find_by_order_id(order_id)
+      OpeningAsk.find_by_order_id(order_id).try(:opening_flow)
     end
 
     def self.maker_specie_to_spend
@@ -92,6 +101,13 @@ module BitexBot
     # @return [ApiWrapper::Order]
     def find_maker_order(order_id)
       Robot.maker.ask_by_id(order_id)
+    end
+
+    # @param variation [Float] for expensive orden on market deepening
+    #
+    # @return [BigDecimal]
+    def price_scale(variation)
+      price * (1 + variation)
     end
   end
 end

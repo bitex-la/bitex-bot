@@ -25,6 +25,10 @@ require 'bitex_bot/models/opening_flow'
 require 'bitex_bot/models/sell_opening_flow'
 require 'bitex_bot/models/buy_opening_flow'
 
+require 'bitex_bot/models/opening_order'
+require 'bitex_bot/models/opening_ask'
+require 'bitex_bot/models/opening_bid'
+
 require 'bitex_bot/models/closing_flow'
 require 'bitex_bot/models/sell_closing_flow'
 require 'bitex_bot/models/buy_closing_flow'

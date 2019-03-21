@@ -11,6 +11,8 @@ module BitexBot
   #
   # @attr order_id The first thing a BuyOpeningFlow does is placing a Bid on maker market, this is its unique id.
   class BuyOpeningFlow < OpeningFlow
+    has_many :opening_orders, class_name: 'OpeningBid', foreign_key: :opening_flow_id
+
     # Start a workflow for buying crypto specie on maker market and selling on taker market. The amount to be spent on maker
     # market is retrieved from Settings, if there is not enough FIAT on maker maket or CRYPTO on taker market then no order will
     # be placed and an exception will be raised instead.
@@ -28,7 +30,7 @@ module BitexBot
     # @return [BuyOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of FIAT on maker market
     # or out of CRYPTO on the taker market.
-    def self.open_market(taker_crypto_balance, maker_crypto_balance, taker_bids, taker_transactions, maker_fee, taker_fee)
+    def self.open_market(taker_crypto_balance, maker_fiat_balance, taker_bids, taker_transactions, maker_fee, taker_fee)
       super
     end
 
@@ -49,6 +51,7 @@ module BitexBot
     def self.trade_type
       :buy
     end
+    def_delegator self, :trade_type
 
     def self.profit
       store.try(:buying_profit) || Settings.buying.profit.to_d
@@ -69,9 +72,14 @@ module BitexBot
     def self.fx_rate
       Settings.buying_fx_rate
     end
+    def_delegator :self, :fx_rate
 
     def self.value_per_order
       value_to_use * fx_rate
+    end
+
+    def self.find_by_order_id(order_id)
+      OpeningBid.find_by_order_id(order_id).try(:opening_flow)
     end
 
     def self.maker_specie_to_spend
@@ -93,6 +101,13 @@ module BitexBot
     # @return [ApiWrapper::Order]
     def find_maker_order(order_id)
       Robot.maker.bid_by_id(order_id)
+    end
+
+    # @param variation [Float] for cheaper orden on market deepening
+    #
+    # @return [BigDecimal]
+    def price_scale(variation)
+      price * (1 - variation)
     end
   end
 end

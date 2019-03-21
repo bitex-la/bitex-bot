@@ -8,23 +8,28 @@ module BitexBot
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id,                null: false
-          t.string     :status,                  null: false,   default: 'executing'
-          t.index      :status
+          t.integer    :status,                  null: false, default: 0, index: true
           t.timestamps null: true
         end
-        add_index :buy_opening_flows, :order_id
 
         create_table :sell_opening_flows do |t|
           t.decimal    :price,                   precision: 30, scale: 15
           t.decimal    :value_to_use,            precision: 30, scale: 15
           t.decimal    :suggested_closing_price, precision: 30, scale: 15
-          t.integer    :order_id,                null: false
-          t.string     :status,                  null: false,   default: 'executing'
-          t.index      :status
+          t.integer    :status,                  null: false, default: 0, index: true
           t.timestamps null: true
         end
-        add_index :sell_opening_flows, :order_id
+
+        create_table :opening_orders do |t|
+          t.belongs_to :opening_flow
+          t.string     :type,                  null: false
+          t.string     :order_id, index: true, null: false
+          t.integer    :role,                  null: false, default: 0
+          t.integer    :status,   index: true, null: false, default: 0
+          t.decimal    :price,                 null: false, precision: 30, scale: 15
+          t.decimal    :amount,                null: false, precision: 30, scale: 15
+          t.timestamps null: true
+        end
 
         create_table :open_buys do |t|
           t.belongs_to :opening_flow
