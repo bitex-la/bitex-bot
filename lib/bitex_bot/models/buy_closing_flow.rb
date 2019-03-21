@@ -12,7 +12,7 @@ module BitexBot
 
     # @return [BigDecimal]
     def self.fx_rate
-      Settings.buying_fx_rate.to_d
+      Settings.buying_fx_rate
     end
     def_delegator self, :fx_rate
 
