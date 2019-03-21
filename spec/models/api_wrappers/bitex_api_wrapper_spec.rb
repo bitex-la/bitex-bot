@@ -14,6 +14,14 @@ describe BitexApiWrapper do
 
   let(:wrapper) { BitexApiWrapper.new(taker_settings) }
 
+  it 'min amount for place asks' do
+    expect(described_class::ASK_MIN_AMOUNT).to eq(0.0001)
+  end
+
+  it 'min amount for place bids' do
+    expect(described_class::BID_MIN_AMOUNT).to eq(0.1)
+  end
+
   it '#currency_pair' do
     expect(wrapper.currency_pair).to eq({ name: 'btc_usd', base: 'btc', quote: 'usd'})
   end
@@ -191,6 +199,14 @@ describe BitexApiWrapper do
       its(:timestamp) { is_expected.to be_a(Integer) }
       its(:raw) { is_expected.to be_present }
     end
+  end
+
+  context 'order_id' do
+    subject { wrapper.order_id(raw) }
+
+    let(:raw) { build_bitex_raw_trade(:buy, 123, 4_567, 100, 200, 2, 0.05, :btc_usd, Time.now.utc) }
+
+    it { is_expected.to eq('4567') }
   end
 
   context '#amount_and_quantity', vcr: { cassette_name: 'bitex/user_transactions' } do

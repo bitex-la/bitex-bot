@@ -91,29 +91,32 @@ module BitexStubs
   #
   # return [ApiWrapper::UserTransaction]
   def build_bitex_user_transaction(type, order_id, cash_amount, coin_amount, price, fee, orderbook_code, created_at = Time.now.utc)
-    order_type = { buy: :bid, sell: :ask, dont_care: :dont_care }[type]
-    raw = double(
+    trade_id = rand(1_000_000)
+    raw = build_bitex_raw_trade(type, trade_id, order_id, cash_amount, coin_amount, price, fee, orderbook_code, created_at)
+    ApiWrapper::UserTransaction.new(order_id.to_s, cash_amount.to_d, coin_amount.to_d, price, fee.to_d, raw.type, created_at.to_i, raw)
+  end
+
+  def build_bitex_raw_trade(type, id, order_id, cash_amount, coin_amount, price, fee, orderbook_code, created_at)
+    Bitex::Resources::Trades::Trade.new(
       type: type.to_s.pluralize,
-      id: rand(1_000_000).to_s,
-      created_at: created_at,
-      coin_amount: coin_amount.to_d,
+      id: id.to_s,
       cash_amount: cash_amount.to_d,
-      fee: fee.to_d,
+      coin_amount: coin_amount.to_d,
       price: price.to_d,
-      fee_currency: :dont_care_but_is_maker_base_currency,
+      fee: fee.to_d,
+      fee_currency: :dont_care,
       fee_decimals: 8,
-      orderbook_code: orderbook_code,
+      orderbook_code: orderbook_code.to_s,
+      created_at: created_at,
       relationships: {
         'order' => {
           'data' => {
             'id' => order_id.to_s,
-            'type' => order_type.to_s.pluralize
+            'type' => { buy: :bid, sell: :ask, dont_care: :dont_care }[type].to_s.pluralize
           }
         }
       }
     )
-
-    ApiWrapper::UserTransaction.new(order_id.to_s, cash_amount.to_d, coin_amount.to_d, price, fee.to_d, raw.type, created_at.to_i, raw)
   end
 
   # @param [Symbol] type. <:bid|:ask>

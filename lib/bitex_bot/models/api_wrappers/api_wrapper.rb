@@ -99,13 +99,14 @@ class ApiWrapper
 
   # @param [Symbol] trade_type. <:buy|:sell>
   # @param [BigDecimal] price.
-  # @param [BigDecimal] quantity. Crypto amount.
+  # @param [BigDecimal] amount. Crypto amount.
   #
   # @return [Order|OrderNotFound]
   # rubocop:disable Metrics/AbcSize
-  def place_order(trade_type, price, quantity)
-    order = send_order(trade_type, price, quantity)
-    return order unless order.nil? || order.id.nil?
+  def place_order(trade_type, price, amount)
+    threshold = Time.now
+    order = send_order(trade_type, price, amount)
+    return order unless order.nil? || order.try(:id).nil?
 
     BitexBot::Robot.log(:error, "Captured error when placing order on #{name}")
     # Order may have gone through and be stuck somewhere in Wrapper's pipeline.
@@ -114,15 +115,15 @@ class ApiWrapper
       BitexBot::Robot.log(
         :info,
         "#{name} cauldn't place #{trade_type} order #{i} times for #{base.upcase}"\
-        " #{quantity.truncate(8)} @ #{quote.upcase} #{price.truncate(8)}. Going to sleep 10 seconds."
+        " #{amount.truncate(8)} @ #{quote.upcase} #{price.truncate(8)}. Going to sleep 10 seconds."
       )
 
-      BitexBot::Robot.sleep_for(15)
-      order = find_lost(trade_type, price, quantity)
+      BitexBot::Robot.sleep_for(10)
+      order = find_lost(trade_type, price, amount, threshold)
       return order if order.present?
     end
 
-    raise OrderNotFound, "Closing: #{trade_type} order not found for #{base.upcase} #{quantity} @ #{quote.upcase} #{price}."
+    raise OrderNotFound, "Closing: #{trade_type} order not found for #{base.upcase} #{amount} @ #{quote.upcase} #{price}."
   end
   # rubocop:enable Metrics/AbcSize
 
@@ -130,10 +131,10 @@ class ApiWrapper
   #
   # @param [Symbol] trade_type. <:buy|:sell>
   # @param [BigDecimal] price.
-  # @param [BigDecimal] quantity. Crypto amount.
+  # @param [BigDecimal] amount. Crypto amount.
   #
   # @return [Order|nil]
-  def send_order(_trade_type, _price, _quantity)
+  def send_order(_trade_type, _price, _amount)
     raise 'self subclass responsibility'
   end
 
@@ -141,21 +142,21 @@ class ApiWrapper
   #
   # @param [Symbol] trade_type. <:buy|:sell>
   # @param [BigDecimal] price.
-  # @param [BigDecimal] quantity. Crypto amount.
+  # @param [BigDecimal] amount. Crypto amount.
   #
   # @return [Order|OrderNotFound]
-  def find_lost(_type, _price, _quantity)
+  def find_lost(_type, _price, _amount, _threshold)
     raise 'self subclass responsibility'
   end
 
   # Respont to minimun order size to place order.
   #
-  # @param [BigDecimal] quantity.
+  # @param [BigDecimal] amount.
   # @param [BigDecimal] price.
   #
   # @return [Boolean]
-  def enough_order_size?(quantity, price)
-    quantity * price > MIN_AMOUNT
+  def enough_order_size?(amount, price, _trade_type = nil)
+    amount* price > MIN_AMOUNT
   end
 
   def base_quote

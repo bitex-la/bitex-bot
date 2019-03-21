@@ -3,6 +3,9 @@
 class BitexApiWrapper < ApiWrapper
   attr_accessor :client, :trading_fee
 
+  ASK_MIN_AMOUNT = 0.0_001.to_d
+  BID_MIN_AMOUNT = 0.1.to_d
+
   Order = Struct.new(
     :id,        # String
     :type,      # Symbol <:bid|:ask>
@@ -32,7 +35,7 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def amount_and_quantity(order_id)
-    trades = user_transactions.select { |t| t.order_id.to_s == order_id }
+    trades = user_transactions.select { |trade| trade.order_id == order_id }
 
     [trades.sum(&:fiat).abs, trades.sum(&:crypto).abs]
   end
@@ -66,6 +69,9 @@ class BitexApiWrapper < ApiWrapper
     )
   end
 
+  # @param [Bitex::Resources::Trades::Trade] trade
+  #
+  # @return [String]
   def order_id(trade)
     trade.relationships.order[:data][:id]
   end
@@ -120,14 +126,8 @@ class BitexApiWrapper < ApiWrapper
       .map { |o| order_parser(o) }
   end
 
-  def bid_by_id(bid_id)
-    order_parser(client.bids.find(bid_id))
-  rescue StandardError => e
-    raise OrderNotFound, e.message
-  end
-
-  def ask_by_id(ask_id)
-    order_parser(client.asks.find(ask_id))
+  def order_by_id(type, order_id)
+    order_parser(orders_accessor_for(type).find(order_id))
   rescue StandardError => e
     raise OrderNotFound, e.message
   end
@@ -152,18 +152,21 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def transactions
-    client.transactions.all(orderbook: orderbook).map { |t| transaction_parser(t) }
+    client.transactions.all(orderbook: orderbook).map { |raw| transaction_parser(raw) }
   end
 
   # <Bitex::Resources::Transaction:
   #   @attributes={
-  #     "type"=>"transactions", "id"=>"1654", "timestamp"=>1549294667, "price"=>0.44e4, "amount"=>0.22727e-3,
-  #     "orderbook_code"=>"btc_usd"
-  #   }
+  #     "type"=>"transactions",
+  #     "id"=>"1680",
+  #     "orderbook_code"=>:btc_usd
+  #     "price"=>0.41e4,
+  #     "amount"=>0.1e1,
+  #     "datetime"=>2019-03-13 17:37:10 UTC,
+  #  }
   # >
-  # TODO all IDs parsed jsonapi must be string
   def transaction_parser(transaction)
-    Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.timestamp, transaction)
+    Transaction.new(transaction.id.to_i, transaction.price, transaction.amount, transaction.datetime.to_i, transaction)
   end
 
   # @param [ApiWrapper::Order]
@@ -172,10 +175,6 @@ class BitexApiWrapper < ApiWrapper
   rescue StandardError => e
     # just pass, we'll keep on trying until it's not in orders anymore.
     BitexBot::Robot.log(:error, e.message)
-  end
-
-  def last_order_by(price)
-    orders.select { |o| o.price == price && (o.timestamp - Time.now.to_i).abs < 500 }.first
   end
 
   def currency_pair(orderbook_code = '_')
@@ -187,11 +186,74 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def send_order(type, price, amount)
-    order = { sell: client.asks, buy: client.bids }[type].create(orderbook: orderbook, amount: amount, price: price)
+    order = orders_accessor_for(type).create(orderbook: orderbook, amount: amount, price: price)
     order_parser(order) if order.present?
   end
 
-  def find_lost(type, price, _quantity)
-    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
+  def find_lost(type, price, amount, threshold)
+    # if order is executing
+    order = orders_accessor_for(type)
+      .all(orderbook: orderbook)
+      .find { |order| sought_order?(order, price, amount, threshold) }
+    return order_parser(order) if order.present?
+
+    # if order is completed
+    trade = trades_accessor_for(type)
+      .all(orderbook: orderbook)
+      .find { |trade| sought_trade?(trade, price, amount, threshold) }
+    return unless trade.present?
+
+    order = orders_accessor_for(type).find(order_id(trade))
+    order_parser(order) if order.present?
+  end
+
+  def sought_order?(order, price, amount, threshold)
+    order.price == price && order.created_at >= threshold && sought_amount?(amount, order.amount)
+  end
+
+  def sought_trade?(trade, price, amount, threshold)
+    trade_amount = trade.type == 'sells' ? trade.coin_amount : trade.cash_amount
+
+    trade.price == price && trade.created_at >= threshold && sought_amount?(amount, trade_amount)
+  end
+
+  def sought_amount?(amount, resource_amount)
+    variation = amount - 0.00_000_01
+
+    variation <= resource_amount && resource_amount <= amount
+  end
+
+  def order_id(trade)
+    trade.relationships.order[:data][:id]
+  end
+
+  def trades_accessor_for(type)
+    { sell: client.sells, buy: client.buys }[type]
+  end
+
+  def orders_accessor_for(type)
+    { sell: client.asks, buy: client.bids }[type]
+  end
+
+  # Respont to minimun order size to place order.
+  #
+  # For bids: crypto to obtain must be greather or equal than 0.1
+  # For asks: crypto to sell must be greather or equal than 0.0001
+  #
+  # @param [BigDecimal] amount.
+  # @param [BigDecimal] price.
+  # @param [Symbol] trade_type. <:buy|:sell>
+  #
+  # @return [Boolean]
+  def enough_order_size?(amount, price, trade_type)
+    send("enough_#{trade_type}_size?", amount, price)
+  end
+
+  def enough_sell_size?(amount, _price)
+    amount >= ASK_MIN_AMOUNT
+  end
+
+  def enough_buy_size?(amount, price)
+    amount * price >= BID_MIN_AMOUNT
   end
 end
