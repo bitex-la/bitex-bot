@@ -33,8 +33,8 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp balance failed: #{e.message}"
   end
 
-  def find_lost(type, price, _quantity)
-    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
+  def find_lost(type, price, _amount, threshold)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= threshold.to_i }
   end
 
   def market(retries = 20)
@@ -58,8 +58,8 @@ class BitstampApiWrapper < ApiWrapper
     raise ApiWrapperError, "Bitstamp orders failed: #{e.message}"
   end
 
-  def send_order(type, price, quantity)
-    order = Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: quantity.round(4), price: price.round(2))
+  def send_order(type, price, amount)
+    order = Bitstamp.orders.send(type, currency_pair: currency_pair[:name], amount: amount.round(4), price: price.round(2))
     order_parser(order) unless order.error.present?
   end
 

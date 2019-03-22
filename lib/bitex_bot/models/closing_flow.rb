@@ -15,7 +15,7 @@ module BitexBot
       positions = open_position_class.open
       quantity = positions.sum(&:quantity)
       price = (suggested_amount(positions) / quantity)
-      return unless Robot.taker.enough_order_size?(quantity, price)
+      return unless Robot.taker.enough_order_size?(quantity, price, trade_type)
 
       order = Robot.taker.place_order(trade_type, price, quantity)
       Robot.log(:info, "Closing: placed #{trade_type} with price: #{order.price} @ quantity #{order.amount}.")
@@ -34,15 +34,15 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize
     def self.sync_positions
       active.each do |flow|
-        latest = flow.close_positions.last
-        next Robot.taker.cancel_order(latest.order) if latest.cancellable?
+        position = flow.close_positions.last
+        next Robot.taker.cancel_order(position.order) if position.cancellable?
 
-        next unless latest.executed?
+        next unless position.executed?
 
-        latest.sync
+        position.sync
 
         quantity, price = flow.next_quantity_and_price
-        next flow.finalise! unless Robot.taker.enough_order_size?(quantity, price)
+        next flow.finalise! unless Robot.taker.enough_order_size?(quantity, price, trade_type)
 
         Robot.taker.place_order(trade_type, price, quantity).tap do |order|
           flow.close_positions.create!(order_id: order.id)

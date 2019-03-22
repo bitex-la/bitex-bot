@@ -35,8 +35,8 @@ class ItbitApiWrapper < ApiWrapper
     balance_summary_parser(wallet[:balances])
   end
 
-  def find_lost(type, price, _quantity)
-    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
+  def find_lost(type, price, _amount, threshold)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= threshold.to_i }
   end
 
   def market

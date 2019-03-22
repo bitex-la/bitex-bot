@@ -31,8 +31,8 @@ class KrakenApiWrapper < ApiWrapper
     quantity >= MIN_AMOUNT
   end
 
-  def find_lost(type, price, quantity)
-    order = KrakenOrder.find_lost(type, price, quantity)
+  def find_lost(type, price, amount, _threshold)
+    order = KrakenOrder.find_lost(type, price, amount)
     order_parser(order) if order.present?
   end
 

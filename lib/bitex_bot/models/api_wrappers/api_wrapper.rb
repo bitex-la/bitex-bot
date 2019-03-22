@@ -104,7 +104,7 @@ class ApiWrapper
   # @return [Order|OrderNotFound]
   # rubocop:disable Metrics/AbcSize
   def place_order(trade_type, price, amount)
-    threshold = Time.now
+    threshold = 1.minute.ago.utc
     order = send_order(trade_type, price, amount)
     return order unless order.nil? || order.try(:id).nil?
 

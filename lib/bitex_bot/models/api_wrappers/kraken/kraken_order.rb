@@ -67,13 +67,13 @@ class KrakenOrder
     retry
   end
 
-  def self.find_lost(type, price, quantity)
+  def self.find_lost(type, price, amount, _threshold)
     BitexBot::Robot.log(:debug, "Looking for #{type} order in open orders...")
-    order = open_order_by(type, price.truncate(2), quantity.truncate(8))
+    order = open_order_by(type, price.truncate(2), amount.truncate(8))
     return log_and_return(order, :open) if order.present?
 
     BitexBot::Robot.log(:debug, "Looking for #{type} order in closed orders...")
-    order = closed_order_by(type, price.truncate(2), quantity.truncate(8))
+    order = closed_order_by(type, price.truncate(2), amount.truncate(8))
     return log_and_return(order, :closed) if order.present? && order.id != last_closed_order
   end
 
@@ -83,13 +83,13 @@ class KrakenOrder
   end
 
   # description: [type, price, quantity]
-  def self.open_order_by(type, price, quantity)
-    open.detect { |order| order == [type, price, quantity] }
+  def self.open_order_by(type, price, amount)
+    open.detect { |order| order == [type, price, amount] }
   end
 
   # description: [type, price, quantity]
-  def self.closed_order_by(type, price, quantity)
-    closed(start: last_closed_order).detect { |order| order == [type, price, quantity] }
+  def self.closed_order_by(type, price, amount)
+    closed(start: last_closed_order).detect { |order| order == [type, price, amount] }
   end
 
   # id: 'O5TDV2-WDYB2-6OGJRD'

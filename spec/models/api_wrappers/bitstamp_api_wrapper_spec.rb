@@ -172,11 +172,10 @@ describe BitstampApiWrapper do
   end
 
   describe '#find_lost', vcr: { cassette_name: 'bitstamp/orders/all', allow_playback_repeats: true } do
-    before(:each) { Timecop.freeze(Time.strptime(order.timestamp.to_s, '%s') - 3.minutes.ago) }
-
     let(:order) { wrapper.orders.sample }
+    let(:threshold) { Time.strptime(order.timestamp.to_s, '%s') - 1.minute.ago }
 
-    subject { wrapper.find_lost(order.type, order.price, order.amount) }
+    subject { wrapper.find_lost(order.type, order.price, order.amount, threshold) }
 
     it { is_expected.to be_present }
   end
