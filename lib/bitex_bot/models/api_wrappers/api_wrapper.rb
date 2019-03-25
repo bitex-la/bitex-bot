@@ -156,7 +156,7 @@ class ApiWrapper
   #
   # @return [Boolean]
   def enough_order_size?(amount, price, _trade_type = nil)
-    amount* price > MIN_AMOUNT
+    amount * price > MIN_AMOUNT
   end
 
   def base_quote

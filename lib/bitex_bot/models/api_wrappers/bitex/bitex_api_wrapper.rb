@@ -193,14 +193,14 @@ class BitexApiWrapper < ApiWrapper
   def find_lost(type, price, amount, threshold)
     # if order is executing
     order = orders_accessor_for(type)
-      .all(orderbook: orderbook)
-      .find { |order| sought_order?(order, price, amount, threshold) }
+            .all(orderbook: orderbook)
+            .find { |wrapped_order| sought_order?(wrapped_order, price, amount, threshold) }
     return order_parser(order) if order.present?
 
     # if order is completed
     trade = trades_accessor_for(type)
-      .all(orderbook: orderbook)
-      .find { |trade| sought_trade?(trade, price, amount, threshold) }
+            .all(orderbook: orderbook)
+            .find { |wrapped_trade| sought_trade?(wrapped_trade, price, amount, threshold) }
     return unless trade.present?
 
     order = orders_accessor_for(type).find(order_id(trade))
@@ -221,10 +221,6 @@ class BitexApiWrapper < ApiWrapper
     variation = amount - 0.00_000_01
 
     variation <= resource_amount && resource_amount <= amount
-  end
-
-  def order_id(trade)
-    trade.relationships.order[:data][:id]
   end
 
   def trades_accessor_for(type)

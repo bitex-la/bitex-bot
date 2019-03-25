@@ -1,5 +1,5 @@
 module BitexBot
-  # Represents an order placed by opening flow on maker market.
+  # Order reference placed by opening flow on maker market.
   class OpeningOrder < ActiveRecord::Base
     # With this roles, define actions when be hitted, cancelled, etc
     enum role: %i[no_role first_tip second_tip support informant final]

@@ -14,7 +14,6 @@ module BitexBot
     # The updated config store as passed from the robot
     cattr_accessor :store
 
-    # rubocop:disable Metrics/AbcSize
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       unless enough_funds?(maker_balance, value_per_order)
         raise CannotCreateFlow,
@@ -30,13 +29,10 @@ module BitexBot
         value_to_use: value_to_use,
         suggested_closing_price: taker_safest_price,
         status: :executing
-      ).tap do |flow|
-        flow.place_orders
-      end
+      ).tap(&:place_orders)
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
-    # rubocop:enable Metrics/AbcSize
 
     # Flow will try to place an rolify orders team, but dont care if cant place anyone, in this case, only log these.
     def place_orders
@@ -52,6 +48,7 @@ module BitexBot
     end
 
     # @param role [Symbol]: OpeningOrder.roles
+    # rubocop:disable Metrics/AbcSize
     def place_order(role, price, amount)
       Robot.with_cooldown do
         Robot.maker.place_order(trade_type, price, amount).tap do |order|
@@ -71,6 +68,7 @@ module BitexBot
         " by #{Robot.maker.base.upcase} #{amount} @ #{Robot.maker.quote.upcase} #{price}."
       )
     end
+    # rubocop:enable Metrics/AbcSize
 
     def resume
       opening_orders.where.not(status: :finalised).map(&:resume)
@@ -190,7 +188,8 @@ module BitexBot
     def finalise
       return if finalised?
 
-      return finalised! if opening_orders.empty? ||
+      return finalised! if
+        opening_orders.empty? ||
         opening_orders.all?(&:finalised?) ||
         opening_orders.each(&:finalise).all?(&:finalised?)
 
