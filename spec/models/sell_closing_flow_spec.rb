@@ -55,7 +55,7 @@ describe BitexBot::SellClosingFlow do
 
         allow(described_class).to receive(:suggested_amount).and_return(20.to_d)
 
-        allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 2).and_return(enough_order_size)
+        allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 2, :buy).and_return(enough_order_size)
       end
 
       context 'not enough order size for taker' do
@@ -136,7 +136,7 @@ describe BitexBot::SellClosingFlow do
 
           context 'and not enough order size' do
             before(:each) do
-              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 20).and_return(false)
+              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 20, :buy).and_return(false)
 
               allow_any_instance_of(described_class).to receive(:estimate_crypto_profit).and_return(1_000.to_d)
               allow_any_instance_of(described_class).to receive(:estimate_fiat_profit).and_return(2_000.to_d)
@@ -189,11 +189,11 @@ describe BitexBot::SellClosingFlow do
 
           context 'and enough order size' do
             before(:each) do
-              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10.to_d, 20.to_d).and_return(true)
+              allow(BitexBot::Robot).to receive_message_chain(:taker, :enough_order_size?).with(10, 20, :buy).and_return(true)
 
               allow(BitexBot::Robot)
                 .to receive_message_chain(:taker, :place_order)
-                .with(:buy, 20.to_d, 10.to_d)
+                .with(:buy, 20, 10)
                 .and_return(ApiWrapper::Order.new('8787'))
             end
 

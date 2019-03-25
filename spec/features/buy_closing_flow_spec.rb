@@ -243,7 +243,10 @@ describe BitexBot::BuyClosingFlow do
     let(:flow) { described_class.last }
 
     it 'keeps trying to place a closed position on bitstamp errors' do
-      allow_any_instance_of(BitstampApiWrapper).to receive(:find_lost).and_return(nil)
+      allow_any_instance_of(BitstampApiWrapper)
+        .to receive(:find_lost)
+        .with(:sell, 310, 2, kind_of(Time))
+        .and_return(nil)
 
       open_trade = create(:open_buy, id: 162)
 
@@ -254,18 +257,6 @@ describe BitexBot::BuyClosingFlow do
       end.to raise_error(BitexBot::CannotCreateFlow, 'Closing: sell order not found for BTC 2.0 @ USD 310.0.')
 
       expect(described_class.count).to be_zero
-
-      # No deberia crear un flow ante un intento erroneo de crear una order
-      # si la orden no se pudo crear, y tampoco se pudo encontrar, el impacto es que
-      # esas open positions no fueron procesadas, solo un calculo.
-      # open.reload.closing_flow.should == flow
-
-      # flow.open_positions.should == [open]
-      # flow.desired_price.should == 310
-      # flow.quantity.should == 2
-      # flow.crypto_profit.should be_nil
-      # flow.fiat_profit.should be_nil
-      # flow.close_positions.should be_empty
     end
 
     it 'retries until it finds the lost order' do

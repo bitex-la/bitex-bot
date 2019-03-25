@@ -171,6 +171,7 @@ describe ItbitApiWrapper do
   it '#find_lost' do
     stub_orders
 
-    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount).present? }
+    threshold = 5.minutes.ago.utc
+    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount, threshold).present? }
   end
 end

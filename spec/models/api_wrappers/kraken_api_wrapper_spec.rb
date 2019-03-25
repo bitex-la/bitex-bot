@@ -273,7 +273,7 @@ describe KrakenApiWrapper do
   it '#find_lost' do
     stub_orders
 
-    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount).present? }
+    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount, nil).present? }
   end
 
   it '#currency_pair' do

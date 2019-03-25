@@ -11,10 +11,8 @@ describe BitexBot::SellOpeningFlow do
       .to receive(:taker)
       .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
 
-    described_class.store = store
+    described_class.store = create(:store)
   end
-
-  let(:store) { create(:store) }
 
   let(:maker) { BitexBot::Robot.maker }
   let(:taker) { BitexBot::Robot.taker }
@@ -32,12 +30,11 @@ describe BitexBot::SellOpeningFlow do
 
     subject(:flow) do
       described_class.open_market(
-        taker_balance, maker_balance, taker.market.asks, taker.transactions, 0.5.to_d, 0.25.to_d
+        taker_balance, 1_000.to_d, taker.market.asks, taker.transactions, 0.5.to_d, 0.25.to_d
       )
     end
 
     let(:taker_balance) { 1_000.to_d }
-    let(:maker_balance) { 1_000.to_d }
 
     context 'sells 2 crypto' do
       before(:each) { allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(2.to_d) }
@@ -51,29 +48,28 @@ describe BitexBot::SellOpeningFlow do
       end
 
       context 'finalising flow cancels associated ask' do
-        subject(:flow) { create(:sell_opening_flow, order_id: order.id) }
+        subject(:flow) { create(:sell_opening_flow).tap { |opening_flow| opening_flow.place_orders } }
 
-        let(:order) { maker.send_order(:sell, 20, 50) }
+        its(:status) { is_expected.to eq('executing') }
+        it { expect(flow.opening_orders.map(&:status)).to all(eq('executing')) }
 
-        it { expect(order.status).to eq(:executing) }
-        it { is_expected.to be_executing }
+        context 'cancel one time, but first time orders not be finalisables' do
+          before(:each) { flow.finalise }
 
-        context 'cancel one time' do
-          before(:each) { flow.finalise! }
-
-          it { expect(order.status).to eq(:cancelled) }
-          it { is_expected.to be_settling }
+          its(:status) { is_expected.to eq('settling') }
+          it { expect(flow.opening_orders.map(&:status)).to all(eq('settling')) }
 
           context 'cancels one more time' do
-            before(:each) { flow.finalise! }
+            before(:each) { flow.finalise }
 
-            it { is_expected.to be_finalised }
+            its(:status) { is_expected.to eq('finalised') }
+            it { expect(flow.opening_orders.map(&:status)).to all(eq('finalised')) }
           end
         end
       end
 
       context 'prioritizes profit from store' do
-        let(:store) { create(:store, selling_profit: 10.to_d) }
+        before(:each) { described_class.store = create(:store, selling_profit: 10.to_d) }
 
         it 'rounded price' do
           expect(flow.price.round(14)).to eq('22.16541353383459'.to_d)
@@ -116,18 +112,17 @@ describe BitexBot::SellOpeningFlow do
         end
       end
 
-      context 'when there is a problem placing the ask on maker' do
+      context 'when there is a problem placing the asks on maker' do
         before(:each) do
           allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order) do
             raise StandardError, 'boo shit'
           end
         end
 
-        it 'fails' do
+        it 'not brokes flow creation, but no creates opening orders' do
           expect do
-            expect(flow).to be_nil
-            expect(described_class.count).to be_zero
-          end.to raise_error(BitexBot::CannotCreateFlow, 'boo shit')
+            is_expected.to be_a(described_class)
+          end.not_to change { BitexBot::OpeningAsk.count }
         end
       end
 
@@ -151,26 +146,21 @@ describe BitexBot::SellOpeningFlow do
     before(:each) { stub_bitex_transactions }
 
     it 'does not register buys from unknown asks' do
-      expect { described_class.sync_positions.should be_empty }.not_to change { BitexBot::OpenSell.count }
+      expect { described_class.sync_positions }.not_to change { BitexBot::OpenSell.count }
     end
 
     context 'with known ask' do
-      before(:each) { create(:sell_opening_flow) }
+      before(:each) { create(:sell_opening_flow, orders: [{ order_id: 246 }]) }
 
       let(:flow) { described_class.first }
 
-      it { expect(flow.order_id).to eq(246) }
-      it { expect(BitexBot::OpenSell.count).to be_zero }
-
       it 'only gets sells' do
+        expect(flow.opening_orders.take.order_id).to eq('246')
+        expect(BitexBot::OpenSell.count).to be_zero
+
         expect do
-          described_class.sync_positions.first.tap do |open_trade|
-            expect(open_trade.transaction_id).to eq(246)
-            expect(open_trade.amount).to eq(600)
-            expect(open_trade.quantity).to eq(2)
-            expect(open_trade.price).to eq(300)
-            expect(open_trade.opening_flow).to eq(flow)
-          end
+          described_class.sync_positions
+          expect(BitexBot::OpenSell.find_by(transaction_id: 246)).to be_present
         end.to change { BitexBot::OpenSell.count }.by(1)
       end
 
@@ -179,14 +169,13 @@ describe BitexBot::SellOpeningFlow do
 
         Timecop.travel(1.second.from_now)
 
-        other_flow = create(:sell_opening_flow, order_id: 789)
+        other_flow = create(:sell_opening_flow, orders: [{ order_id: 789 }])
         trade = build_bitex_user_transaction(:sell, 789, 600, 2, 300, 0.05, BitexBot::Robot.maker.base_quote.to_sym)
         stub_bitex_transactions(trade)
 
         expect do
-          described_class.sync_positions.first do |new_open_trade|
-            expect(new_open_trade.transaction_id).to eq(789)
-          end
+          described_class.sync_positions
+          expect(BitexBot::OpenSell.find_by(transaction_id: 789)).to be_present
         end.to change { BitexBot::OpenSell.count }.by(1)
       end
 
@@ -194,7 +183,7 @@ describe BitexBot::SellOpeningFlow do
         trade = build_bitex_user_transaction(:sell, 777, 600, 2, 300, 0.05, :boo_shit)
         allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
 
-        expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenSell.count }
+        expect { described_class.sync_positions }.not_to change { BitexBot::OpenSell.count }
       end
     end
   end

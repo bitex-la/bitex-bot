@@ -179,7 +179,7 @@ describe BitexBot::SellOpeningFlow do
       end
 
       context 'non active' do
-        let(:created_at) { 35.minutes.ago.to_i }
+        let(:created_at) { 35.minutes.ago.utc }
 
         it { is_expected.to be_falsey }
       end
@@ -215,9 +215,7 @@ describe BitexBot::SellOpeningFlow do
       before(:each) { allow(BitexBot::Robot).to receive_message_chain(:maker, :trades).and_return([]) }
 
       it 'nothing to sync' do
-        expect do
-          expect(sync).to be_empty
-        end.to_not change { BitexBot::OpenSell.count }
+        expect { sync }.to_not change { BitexBot::OpenSell.count }
       end
     end
 
@@ -236,11 +234,7 @@ describe BitexBot::SellOpeningFlow do
         before(:each) { create(:open_sell, transaction_id: 999) }
 
         it 'no syncs' do
-          expect(BitexBot::OpenSell.count).to eq(1)
-
-          expect do
-            expect(sync).to be_empty
-          end.to_not change { BitexBot::OpenSell.count }
+          expect { sync }.to_not change { BitexBot::OpenSell.count }
         end
       end
 
@@ -249,70 +243,92 @@ describe BitexBot::SellOpeningFlow do
         before(:each) { create(:open_sell) }
 
         it 'but this trade not belong to any sell opening flow, then no syncs' do
-          expect(BitexBot::OpenSell.count).to eq(1)
-
-          expect do
-            expect(sync).to be_empty
-          end.to_not change { BitexBot::OpenSell.count }
+          expect { sync }.to_not change { BitexBot::OpenSell.count }
         end
 
         it 'belong to any sell opening flow then syncs' do
-          flow = create(:sell_opening_flow, order_id: 999)
+          flow = create(:sell_opening_flow, orders: [{ order_id: 999 }])
 
           expect(BitexBot::OpenSell.count).to eq(1)
-
-          expect do
-            expect(sync.count).to eq(1)
-
-            sync.find { |position| position.opening_flow == flow }.tap do |syncronized|
-              expect(syncronized.transaction_id.to_s).to eq(trade.order_id)
-              expect(syncronized.closing_flow_id).to be_nil
-            end
-          end.to change { BitexBot::OpenSell.count }.by(1)
+          expect { sync }.to change { BitexBot::OpenSell.count }.by(1)
+          expect(BitexBot::OpenSell.find_by(opening_flow: flow).transaction_id.to_s).to eq(trade.order_id)
         end
       end
     end
   end
 
-  describe '#finalise!'do 
-    before(:each) { allow_any_instance_of(described_class).to receive(:order).and_return(order) }
-
-    let(:order) { BitexApiWrapper::Order.new('12', :fuck, 1, 1, Time.now.to_i, status, double) }
-
-    subject(:flow) { create(:sell_opening_flow) }
-
-    context 'finalizable' do
-      context 'order cancelled' do
-        let(:status) { :cancelled }
+  describe '#finalise' do
+    shared_examples_for 'No finalised status' do
+      context 'when there are no opening orders' do
+        let(:flow) { create(:sell_opening_flow, status: status) }
 
         it do
-          flow.finalise!
-
-          expect(flow.finalised?).to be_truthy
+          expect(flow.opening_orders).to be_empty
+          expect { flow.finalise }.to change(flow, :status).from(status.to_s).to('finalised')
         end
       end
 
-      context 'order completed' do
-        let(:status) { :completed }
+      context 'when opening orders be finalised' do
+        let(:flow) { create(:sell_opening_flow, status: status, orders: [{ status: :finalised }]) }
 
         it do
-          flow.finalise!
+          expect(flow.opening_orders.map(&:status)).to all(eq('finalised'))
+          expect { flow.finalise }.to change(flow, :status).from(status.to_s).to('finalised')
+        end
+      end
 
-          expect(flow.finalised?).to be_truthy
+      context 'when opening orders not finalised and be finalisables' do
+        before(:each) { allow(BitexBot::Robot).to receive_message_chain(:maker, :order_by_id).with(:sell, '999') { order } }
+
+        let(:order) { build_bitex_order(:ask, 300, 2, :btc_usd, :completed, Time.now.utc, '999') }
+        let(:flow) { create(:sell_opening_flow, status: status, orders: [{ order_id: 999 }]) }
+
+        it do
+          expect(flow.opening_orders.map(&:order_finalisable?)).to all(be_truthy)
+          expect { flow.finalise }.to change(flow, :status).from(status.to_s).to('finalised')
         end
       end
     end
 
-    context 'non finalizable' do
-      let(:status) { :another_status }
+    context 'with finalised status' do
+      let(:flow) { create(:sell_opening_flow, status: :finalised) }
 
-      it do
-        expect(BitexBot::Robot).to receive_message_chain(:maker, :cancel_order).with(order)
+      it { expect { flow.finalise }.not_to change(flow, :status) }
+    end
 
-        flow.finalise!
+    context 'with executing status' do
+      let(:status) { :executing }
 
-        expect(flow.finalised?).to be_falsey
-        expect(flow.settling?).to be_truthy
+      it_behaves_like 'No finalised status'
+
+      context 'when opening orders not finalised and no finalisables' do
+        before(:each) { allow(BitexBot::Robot).to receive_message_chain(:maker, :order_by_id).with(:sell, '999') { order } }
+
+        let(:order) { build_bitex_order(:ask, 300, 2, :btc_usd, :NOT_FINALISABLE, Time.now.utc, '999') }
+        let(:flow) { create(:sell_opening_flow, status: status, orders: [{ order_id: 999, status: :settling }]) }
+
+        it 'then will be settled' do
+          expect(flow.opening_orders.map(&:order_finalisable?)).to all(be_falsey)
+          expect { flow.finalise }.to change(flow, :status).from('executing').to('settling')
+        end
+      end
+    end
+
+    context 'with settling status' do
+      let(:status) { :settling }
+
+      it_behaves_like 'No finalised status'
+
+      context 'when opening orders not finalised and no finalisables' do
+        before(:each) { allow(BitexBot::Robot).to receive_message_chain(:maker, :order_by_id).with(:sell, '999') { order } }
+
+        let(:order) { build_bitex_order(:ask, 300, 2, :btc_usd, :NOT_FINALISABLE, Time.now.utc, '999') }
+        let(:flow) { create(:sell_opening_flow, status: status, orders: [{ order_id: 999, status: :settling }]) }
+
+        it 'then status no change' do
+          expect(flow.opening_orders.map(&:order_finalisable?)).to all(be_falsey)
+          expect { flow.finalise }.not_to change(flow, :status)
+        end
       end
     end
   end

@@ -3,7 +3,7 @@ shared_examples_for 'OpeningOrders' do
     it { is_expected.to validate_presence_of(:order_id) }
     it { is_expected.to validate_presence_of(:amount) }
     it { is_expected.to validate_presence_of(:price) }
-    it { is_expected.to define_enum_for(:role).with_values(%i[first_tip second_tip support informant final]) }
+    it { is_expected.to define_enum_for(:role).with_values(%i[no_role first_tip second_tip support informant final]) }
     it { is_expected.to define_enum_for(:status).with_values(%i[executing settling finalised]) }
   end
 

@@ -2,7 +2,7 @@ module BitexBot
   # Represents an order placed by opening flow on maker market.
   class OpeningOrder < ActiveRecord::Base
     # With this roles, define actions when be hitted, cancelled, etc
-    enum role: %i[first_tip second_tip support informant final]
+    enum role: %i[no_role first_tip second_tip support informant final]
 
     # Statuses:
     #   executing: The maker order has been placed, its id stored as order_id.
@@ -32,14 +32,14 @@ module BitexBot
       "#{opening_flow.trade_type}: #{order_id}, status: #{status}, price: #{price}, amount: #{amount * opening_flow.fx_rate}"
     end
 
+    def order_finalisable?
+      order.status == :cancelled || order.status == :completed
+    end
+
     private
 
     def order
       @order ||= Robot.with_cooldown { Robot.maker.order_by_id(opening_flow.trade_type, order_id) }
-    end
-
-    def order_finalisable?
-      order.status == :cancelled || order.status == :completed
     end
   end
 end

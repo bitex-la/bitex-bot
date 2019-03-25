@@ -7,22 +7,13 @@ module BitexBot
 
     self.abstract_class = true
 
+    # TODO check these scope specs
+    scope :active, -> { where.not(status: :finalised) }
+    scope :old_active, ->(threshold) { active.where('created_at < ?', threshold) }
+    scope :recents, ->(threshold) { active.where('created_at >= ?', threshold) }
+
     # The updated config store as passed from the robot
     cattr_accessor :store
-
-    # @!group Statuses
-    # All possible flow statuses
-    # @return [Array<String>]
-    cattr_accessor(:statuses) { %w[executing settling finalised] }
-
-    def self.active
-      where.not(status: :finalised)
-    end
-
-    def self.old_active
-      active.where('created_at < ?', Settings.time_to_live.seconds.ago)
-    end
-    # @!endgroup
 
     # rubocop:disable Metrics/AbcSize
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
@@ -33,26 +24,61 @@ module BitexBot
       end
 
       taker_amount, taker_safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
-
       price = maker_price(taker_amount)
-      order = Robot.maker.send_order(trade_type, price, value_per_order)
-      Robot.log(
-        :info,
-        "Opening: Placed #{trade_type} ##{order.id} #{maker_specie_to_spend} #{value_per_order} @ #{price.truncate(2)}."\
-        " (#{maker_specie_to_obtain} #{taker_amount})."
-      )
 
       create!(
         price: price,
         value_to_use: value_to_use,
         suggested_closing_price: taker_safest_price,
-        status: :executing,
-        order_id: order.id
-      )
+        status: :executing
+      ).tap do |flow|
+        flow.place_orders
+      end
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
     # rubocop:enable Metrics/AbcSize
+
+    # Flow will try to place an rolify orders team, but dont care if cant place anyone, in this case, only log these.
+    # TODO add spec
+    def place_orders
+      {
+        first_tip: { price: price, amount: value_to_use * 0.5 },
+        second_tip: { price: price_scale(0.01), amount: value_to_use * 0.25 },
+        support: { price: price_scale(0.02), amount: value_to_use * 0.05 },
+        informant: { price: price_scale(0.05), amount: value_to_use * 0.15 },
+        final: { price: price_scale(0.1), amount: value_to_use * 0.05 }
+      }.each do |order_role, order_data|
+        place_order(order_role, order_data[:price], order_data[:amount])
+      end
+    end
+
+    # @param role [Symbol]: OpeningOrder.roles
+    # TODO add spec
+    def place_order(role, price, amount)
+      Robot.with_cooldown do
+        Robot.maker.place_order(trade_type, price, amount).tap do |order|
+          Robot.log(
+            :info,
+            "Opening: Placed #{role} #{trade_type} ##{order.id}"\
+            " by #{Robot.maker.base.upcase} #{amount} @ #{Robot.maker.quote.upcase} #{price}."
+          )
+          opening_orders.create(order_id: order.id, role: role, price: price, amount: amount)
+        end
+      end
+    rescue StandardError => e
+      Robot.log(
+        :error,
+        "#{e.message}."\
+        " Opening: Fail place #{role} #{trade_type}"\
+        " by #{Robot.maker.base.upcase} #{amount} @ #{Robot.maker.quote.upcase} #{price}."
+      )
+    end
+
+    # TODO add spec
+    def resume
+      opening_orders.where.not(status: :finalised).map(&:resume)
+    end
 
     # Checks if you have necessary funds for the amount you want to execute in the order.
     #   If BuyOpeningFlow, they must be in relation to the amounts and crypto funds.
@@ -103,22 +129,25 @@ module BitexBot
     def self.sync_positions
       threshold = open_position_class.last.try(:created_at)
 
-      Robot.maker.trades.map do |trade|
+      Robot.maker.trades.each do |trade|
         next unless sought_transaction?(trade, threshold)
 
         flow = find_by_order_id(trade.order_id)
+        # Asume que cualquier referencia a una orden que no sea referenciada por un flujo de apertura
+        # es una orden que no ha podido concretar su enlace con el flujo.
+        # TODO entonces envio a cancelar esa orden
         next unless flow.present?
 
         Robot.log(
           :info,
-          "Opening: #{self} ##{flow.id} was hit for #{Robot.maker.base.upcase} #{trade.crypto}"\
-        " @ #{Robot.maker.quote.upcase} #{trade.price}."
+          "Opening: #{self} ##{flow.id} on order_id #{trade.order_id} was hit for #{Robot.maker.base.upcase} #{trade.crypto}"\
+          " @ #{Robot.maker.quote.upcase} #{trade.price}."
         )
 
         open_position_class.create!(
           transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
-      end.compact
+      end
     end
     # rubocop:enable Metrics/AbcSize
 
@@ -142,6 +171,7 @@ module BitexBot
     #
     # @return [Boolean]
     def self.syncronized?(trade)
+      # TODO: syncronizeds scope
       open_position_class.find_by_transaction_id(trade.order_id).present?
     end
 
@@ -152,36 +182,23 @@ module BitexBot
       trade.raw.orderbook_code.to_s == Robot.maker.base_quote
     end
 
-    def self.resume
-      active.map { |flow| "#{trade_type}: #{flow.order_id}, price: #{flow.price}, amount: #{flow.value_to_use * fx_rate}" }
-    end
+    # Statuses:
+    #   executing: The maker order has been placed, its id stored as order_id.
+    #   settling: In process of cancelling the maker order and any other outstanding order in the taker exchange.
+    #   finalised: Successfully settled or finished executing.
+    enum status: %i[executing settling finalised]
 
     validates :status, presence: true, inclusion: { in: statuses }
-    validates :order_id, presence: true
     validates_presence_of :price, :value_to_use
 
-    # Statuses:
-    #   executing: The Bitex order has been placed, its id stored as order_id.
-    #   settling: In process of cancelling the Bitex order and any other outstanding order in the other exchange.
-    #   finalised: Successfully settled or finished executing.
-    statuses.each do |status_name|
-      define_method("#{status_name}?") { status == status_name }
-      define_method("#{status_name}!") { update!(status: status_name) }
-    end
+    def finalise
+      return if finalised?
 
-    def finalise!
-      return finalised! if order.status == :cancelled || order.status == :completed
+      return finalised! if opening_orders.empty? ||
+        opening_orders.all?(&:finalised?) ||
+        opening_orders.each(&:finalise).all?(&:finalised?)
 
-      Robot.maker.cancel_order(order)
       settling! unless settling?
-    end
-
-    private
-
-    def order
-      @order ||= Robot.with_cooldown do
-        find_maker_order(order_id)
-      end
     end
   end
 

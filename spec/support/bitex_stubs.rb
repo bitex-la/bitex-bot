@@ -14,12 +14,8 @@ module BitexStubs
       active_bids + active_asks
     end
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
-      bids.find { |bid| bid.id == id.to_s }
-    end
-
-    allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
-      asks.find { |ask| ask.id == id.to_s }
+    allow_any_instance_of(BitexApiWrapper).to receive(:order_by_id) do |type, id|
+      { buy: bids, sell: asks }[type].find { |raw_order| raw_order.id == id.to_s }
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:send_order) do |type, price, amount|
@@ -27,11 +23,7 @@ module BitexStubs
       orderbook_code = BitexBot::Robot.maker.base_quote.to_sym
 
       build_bitex_order(type, price, amount, orderbook_code).tap do |order|
-        if type == :bid
-          [BitexStubs.bids, BitexStubs.active_bids]
-        else
-          [BitexStubs.asks, BitexStubs.active_asks]
-        end.each { |orders| orders << order }
+        add_bitex_order(order)
       end
     end
 
@@ -46,6 +38,14 @@ module BitexStubs
       end
       []
     end
+  end
+
+  def add_bitex_order(order)
+    if order.type == :bid
+      [BitexStubs.bids, BitexStubs.active_bids]
+    else
+      [BitexStubs.asks, BitexStubs.active_asks]
+    end.each { |orders| orders << order }
   end
 
   def stub_bitex_transactions(*extra_trades)
@@ -128,6 +128,7 @@ module BitexStubs
   #
   # return [BitexApiWrapper::Order]
   def build_bitex_order(type, price, amount, orderbook_code, status = :executing, created_at = Time.now.utc, id = next_bitex_order_id)
+    # TODO: add status member to order wrapper
     raw = double(
       type: type.to_s.pluralize,
       id: id,

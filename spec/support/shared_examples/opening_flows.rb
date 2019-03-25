@@ -3,12 +3,11 @@ shared_examples_for 'OpeningFlows' do
     it { is_expected.to validate_presence_of(:status) }
     it { is_expected.to validate_presence_of(:price) }
     it { is_expected.to validate_presence_of(:value_to_use) }
-    it { is_expected.to validate_presence_of(:order_id) }
-    it { is_expected.to validate_inclusion_of(:status).in_array(%w[executing settling finalised]) }
+    it { is_expected.to define_enum_for(:status).with_values(%i[executing settling finalised]) }
   end
 
   describe '.scopes' do
-    before(:each) { 3.times { described_class.create(price: 1, value_to_use: 1, order_id: 1) } }
+    before(:each) { 3.times { described_class.create(price: 1, value_to_use: 1) } }
 
     context 'active' do
       before(:each) { described_class.last.finalised! }
@@ -20,14 +19,13 @@ shared_examples_for 'OpeningFlows' do
 
     context 'old active' do
       before(:each) do
-        allow(BitexBot::Settings).to receive(:time_to_live).and_return(60 * 60 * 24 * 2) # 2 days ago
         described_class.find(1).finalised!
         described_class.find(2).update(created_at: old_date)
       end
 
-      let(:old_date) { 3.days.ago }
+      let(:old_date) { 3.days.ago.utc }
 
-      subject(:old_active) { described_class.old_active }
+      subject(:old_active) { described_class.old_active(2.days.ago.utc) }
 
       its(:count) { is_expected.to eq(1) }
       its(:'take.created_at.to_date') { is_expected.to eq(old_date.to_date) }
@@ -97,41 +95,46 @@ shared_examples_for 'OpeningFlows' do
     before(:each) do
       allow(described_class).to receive(:value_to_use).and_return(10_000.to_d)
       allow(described_class).to receive(:fx_rate).and_return(1.to_d)
-      allow(described_class).to receive(:calc_taker_amount).and_return([100.to_d, closing_price])
-      allow(described_class).to receive(:maker_price).and_return(minimun_price)
+      allow(described_class).to receive(:calc_taker_amount).and_return([100.to_d, 200.to_d])
+      allow(described_class).to receive(:maker_price).and_return(300.to_d)
       allow(described_class).to receive(:trade_type).and_return(:dont_care_trade_type)
 
-      # Don't care by another data fields.
-      maker_order = ApiWrapper::Order.new(order_id, :dont_care_trade_type, 300, 10, Time.now.to_i, 'raw_order')
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order).and_return(maker_order)
+      allow(BitexBot::Robot).to receive(:maker).and_return(maker)
+      allow(maker).to receive(:place_order) do |type, price, amount|
+        build_bitex_order(type, price, amount, :btc_usd)
+      end
     end
 
-    let(:order_id) { '111111' }
-    let(:minimun_price) { 300.to_d }
-    let(:closing_price) { 200.to_d }
-
-    let(:taker_orders) { [ApiWrapper::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')] }
-    let(:taker_transactions) { [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')] }
-    let(:store) { BitexBot::Store.create }
+    let(:maker) { instance_double(ApiWrapper) }
 
     subject(:open_market) do
-      described_class.open_market(1_000.to_d, 2_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d)
+      described_class.open_market(
+        1_000.to_d,
+        2_000.to_d,
+        [ApiWrapper::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')],
+        [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')],
+        0.25.to_d,
+        0.50.to_d
+      )
     end
 
     context 'succesful' do
       before(:each) do
         allow(described_class).to receive(:enough_funds?).and_return(true)
-        allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE_TO_SPEND')
-        allow(described_class).to receive(:maker_specie_to_obtain).and_return('SPECIE_TO_OBTAIN')
-        allow(BitexBot::Robot).to receive_message_chain(:taker, :quote).and_return('TAKER_CRYPTO_SPECIE')
+        allow(maker).to receive_messages(base: 'maker_base', quote: 'maker_quote')
       end
 
-      it { is_expected.to be_a(BitexBot::OpeningFlow) }
+      it do
+        expect(maker).to receive(:place_order).exactly(5).times
 
-      its(:price) { is_expected.to eq(minimun_price) }
+        expect do
+          expect(open_market).to be_a(BitexBot::OpeningFlow)
+        end.to change { BitexBot::OpeningOrder.count }.from(0).to(5)
+      end
+
+      its(:price) { is_expected.to eq(300) }
       its(:value_to_use) { is_expected.to eq(10_000) }
-      its(:suggested_closing_price) { is_expected.to eq(closing_price) }
-      its(:order_id) { is_expected.to eq(order_id.to_i) }
+      its(:suggested_closing_price) { is_expected.to eq(200) }
       its(:status) { is_expected.to eq('executing') }
     end
 
@@ -205,7 +208,7 @@ shared_examples_for 'OpeningFlows' do
       end
 
       context 'inactive' do
-        let(:created_at) { 30.minutes.ago.to_i }
+        let(:created_at) { 30.minutes.ago }
 
         it { is_expected.to be_falsey }
       end

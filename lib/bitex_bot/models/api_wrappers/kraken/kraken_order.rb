@@ -67,7 +67,7 @@ class KrakenOrder
     retry
   end
 
-  def self.find_lost(type, price, amount, _threshold)
+  def self.find_lost(type, price, amount)
     BitexBot::Robot.log(:debug, "Looking for #{type} order in open orders...")
     order = open_order_by(type, price.truncate(2), amount.truncate(8))
     return log_and_return(order, :open) if order.present?
