@@ -257,6 +257,13 @@ describe BitexBot::BuyOpeningFlow do
     end
   end
 
+  describe '#price_scale' do
+    subject(:flow) { create(:buy_opening_flow, price: 100, value_to_use: 200) }
+
+    it { expect(flow.price_scale(0.1)).to eq(90) }
+    it { expect(flow.price_scale(0.3)).to eq(70) }
+  end
+
   describe '#place_order' do
     before(:each) do
       allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
