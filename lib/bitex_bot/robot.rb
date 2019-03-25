@@ -81,7 +81,7 @@ module BitexBot
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
-      shutdown! if shutdable?
+      shutdown! if shutdownable?
       start_closing_flows if open_positions?
       sync_closing_flows if active_closing_flows?
       start_opening_flows_if_needed
@@ -119,10 +119,10 @@ module BitexBot
     private
 
     def sync_opening_flows
-      [SellOpeningFlow, BuyOpeningFlow].each(&:sync_positions)
+      [BuyOpeningFlow, SellOpeningFlow].each(&:sync_positions)
     end
 
-    def shutdable?
+    def shutdownable?
       !(active_flows? || open_positions?) && turn_off?
     end
 
@@ -140,11 +140,13 @@ module BitexBot
     end
 
     def finalise_some_opening_flows
-      [BuyOpeningFlow, SellOpeningFlow].each { |kind| active_flows(kind).each(&:finalise!) }
-    end
+      threshold = Settings.time_to_live.seconds.ago.utc
 
-    def active_flows(opening_flow_class)
-      turn_off? ? opening_flow_class.active : opening_flow_class.old_active
+      if turn_off?
+        [BuyOpeningFlow, SellOpeningFlow].each { |kind| kind.active.each(&:finalise) }
+      else
+        [BuyOpeningFlow, SellOpeningFlow].each { |kind| kind.old_active(threshold).each(&:finalise) }
+      end
     end
 
     def start_closing_flows
@@ -192,14 +194,17 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def recent_operations
-      threshold = (Settings.time_to_live / 2).seconds.ago
+      threshold = (Settings.time_to_live / 2).seconds.ago.utc
+
       [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.active.where('created_at > ?', threshold).first }
     end
 
     # rubocop:disable Metrics/AbcSize
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
-      last_log << "Last run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
+      last_log << "Last run: #{Time.now.utc},"\
+        " Open Bids: #{BuyOpeningFlow.active.map(&:resume)},"\
+        " Open Asks: #{SellOpeningFlow.active.map(&:resume)}."
       logs = last_log.join("\n")
       last_log.clear
       store.update(

@@ -84,7 +84,7 @@ describe BitexBot::OpeningBid do
   end
 
   describe '#resume' do
-    before(:each) { allow_any_instance_of(BitexBot::BuyOpeningFlow).to receive(:fx_rate).and_return(10.to_d) }
+    before(:each) { allow(BitexBot::BuyOpeningFlow).to receive(:fx_rate).and_return(10.to_d) }
 
     subject { create(:opening_bid, order_id: 'order#45', price: 300, amount: 3).resume }
 

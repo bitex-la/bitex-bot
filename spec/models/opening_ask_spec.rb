@@ -84,7 +84,7 @@ describe BitexBot::OpeningAsk do
   end
 
   describe '#resume' do
-    before(:each) { allow_any_instance_of(BitexBot::SellOpeningFlow).to receive(:fx_rate).and_return(10.to_d) }
+    before(:each) { allow(BitexBot::SellOpeningFlow).to receive(:fx_rate).and_return(10.to_d) }
 
     subject { create(:opening_ask, order_id: 'order#45', price: 300, amount: 3).resume }
 

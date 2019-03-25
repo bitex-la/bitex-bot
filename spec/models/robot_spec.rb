@@ -10,7 +10,7 @@ describe BitexBot::Robot do
       .to receive(:taker_settings)
       .and_return(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd'))
 
-    allow(BitexBot::Settings).to receive(:time_to_live).and_return(10)
+    allow(BitexBot::Settings).to receive(:time_to_live).and_return(60)
     allow(BitexBot::Settings).to receive(:close_time_to_live).and_return(30)
 
     allow(BitexBot::Settings).to receive_message_chain(:buying, :amount_to_spend_per_order).and_return(50.to_d)
@@ -81,11 +81,11 @@ describe BitexBot::Robot do
     bot.trade!
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
-    Timecop.travel(2.seconds.from_now)
-    bot.trade!
+    Timecop.travel(29.seconds.from_now)
+    Timecop.freeze { bot.trade! }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
-    Timecop.travel(5.seconds.from_now)
+    Timecop.travel(1.seconds.from_now)
     bot.trade!
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(2)
 
@@ -98,7 +98,7 @@ describe BitexBot::Robot do
       ]
     end
 
-    Timecop.travel(5.seconds.from_now)
+    Timecop.travel(30.seconds.from_now)
     2.times { bot.trade! }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
@@ -109,13 +109,14 @@ describe BitexBot::Robot do
       ]
     end
 
-    Timecop.travel(10.seconds.from_now)
-    2.times { bot.trade! }
+    Timecop.travel(40.seconds.from_now)
+    2.times { bot.trade!  }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(0)
   end
 
   it 'does not place new opening flows until all closing flows are done' do
-    bot.trade!
+    expect { bot.trade! }.to change { BitexBot::BuyOpeningFlow.count }.by(1)
+
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
         build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
@@ -123,9 +124,12 @@ describe BitexBot::Robot do
       ]
     end
 
-    expect { bot.trade! }.to change { BitexBot::BuyClosingFlow.count }.by(1)
+    expect { bot.trade! }
+      .to change { BitexBot::OpenBuy.count }.by(1)
+      .and change { BitexBot::BuyClosingFlow.count }.by(1)
+      .and change { BitexBot::CloseBuy.count }.by(1)
 
-    Timecop.travel(15.seconds.from_now)
+    Timecop.travel(60.seconds.from_now)
     2.times { bot.trade! }
     expect(bot).to be_active_closing_flows
     expect(bot).not_to be_active_opening_flows
