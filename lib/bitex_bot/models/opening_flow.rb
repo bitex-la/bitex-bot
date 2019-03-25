@@ -52,7 +52,6 @@ module BitexBot
     end
 
     # @param role [Symbol]: OpeningOrder.roles
-    # TODO add spec
     def place_order(role, price, amount)
       Robot.with_cooldown do
         Robot.maker.place_order(trade_type, price, amount).tap do |order|

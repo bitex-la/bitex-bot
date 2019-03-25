@@ -257,6 +257,43 @@ describe BitexBot::BuyOpeningFlow do
     end
   end
 
+  describe '#place_order' do
+    before(:each) do
+      allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
+      allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
+    end
+
+    let(:maker_market) { instance_double(ApiWrapper) }
+
+    subject(:place_order) { create(:buy_opening_flow).place_order(:no_role, 100.to_d, 200.to_d) }
+
+    context 'successfully' do
+      before(:each) do
+        allow(maker_market).to receive(:place_order) do |trade_type, price, amount|
+          build_bitex_order(trade_type, price, amount, :orderbook_code)
+        end
+      end
+
+      it do
+        expect do
+          expect(place_order).to be_a(BitexApiWrapper::Order)
+        end.to change { BitexBot::OpeningBid.count }.by(1)
+      end
+    end
+
+    context 'failed' do
+      before(:each) do
+        allow(maker_market).to receive(:place_order) do |trade_type, price, amount|
+          raise StandardError, 'boo shit'
+        end
+      end
+
+      it 'fail' do
+        expect { place_order }.not_to change { BitexBot::OpeningBid.count }
+      end
+    end
+  end
+
   describe '#place_orders' do
     before(:each) do
       maker_market = instance_double(ApiWrapper)
@@ -271,7 +308,7 @@ describe BitexBot::BuyOpeningFlow do
     subject(:flow) { create(:buy_opening_flow, price: 100, value_to_use: 100) }
 
     it 'place 5 orders' do
-      expect { flow.place_orders }.to change { BitexBot::OpeningBid.count }.from(0).to(5)
+      expect { flow.place_orders }.to change { BitexBot::OpeningBid.count }.by(5)
     end
 
     shared_examples_for 'deepnes for' do |opening_order_id, role, price, amount|
