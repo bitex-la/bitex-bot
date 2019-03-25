@@ -72,7 +72,6 @@ module BitexBot
       )
     end
 
-    # TODO add spec
     def resume
       opening_orders.where.not(status: :finalised).map(&:resume)
     end

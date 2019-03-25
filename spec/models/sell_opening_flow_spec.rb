@@ -337,6 +337,28 @@ describe BitexBot::SellOpeningFlow do
     end
   end
 
+  describe '#resume' do
+    before(:each) { allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(100.to_d) }
+
+    subject(:flow) do
+      create(
+        :sell_opening_flow,
+        orders: [
+          { order_id: 1, status: :executing, price: 10, amount: 15 },
+          { order_id: 2, status: :settling, price: 20, amount: 25 },
+          { order_id: 1, status: :finalised, price: 30, amount: 35 }
+        ]
+      )
+    end
+
+    its(:resume) do
+      is_expected.to eq([
+        'sell: 1, status: executing, price: 10.0, amount: 1500.0',
+        'sell: 2, status: settling, price: 20.0, amount: 2500.0'
+      ])
+    end
+  end
+
   describe '#finalise' do
     shared_examples_for 'No finalised status' do
       context 'when there are no opening orders' do

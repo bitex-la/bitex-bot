@@ -72,7 +72,6 @@ module BitexBot
     def self.fx_rate
       Settings.selling_fx_rate
     end
-    def_delegator self, :fx_rate
 
     def self.value_per_order
       value_to_use

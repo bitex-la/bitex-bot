@@ -29,7 +29,8 @@ module BitexBot
     end
 
     def resume
-      "#{opening_flow.trade_type}: #{order_id}, status: #{status}, price: #{price}, amount: #{amount * opening_flow.fx_rate}"
+      "#{opening_flow.trade_type}: #{order_id}"\
+        ", status: #{status}, price: #{price}, amount: #{amount * opening_flow.class.fx_rate}"
     end
 
     def order_finalisable?
