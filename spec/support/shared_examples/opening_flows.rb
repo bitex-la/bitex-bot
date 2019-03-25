@@ -103,7 +103,7 @@ shared_examples_for 'OpeningFlows' do
     end
   end
 
-  describe 'open market' do
+  describe '.open_market' do
     before(:each) do
       allow(described_class).to receive(:value_to_use).and_return(10_000.to_d)
       allow(described_class).to receive(:fx_rate).and_return(1.to_d)
@@ -174,7 +174,7 @@ shared_examples_for 'OpeningFlows' do
             .to raise_error(
               BitexBot::CannotCreateFlow,
               'Needed SPECIE 10000.0 on maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
-          )
+            )
         end
       end
     end

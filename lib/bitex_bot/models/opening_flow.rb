@@ -39,7 +39,6 @@ module BitexBot
     # rubocop:enable Metrics/AbcSize
 
     # Flow will try to place an rolify orders team, but dont care if cant place anyone, in this case, only log these.
-    # TODO add spec
     def place_orders
       {
         first_tip: { price: price, amount: value_to_use * 0.5 },

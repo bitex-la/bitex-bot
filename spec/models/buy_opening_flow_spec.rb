@@ -257,6 +257,42 @@ describe BitexBot::BuyOpeningFlow do
     end
   end
 
+  describe '#place_orders' do
+    before(:each) do
+      maker_market = instance_double(ApiWrapper)
+      allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
+      allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
+
+      allow(maker_market).to receive(:place_order) do |trade_type, price, amount|
+        build_bitex_order(trade_type, price, amount, :orderbook_code)
+      end
+    end
+
+    subject(:flow) { create(:buy_opening_flow, price: 100, value_to_use: 100) }
+
+    it 'place 5 orders' do
+      expect { flow.place_orders }.to change { BitexBot::OpeningBid.count }.from(0).to(5)
+    end
+
+    shared_examples_for 'deepnes for' do |opening_order_id, role, price, amount|
+      subject(:opening_order) { flow.opening_orders.find(opening_order_id) }
+
+      its(:role) { is_expected.to eq(role) }
+      its(:price) { is_expected.to eq(price) }
+      its(:amount) { is_expected.to eq(amount) }
+    end
+
+    context 'opening orders depth' do
+      before(:each) { flow.place_orders }
+
+      it_behaves_like 'deepnes for', 1, 'first_tip', 100, 50
+      it_behaves_like 'deepnes for', 2, 'second_tip', 99, 25
+      it_behaves_like 'deepnes for', 3, 'support', 98, 5
+      it_behaves_like 'deepnes for', 4, 'informant', 95, 15
+      it_behaves_like 'deepnes for', 5, 'final', 90, 5
+    end
+  end
+
   describe '#finalise' do
     shared_examples_for 'No finalised status' do
       context 'when there are no opening orders' do
