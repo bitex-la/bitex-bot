@@ -7,28 +7,40 @@ shared_examples_for 'OpeningFlows' do
   end
 
   describe '.scopes' do
-    before(:each) { 3.times { described_class.create(price: 1, value_to_use: 1) } }
+    before(:each) do
+      3.times do
+        Timecop.travel(5.minutes.from_now.utc)
+        described_class.create(price: 1, value_to_use: 1)
+      end
+    end
 
     context 'active' do
-      before(:each) { described_class.last.finalised! }
+      before(:each) { described_class.find(1).finalised! }
 
       subject(:active) { described_class.active }
 
       its(:count) { is_expected.to eq(2) }
-    end
+      it { expect(active.map(&:id)).to eq([2, 3]) }
 
-    context 'old active' do
-      before(:each) do
-        described_class.find(1).finalised!
-        described_class.find(2).update(created_at: old_date)
+      context 'old active' do
+        subject(:old_active) { described_class.old_active(threshold) }
+
+        let(:threshold) { 5.minutes.ago.utc }
+
+        its(:count) { is_expected.to eq(1) }
+        its(:'take.id') { is_expected.to eq(2) }
+        its(:'take.created_at') { is_expected.to be < threshold }
       end
 
-      let(:old_date) { 3.days.ago.utc }
+      context 'recents' do
+        subject(:recents) { described_class.recents(threshold) }
 
-      subject(:old_active) { described_class.old_active(2.days.ago.utc) }
+        let(:threshold) { 1.minutes.ago.utc }
 
-      its(:count) { is_expected.to eq(1) }
-      its(:'take.created_at.to_date') { is_expected.to eq(old_date.to_date) }
+        its(:count) { is_expected.to eq(1) }
+        its(:'take.id') { is_expected.to eq(3) }
+        its(:'take.created_at') { is_expected.to be >= threshold }
+      end
     end
   end
 

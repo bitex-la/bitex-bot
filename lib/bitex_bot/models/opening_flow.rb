@@ -7,7 +7,6 @@ module BitexBot
 
     self.abstract_class = true
 
-    # TODO check these scope specs
     scope :active, -> { where.not(status: :finalised) }
     scope :old_active, ->(threshold) { active.where('created_at < ?', threshold) }
     scope :recents, ->(threshold) { active.where('created_at >= ?', threshold) }
