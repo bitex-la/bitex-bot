@@ -33,6 +33,7 @@ jobs:
       - save_cache:
           paths:
             - ./vendor/bundle
+          key: v1-dependencies-
 
       # run tests!
       - run:
