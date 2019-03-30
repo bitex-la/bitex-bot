@@ -33,7 +33,6 @@ jobs:
       - save_cache:
           paths:
             - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "bitex_bot.gemspec" }}-{{ checksum "Gemfile" }}
 
       # run tests!
       - run:
