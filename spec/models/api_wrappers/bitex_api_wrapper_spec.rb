@@ -147,7 +147,11 @@ describe BitexApiWrapper do
         allow_any_instance_of(Bitex::Client).to receive_message_chain(:asks, :create).and_return(nil)
         allow_any_instance_of(Bitex::Client).to receive_message_chain(:bids, :create).and_return(nil)
         allow_any_instance_of(BitexApiWrapper).to receive(:find_lost).and_return(nil)
+
+        allow(BitexBot::Robot).to receive(:logger).and_return(logger)
       end
+
+      let(:logger) { BitexBot::Logger.setup }
 
       it { expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound) }
       it { expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound) }

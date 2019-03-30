@@ -15,6 +15,8 @@ module BitexBot
     validates_presence_of :status, inclusion: { in: statuses }
     validates_presence_of :amount, :price, :order_id
 
+    after_commit -> { Robot.log(:info, :opening, :placement, summary) }, on: :create
+
     def finalise
       return if finalised?
 
@@ -28,9 +30,13 @@ module BitexBot
       settling!
     end
 
-    def resume
-      "#{opening_flow.trade_type}: #{order_id}"\
-        ", status: #{status}, price: #{price}, amount: #{amount * opening_flow.class.fx_rate}"
+    def summary
+      "#{opening_flow.trade_type.capitalize} flow ##{opening_flow.id}: "\
+        "order_id: #{order_id}, "\
+        "role: #{role}, "\
+        "status: #{status}, "\
+        "price: #{Robot.maker.base.upcase} #{price * opening_flow.class.fx_rate}, "\
+        "amount: #{Robot.maker.quote.upcase} #{amount}."
     end
 
     def order_finalisable?

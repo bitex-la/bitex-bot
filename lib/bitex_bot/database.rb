@@ -96,27 +96,27 @@ module BitexBot
 
       unless ActiveRecord::Base.connection.table_exists?('stores')
         create_table   :stores, force: true do |t|
-          t.decimal    :maker_crypto,                       precision: 20,   scale: 8
-          t.decimal    :maker_fiat,                         precision: 20,   scale: 8
+          t.decimal    :maker_crypto,                       precision: 20, scale: 8, default: 0
+          t.decimal    :maker_fiat,                         precision: 20, scale: 8, default: 0
 
-          t.decimal    :taker_crypto,                       precision: 20,   scale: 8
-          t.decimal    :taker_fiat,                         precision: 20,   scale: 8
+          t.decimal    :taker_crypto,                       precision: 20, scale: 8, default: 0
+          t.decimal    :taker_fiat,                         precision: 20, scale: 8, default: 0
 
-          t.decimal    :crypto_stop,                        precision: 20,   scale: 8
-          t.decimal    :crypto_warning,                     precision: 20,   scale: 8
+          t.decimal    :crypto_stop,                        precision: 20, scale: 8
+          t.decimal    :crypto_warning,                     precision: 20, scale: 8
 
-          t.decimal    :fiat_stop,                          precision: 20,   scale: 8
-          t.decimal    :fiat_warning,                       precision: 20,   scale: 8
+          t.decimal    :fiat_stop,                          precision: 20, scale: 8
+          t.decimal    :fiat_warning,                       precision: 20, scale: 8
 
-          t.decimal    :buying_amount_to_spend_per_order,   precision: 20,   scale: 8
-          t.decimal    :buying_fx_rate,                     precision: 20,   scale: 8
-          t.decimal    :buying_profit,                      precision: 20,   scale: 8
+          t.decimal    :buying_amount_to_spend_per_order,   precision: 20, scale: 8
+          t.decimal    :buying_fx_rate,                     precision: 20, scale: 8
+          t.decimal    :buying_profit,                      precision: 20, scale: 8
 
-          t.decimal    :selling_quantity_to_sell_per_order, precision: 20,   scale: 8
-          t.decimal    :selling_fx_rate,                    precision: 20,   scale: 8
-          t.decimal    :selling_profit,                     precision: 20,   scale: 8
+          t.decimal    :selling_quantity_to_sell_per_order, precision: 20, scale: 8
+          t.decimal    :selling_fx_rate,                    precision: 20, scale: 8
+          t.decimal    :selling_profit,                     precision: 20, scale: 8
 
-          t.boolean    :hold,                               default:   false
+          t.boolean    :hold,                                                        default: false
           t.text       :log
           t.datetime   :last_warning
 

@@ -14,10 +14,10 @@ class KrakenOrder
   rescue KrakenClient::ErrorResponse => e
     # Order could not be placed
     if e.message == 'EService:Unavailable'
-      BitexBot::Robot.log(:debug, 'Captured EService:Unavailable error when placing order on Kraken. Retrying...')
+      BitexBot::Robot.log(:debug, :wrapper, :placement, "#{e.message} error when placing order on Kraken. Retrying.")
       retry
     elsif e.message.start_with?('EGeneral:Invalid')
-      BitexBot::Robot.log(:debug, "Captured #{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
+      BitexBot::Robot.log(:debug, :wrapper, :placement, "#{e.message}: type: #{type}, price: #{price}, quantity: #{quantity}")
       raise OrderArgumentError, e.message
     elsif e.message != 'error'
       raise
@@ -68,17 +68,16 @@ class KrakenOrder
   end
 
   def self.find_lost(type, price, amount)
-    BitexBot::Robot.log(:debug, "Looking for #{type} order in open orders...")
     order = open_order_by(type, price.truncate(2), amount.truncate(8))
-    return log_and_return(order, :open) if order.present?
+    if order.present?
+      BitexBot::Robot.log(:debug, :wrapper, :look_lost, "Found open with ID #{order.id}")
+      return order
+    end
 
-    BitexBot::Robot.log(:debug, "Looking for #{type} order in closed orders...")
     order = closed_order_by(type, price.truncate(2), amount.truncate(8))
-    return log_and_return(order, :closed) if order.present? && order.id != last_closed_order
-  end
+    return unless order.present? && order.id != last_closed_order
 
-  def self.log_and_return(order, status)
-    BitexBot::Robot.log(:debug, "Found open #{status} with ID #{order.id}")
+    BitexBot::Robot.log(:debug, :wrapper, :look_lost, "Found closed with ID #{order.id}")
     order
   end
 

@@ -17,7 +17,6 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def self.run(volatility, taker_transactions, taker_orderbook, amount_target, quantity_target, fx_rate = 1)
       to_skip = estimate_quantity_to_skip(volatility, taker_transactions)
-      Robot.log(:debug, "Skipping #{to_skip} #{Robot.taker.base.upcase}")
       seen = 0
 
       taker_orderbook.each do |order_summary|
@@ -29,17 +28,23 @@ module BitexBot
           dropped = [quantity, to_skip].min
           to_skip -= dropped
           quantity -= dropped
-          Robot.log(:debug, "Skipped #{dropped} #{Robot.taker.base.upcase} @ #{Robot.taker.quote.upcase} #{price}")
+          log("Skipped #{Robot.taker.base.upcase} #{dropped} @ #{Robot.taker.quote.upcase} #{price}")
           next if quantity.zero?
         end
 
         if quantity_target.present?
-          return best_price(Robot.maker.base.upcase, quantity_target, price) if best_price?(quantity, quantity_target, seen)
+          if best_price?(quantity, quantity_target, seen)
+            log("To get #{Robot.maker.base.upcase} #{quantity_target}, best price is #{Robot.taker.quote.upcase} #{price}")
+            return price
+          end
 
           seen += quantity
         elsif amount_target.present?
           amount = price * quantity
-          return best_price(Robot.maker.quote.upcase, amount_target * fx_rate, price) if best_price?(amount, amount_target, seen)
+          if best_price?(amount, amount_target, seen)
+            log("To get #{Robot.maker.quote} #{amount_target * fx_rate}, best price is #{Robot.taker.quote} #{price}")
+            return price
+          end
 
           seen += amount
         end
@@ -53,16 +58,17 @@ module BitexBot
       transactions
         .select { |t| t.timestamp > threshold }
         .sum(&:amount)
+        .tap { |to_skip| log("Skipping #{Robot.taker.base.upcase} #{to_skip}") }
     end
 
     def self.best_price?(volume, target, seen)
       volume >= (target - seen)
     end
 
-    def self.best_price(currency, target, price)
-      price.tap { Robot.log(:debug, "Best price to get #{currency} #{target} is #{Robot.taker.quote.upcase} #{price}") }
+    def self.log(details)
+      Robot.log(:debug, :opening, :safest_price, details)
     end
 
-    private_class_method :estimate_quantity_to_skip, :best_price?, :best_price
+    private_class_method :estimate_quantity_to_skip, :best_price?, :log
   end
 end

@@ -2,8 +2,8 @@ module BitexBot
   # An OpenBuy represents a Buy transaction on maker market.
   # OpenBuys are open buy positions that are closed by one or several CloseBuys.
   class OpenBuy < ActiveRecord::Base
-    cattr_accessor(:opening_flow_class) { BuyOpeningFlow }
-    cattr_accessor(:closing_flow_class) { BuyClosingFlow }
+    belongs_to :opening_flow, class_name: BuyOpeningFlow.name, foreign_key: :opening_flow_id
+    belongs_to :closing_flow, class_name: BuyClosingFlow.name, foreign_key: :closing_flow_id
 
     include OpenableTrade
   end

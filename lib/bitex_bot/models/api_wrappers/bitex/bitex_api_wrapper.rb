@@ -174,7 +174,7 @@ class BitexApiWrapper < ApiWrapper
     client.send(order.raw.type).cancel(id: order.id)
   rescue StandardError => e
     # just pass, we'll keep on trying until it's not in orders anymore.
-    BitexBot::Robot.log(:error, e.message)
+    BitexBot::Robot.log(:error, :wrapper, :cancel_order, e.message)
   end
 
   def currency_pair(orderbook_code = '_')

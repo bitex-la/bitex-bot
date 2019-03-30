@@ -270,10 +270,14 @@ describe KrakenApiWrapper do
     expect { wrapper.user_transactions }.to raise_error('self subclass responsibility')
   end
 
-  it '#find_lost' do
-    stub_orders
+  context '#find_lost' do
+    before(:each) do
+      stub_orders
 
-    wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount, nil).present? }
+      allow(BitexBot::Robot).to receive(:logger).and_return(BitexBot::Logger.setup)
+    end
+
+    it { wrapper.orders.all? { |o| wrapper.find_lost(o.type, o.price, o.amount, nil).present? } }
   end
 
   it '#currency_pair' do

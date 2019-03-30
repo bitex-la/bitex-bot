@@ -1,11 +1,11 @@
 module BitexBot
   # Close buy/sell positions.
   class ClosingFlow < ActiveRecord::Base
-    extend Forwardable
-
     self.abstract_class = true
 
     cattr_reader(:close_time_to_live) { Settings.close_time_to_live }
+
+    scope :active, -> { where(done: false) }
 
     # Start a new CloseBuy that closes existing OpenBuy's by selling on taker market what was just bought on maker market.
     # rubocop:disable Metrics/AbcSize
@@ -18,12 +18,10 @@ module BitexBot
       return unless Robot.taker.enough_order_size?(quantity, price, trade_type)
 
       order = Robot.taker.place_order(trade_type, price, quantity)
-      Robot.log(:info, "Closing: placed #{trade_type} with price: #{order.price} @ quantity #{order.amount}.")
-
       amount = positions.sum(&:amount) / fx_rate
 
-      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: positions).tap do |flow|
-        flow.close_positions.create!(order_id: order.id)
+      create!(desired_price: price, quantity: quantity, amount: amount, open_positions: positions) do |flow|
+        flow.close_positions.build(order_id: order.id)
       end
     rescue StandardError => e
       raise CannotCreateFlow, e.message
@@ -60,19 +58,16 @@ module BitexBot
 
     private_class_method :suggested_amount
 
+    after_commit -> { Robot.log(:info, :closing_flow, :finalised, earning_summary) }, on: :update
+
     def finalise!
-      Robot.log(
-        :info,
-        "Closing: Finished #{self.class} ##{id} earned"\
-        " fiat profit: #{estimate_fiat_profit} and crypto profit: #{estimate_crypto_profit}."
-      )
-      update(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: fx_rate, done: true)
+      update(crypto_profit: estimate_crypto_profit, fiat_profit: estimate_fiat_profit, fx_rate: self.class.fx_rate, done: true)
     end
 
     private
 
     def positions_balance_amount
-      close_positions.sum(:amount) * fx_rate
+      close_positions.sum(:amount) * self.class.fx_rate
     end
 
     # Used for progressive scale when trying to place a hitteable order on taker.
@@ -81,6 +76,10 @@ module BitexBot
     # @return [BigDecimal]
     def price_variation
       close_positions.count**2 * 0.03.to_d
+    end
+
+    def earning_summary
+      "#{self.class} ##{id} earned: fiat profit: #{fiat_profit}, crypto profit: #{crypto_profit}."
     end
   end
 end

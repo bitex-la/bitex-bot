@@ -198,7 +198,12 @@ describe BitexBot::BuyOpeningFlow do
     let(:trade) { build_bitex_user_transaction(:dont_care, '999_999', 11, 11, 111, 11, :dont_care) }
 
     context 'is syncronized' do
-      before(:each) { create(:open_buy, transaction_id: trade.order_id) }
+      before(:each) do
+        allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+        allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
+
+        create(:open_buy, transaction_id: trade.order_id)
+      end
 
       it { is_expected.to be_truthy }
     end
@@ -240,7 +245,12 @@ describe BitexBot::BuyOpeningFlow do
 
       context 'is sought, have non syncronized open position' do
         # This trade not is syncronized position
-        before(:each) { create(:open_buy) }
+        before(:each) do
+          allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+          create(:open_buy)
+        end
+
+        let(:logger) { BitexBot::Logger.setup }
 
         it 'but this trade not belong to any buy opening flow, then no syncs' do
           expect { sync }.to_not change { BitexBot::OpenBuy.count }
@@ -266,11 +276,13 @@ describe BitexBot::BuyOpeningFlow do
 
   describe '#place_order' do
     before(:each) do
+      allow(BitexBot::Robot).to receive(:logger).and_return(logger)
       allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
       allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
     end
 
     let(:maker_market) { instance_double(ApiWrapper) }
+    let(:logger) { BitexBot::Logger.setup }
 
     subject(:place_order) { create(:buy_opening_flow).place_order(:no_role, 100.to_d, 200.to_d) }
 
@@ -303,6 +315,8 @@ describe BitexBot::BuyOpeningFlow do
 
   describe '#place_orders' do
     before(:each) do
+      allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+
       maker_market = instance_double(ApiWrapper)
       allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
       allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
@@ -311,6 +325,8 @@ describe BitexBot::BuyOpeningFlow do
         build_bitex_order(trade_type, price, amount, :orderbook_code)
       end
     end
+
+    let(:logger) { BitexBot::Logger.setup }
 
     subject(:flow) { create(:buy_opening_flow, price: 100, value_to_use: 100) }
 
@@ -337,8 +353,12 @@ describe BitexBot::BuyOpeningFlow do
     end
   end
 
-  describe '#resume' do
-    before(:each) { allow(BitexBot::Settings).to receive(:buying_fx_rate).and_return(100.to_d) }
+  describe '#summary' do
+    before(:each) do
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
+      allow(BitexBot::Settings).to receive(:buying_fx_rate).and_return(100.to_d)
+    end
 
     subject(:flow) do
       create(
@@ -346,20 +366,25 @@ describe BitexBot::BuyOpeningFlow do
         orders: [
           { order_id: 1, status: :executing, price: 10, amount: 15 },
           { order_id: 2, status: :settling, price: 20, amount: 25 },
-          { order_id: 1, status: :finalised, price: 30, amount: 35 }
+          { order_id: 3, status: :finalised, price: 30, amount: 35 }
         ]
       )
     end
 
-    its(:resume) do
+    its(:summary) do
       is_expected.to eq([
-        'buy: 1, status: executing, price: 10.0, amount: 1500.0',
-        'buy: 2, status: settling, price: 20.0, amount: 2500.0'
+        'Buy flow #1: order_id: 1, role: first_tip, status: executing, price: MAKER_BASE 1000.0, amount: MAKER_QUOTE 15.0.',
+        'Buy flow #1: order_id: 2, role: first_tip, status: settling, price: MAKER_BASE 2000.0, amount: MAKER_QUOTE 25.0.'
       ])
     end
   end
 
   describe '#finalise' do
+    before(:each) do
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
+    end
+
     shared_examples_for 'No finalised status' do
       context 'when there are no opening orders' do
         let(:flow) { create(:buy_opening_flow, status: status) }

@@ -10,11 +10,14 @@ describe BitexBot::OrderbookSimulator do
       .to receive(:taker)
       .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
 
+    allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+
     allow(BitexBot::Settings).to receive(:buying_fx_rate).and_return(1.to_d)
   end
 
   let(:maker) { BitexBot::Robot.maker }
   let(:taker) { BitexBot::Robot.taker }
+  let(:logger) { BitexBot::Logger.setup }
 
   before(:each) do
     stub_bitstamp_transactions

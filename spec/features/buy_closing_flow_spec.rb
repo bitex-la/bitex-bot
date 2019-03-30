@@ -3,6 +3,9 @@ require 'spec_helper'
 # When maker is Bitex and taker is Bitstamp
 describe BitexBot::BuyClosingFlow do
   before(:each) do
+    stub_bitstamp_reset
+    stub_bitex_reset
+
     allow(BitexBot::Robot)
       .to receive(:maker)
       .and_return(BitexApiWrapper.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
@@ -10,6 +13,8 @@ describe BitexBot::BuyClosingFlow do
     allow(BitexBot::Robot)
       .to receive(:taker)
       .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
+
+    allow(BitexBot::Robot).to receive(:logger).and_return(logger)
 
     allow(BitexBot::Settings).to receive(:buying_fx_rate).and_return(1.to_d)
   end
@@ -21,6 +26,7 @@ describe BitexBot::BuyClosingFlow do
 
   let(:maker) { BitexBot::Robot.maker }
   let(:taker) { BitexBot::Robot.taker }
+  let(:logger) { BitexBot::Logger.setup }
 
   describe 'closes a single open position completely' do
     before(:each) do

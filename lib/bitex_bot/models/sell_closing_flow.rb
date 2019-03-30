@@ -4,8 +4,6 @@ module BitexBot
     has_many :open_positions, class_name: 'OpenSell', foreign_key: :closing_flow_id
     has_many :close_positions, class_name: 'CloseSell', foreign_key: :closing_flow_id
 
-    scope :active, -> { where(done: false) }
-
     def self.open_position_class
       OpenSell
     end
@@ -14,7 +12,6 @@ module BitexBot
     def self.fx_rate
       Settings.selling_fx_rate
     end
-    def_delegator self, :fx_rate
 
     def self.trade_type
       :buy

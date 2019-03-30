@@ -3,16 +3,14 @@ module BitexBot
   # The OpeningFlow stage places an order on maker market, detecting and storing all transactions spawn from that order as
   # Open positions.
   class OpeningFlow < ActiveRecord::Base
-    extend Forwardable
-
     self.abstract_class = true
+
+    # TODO: Make robot accessor
+    cattr_accessor :store
 
     scope :active, -> { where.not(status: :finalised) }
     scope :old_active, ->(threshold) { active.where('created_at < ?', threshold) }
     scope :recents, ->(threshold) { active.where('created_at >= ?', threshold) }
-
-    # The updated config store as passed from the robot
-    cattr_accessor :store
 
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       unless enough_funds?(maker_balance, value_per_order)
@@ -48,30 +46,18 @@ module BitexBot
     end
 
     # @param role [Symbol]: OpeningOrder.roles
-    # rubocop:disable Metrics/AbcSize
     def place_order(role, price, amount)
       Robot.with_cooldown do
         Robot.maker.place_order(trade_type, price, amount).tap do |order|
-          Robot.log(
-            :info,
-            "Opening: Placed #{role} #{trade_type} ##{order.id}"\
-            " by #{Robot.maker.base.upcase} #{amount} @ #{Robot.maker.quote.upcase} #{price}."
-          )
-          opening_orders.create(order_id: order.id, role: role, price: price, amount: amount)
+          opening_orders.create!(order_id: order.id, role: role, price: price, amount: amount)
         end
       end
     rescue StandardError => e
-      Robot.log(
-        :error,
-        "#{e.message}."\
-        " Opening: Fail place #{role} #{trade_type}"\
-        " by #{Robot.maker.base.upcase} #{amount} @ #{Robot.maker.quote.upcase} #{price}."
-      )
+      Robot.log(:error, :opening, :placement, e.message)
     end
-    # rubocop:enable Metrics/AbcSize
 
-    def resume
-      opening_orders.where.not(status: :finalised).map(&:resume)
+    def summary
+      opening_orders.where.not(status: :finalised).map(&:summary)
     end
 
     # Checks if you have necessary funds for the amount you want to execute in the order.
@@ -119,7 +105,6 @@ module BitexBot
     end
 
     # Buys on maker market represent open positions, we mirror them locally so that we can plan on how to close them.
-    # rubocop:disable Metrics/AbcSize
     def self.sync_positions
       threshold = open_position_class.last.try(:created_at)
 
@@ -132,18 +117,11 @@ module BitexBot
         # TODO entonces envio a cancelar esa orden
         next unless flow.present?
 
-        Robot.log(
-          :info,
-          "Opening: #{self} ##{flow.id} on order_id #{trade.order_id} was hit for #{Robot.maker.base.upcase} #{trade.crypto}"\
-          " @ #{Robot.maker.quote.upcase} #{trade.price}."
-        )
-
         open_position_class.create!(
           transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
       end
     end
-    # rubocop:enable Metrics/AbcSize
 
     # @param [ApiWrapper::UserTransaction] trade.
     # @param [Time] threshold.

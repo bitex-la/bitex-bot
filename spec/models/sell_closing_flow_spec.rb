@@ -1,6 +1,11 @@
 require 'spec_helper'
 
 describe BitexBot::SellClosingFlow do
+  before(:each) do
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
+  end
+
   describe '.active' do
     before(:each) do
       create(:sell_closing_flow, id: 1, done: true)
@@ -22,17 +27,10 @@ describe BitexBot::SellClosingFlow do
   describe '.fx_rate' do
     before(:each) { allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(10.to_d) }
 
-    subject(:klass_rate) { described_class.fx_rate }
+    subject(:rate) { described_class.fx_rate }
 
     it { is_expected.to eq(10) }
     it { is_expected.to be_a(BigDecimal) }
-
-    context '#fx_rate' do
-      subject(:instance_rate) { create(:sell_closing_flow).fx_rate }
-
-      it { is_expected.to eq(10) }
-      it { is_expected.to be_a(BigDecimal) }
-    end
   end
 
   describe '.trade_type' do
@@ -72,8 +70,11 @@ describe BitexBot::SellClosingFlow do
         before(:each) do
           allow(described_class).to receive(:fx_rate).and_return(2.to_d)
           allow(BitexBot::Robot).to receive_message_chain(:taker, :place_order).with(:buy, 2, 10).and_return(ApiWrapper::Order.new('65'))
+
+          allow(BitexBot::Robot).to receive(:logger).and_return(logger)
         end
 
+        let(:logger) { BitexBot::Logger.setup }
         let(:flow) { described_class.last }
         let(:positions) { BitexBot::OpenSell.where(id: [800, 900]) }
 
@@ -146,8 +147,15 @@ describe BitexBot::SellClosingFlow do
             context 'with executed order' do
               before(:each) do
                 allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(nil)
-                allow(BitexBot::Robot).to receive_message_chain(:taker, :amount_and_quantity).with('245').and_return([123.to_d, 345.to_d])
+                allow(BitexBot::Robot)
+                  .to receive_message_chain(:taker, :amount_and_quantity)
+                  .with('245')
+                  .and_return([123.to_d, 345.to_d])
+
+                allow(BitexBot::Robot).to receive(:logger).and_return(logger)
               end
+
+              let(:logger) { BitexBot::Logger.setup }
 
               it 'finalized flow, syncronized position, not new close position' do
                 expect { described_class.sync_positions }.not_to change { BitexBot::CloseSell.count }
@@ -200,8 +208,15 @@ describe BitexBot::SellClosingFlow do
             context 'with executed order' do
               before(:each) do
                 allow_any_instance_of(BitexBot::CloseSell).to receive(:order).and_return(nil)
-                allow(BitexBot::Robot).to receive_message_chain(:taker, :amount_and_quantity).with('245').and_return([123.to_d, 345.to_d])
+                allow(BitexBot::Robot)
+                  .to receive_message_chain(:taker, :amount_and_quantity)
+                  .with('245')
+                  .and_return([123.to_d, 345.to_d])
+
+                allow(BitexBot::Robot).to receive(:logger).and_return(logger)
               end
+
+              let(:logger) { BitexBot::Logger.setup }
 
               it 'not finalized flow, sync with trade#245, and not new close poisition' do
                 expect { described_class.sync_positions }.to change { BitexBot::CloseSell.count }.by(1)
@@ -253,12 +268,16 @@ describe BitexBot::SellClosingFlow do
 
   describe '#finalise!' do
     before(:each) do
+      allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+
       allow_any_instance_of(described_class).to receive(:estimate_crypto_profit).and_return(200.to_d)
       allow_any_instance_of(described_class).to receive(:estimate_fiat_profit).and_return(100.to_d)
       allow_any_instance_of(described_class).to receive(:fx_rate).and_return(5.to_d)
 
       create(:sell_closing_flow, id: 20, fiat_profit: 4, crypto_profit: 2)
     end
+
+    let(:logger) { BitexBot::Logger.setup }
 
     subject(:flow) { described_class.find(20).tap { |closing| closing.send(:finalise!) } }
 
@@ -271,7 +290,7 @@ describe BitexBot::SellClosingFlow do
 
   describe '#positions_balance_amount' do
     before(:each) do
-      allow_any_instance_of(described_class).to receive(:fx_rate).and_return(10.to_d)
+      allow(described_class).to receive(:fx_rate).and_return(10.to_d)
 
       create(:close_sell, amount: 10, closing_flow: flow)
       create(:close_sell, amount: 20, closing_flow: flow)

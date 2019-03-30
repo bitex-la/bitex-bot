@@ -72,6 +72,10 @@ describe BitstampApiWrapper do
   end
 
   describe '#market', vcr: { cassette_name: 'bitstamp/market' } do
+    before(:each) { allow(BitexBot::Robot).to receive(:logger).and_return(logger) }
+
+    let(:logger) { BitexBot::Logger.setup }
+
     subject(:market) { wrapper.market }
 
     it { is_expected.to be_a(ApiWrapper::OrderBook) }

@@ -2,6 +2,9 @@ require 'spec_helper'
 
 describe BitexBot::Robot do
   before(:each) do
+    stub_bitex_reset
+    stub_bitstamp_reset
+
     allow(BitexBot::Settings)
       .to receive(:maker_settings)
       .and_return(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd'))
@@ -21,14 +24,7 @@ describe BitexBot::Robot do
 
     allow(BitexBot::Settings)
       .to receive(:mailer)
-      .and_return(
-        double(
-          from: 'test@test.com',
-          to: 'test@test.com',
-          delivery_method: :test,
-          options: {}
-        )
-      )
+      .and_return(double(from: 'test@test.com', to: 'test@test.com', delivery_method: :test, options: {}))
 
     stub_bitex_balance(
       fiat: { total: 10_000, available: 8_000 },
@@ -54,7 +50,15 @@ describe BitexBot::Robot do
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
-    bot.trade!
+    expect { bot.trade! }
+      .to change { BitexBot::BuyOpeningFlow.count }.by(1)
+      .and change { BitexBot::SellOpeningFlow.count }.by(1)
+
+    buying = BitexBot::BuyOpeningFlow.last
+    selling = BitexBot::SellOpeningFlow.last
+
+    expect(buying).to be_executing
+    expect(selling).to be_executing
 
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
@@ -62,8 +66,6 @@ describe BitexBot::Robot do
         build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
       ]
     end
-    buying = BitexBot::BuyOpeningFlow.last
-    selling = BitexBot::SellOpeningFlow.last
 
     Timecop.travel(10.minutes.from_now)
 

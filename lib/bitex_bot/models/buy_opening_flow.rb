@@ -13,6 +13,8 @@ module BitexBot
   class BuyOpeningFlow < OpeningFlow
     has_many :opening_orders, class_name: 'OpeningBid', foreign_key: :opening_flow_id
 
+    cattr_accessor(:trade_type) { :buy }
+
     # Start a workflow for buying crypto specie on maker market and selling on taker market. The amount to be spent on maker
     # market is retrieved from Settings, if there is not enough FIAT on maker maket or CRYPTO on taker market then no order will
     # be placed and an exception will be raised instead.
@@ -48,10 +50,9 @@ module BitexBot
       OpenBuy
     end
 
-    def self.trade_type
-      :buy
+    def self.fx_rate
+      Settings.buying_fx_rate
     end
-    def_delegator self, :trade_type
 
     def self.profit
       store.try(:buying_profit) || Settings.buying.profit.to_d
@@ -67,10 +68,6 @@ module BitexBot
 
     def self.value_to_use
       store.try(:buying_amount_to_spend_per_order) || Settings.buying.amount_to_spend_per_order
-    end
-
-    def self.fx_rate
-      Settings.buying_fx_rate
     end
 
     def self.value_per_order

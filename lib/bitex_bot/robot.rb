@@ -15,32 +15,24 @@ module BitexBot
 
     cattr_accessor :taker
     cattr_accessor :maker
-
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
-    cattr_accessor(:last_log) { [] }
-
-    cattr_accessor(:logger) do
-      logdev = Settings.log.try(:file)
-      STDOUT.sync = true unless logdev.present?
-      Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
-        log.level = Logger.const_get(Settings.log.level.upcase)
-        log.formatter = proc do |severity, datetime, _progname, msg|
-          date = datetime.strftime('%m/%d %H:%M:%S.%L')
-          "#{format('%-6s', severity)} #{date}: #{msg}\n"
-        end
-      end
-    end
+    cattr_accessor :logger
 
     def self.setup
+      log(:info, :bot, :setup, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
+
+      self.logger = Logger.setup
       self.maker = Settings.maker_class.new(Settings.maker_settings)
       self.taker = Settings.taker_class.new(Settings.taker_settings)
+
+      new
     end
 
     # Trade constantly respecting cooldown times so that we don't get banned by api clients.
     def self.run!
-      bot = start_robot
+      bot = setup
       self.cooldown_until = Time.now
       loop do
         start_time = Time.now
@@ -57,12 +49,6 @@ module BitexBot
     end
     def_delegator self, :sleep_for
 
-    def self.log(level, message)
-      last_log << "#{level.upcase} #{Time.now.strftime('%m/%d %H:%M:%S.%L')}: #{message}"
-      logger.send(level, message)
-    end
-    def_delegator self, :log
-
     def self.with_cooldown
       yield.tap do
         self.current_cooldowns += 1
@@ -71,19 +57,18 @@ module BitexBot
     end
     def_delegator self, :with_cooldown
 
-    def self.start_robot
-      setup
-      log(:info, "Loading trading robot, ctrl+c *once* to exit gracefully.\n")
-      new
-    end
-
-    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def trade!
       sync_opening_flows if active_opening_flows?
       finalise_some_opening_flows
       shutdown! if shutdownable?
       start_closing_flows if open_positions?
       sync_closing_flows if active_closing_flows?
+
+      return log(:debug, :bot, :trade, 'Not placing new orders, Store is hold') if store.reload.hold?
+      return log(:debug, :bot, :trade, 'Not placing new orders, has active closing flows.') if active_closing_flows?
+      return log(:debug, :bot, :trade, 'Not placing new orders, shutting down.') if turn_off?
+
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
       notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
@@ -101,7 +86,7 @@ module BitexBot
       notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
-    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     def active_closing_flows?
       [BuyClosingFlow, SellClosingFlow].map(&:active).any?(&:exists?)
@@ -116,6 +101,11 @@ module BitexBot
       @store ||= Store.first || Store.create
     end
 
+    def self.log(level, stage, step, details)
+      logger.send(level, stage: stage, step: step, details: details)
+    end
+    def_delegator self, :log
+
     private
 
     def sync_opening_flows
@@ -127,7 +117,7 @@ module BitexBot
     end
 
     def shutdown!
-      log(:info, 'Shutdown completed')
+      log(:info, :bot, :shutdown, 'Shutdown completed')
       exit
     end
 
@@ -140,11 +130,10 @@ module BitexBot
     end
 
     def finalise_some_opening_flows
-      threshold = Settings.time_to_live.seconds.ago.utc
-
       if turn_off?
         [BuyOpeningFlow, SellOpeningFlow].each { |kind| kind.active.each(&:finalise) }
       else
+        threshold = Settings.time_to_live.seconds.ago.utc
         [BuyOpeningFlow, SellOpeningFlow].each { |kind| kind.old_active(threshold).each(&:finalise) }
       end
     end
@@ -161,20 +150,14 @@ module BitexBot
       [BuyClosingFlow, SellClosingFlow].each(&:sync_positions)
     end
 
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-    def start_opening_flows_if_needed
-      return log(:debug, 'Not placing new orders, because Store is held') if store.reload.hold?
-      return log(:debug, 'Not placing new orders, has active closing flows.') if active_closing_flows?
-      return log(:debug, 'Not placing new orders, shutting down.') if turn_off?
-
-      recent_buying, recent_selling = recent_operations
-      return log(:debug, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
+    def start_opening_flows_if_needed # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
+      recent_buying, recent_selling = recent_openings
+      return log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
 
       maker_balance = with_cooldown { maker.balance }
       taker_balance = with_cooldown { taker.balance }
 
-      sync_log_and_store(maker_balance, taker_balance)
-      log_balances('Store: Current balances.')
+      store.sync(maker_balance, taker_balance)
 
       check_balance_warning if expired_last_warning?
       return if stop_opening_flows?
@@ -191,46 +174,28 @@ module BitexBot
       selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + args
       SellOpeningFlow.open_market(*selling_args) unless recent_selling
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
-    def recent_operations
+    def recent_openings
       threshold = (Settings.time_to_live / 2).seconds.ago.utc
 
-      [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.active.where('created_at > ?', threshold).first }
+      [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.recents(threshold).first }
     end
-
-    # rubocop:disable Metrics/AbcSize
-    def sync_log_and_store(maker_balance, taker_balance)
-      log_balances('Store: Updating log, maker and taker balances...')
-      last_log << "Last run: #{Time.now.utc},"\
-        " Open Bids: #{BuyOpeningFlow.active.map(&:resume)},"\
-        " Open Asks: #{SellOpeningFlow.active.map(&:resume)}."
-      logs = last_log.join("\n")
-      last_log.clear
-      store.update(
-        maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
-        taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
-        log: logs
-      )
-    end
-
-    def log_balances(header)
-      log(
-        :info,
-        "#{header}\n"\
-        "Store: #{maker.name} maker - #{maker.base.upcase}: #{store.maker_crypto}, #{maker.quote.upcase}: #{store.maker_fiat}.\n"\
-        "Store: #{taker.name} taker - #{taker.base.upcase}: #{store.taker_crypto}, #{taker.quote.upcase}: #{store.taker_fiat}.\n"
-      )
-    end
-    # rubocop:enable Metrics/AbcSize
 
     def expired_last_warning?
       store.last_warning.nil? || store.last_warning < 30.minutes.ago
     end
 
+    # TODO: move to store responsibility
     def stop_opening_flows?
-      (log(:info, "Opening: Not placing new orders, #{maker.quote.upcase} target not met") if alert?(:fiat, :stop)) ||
-        (log(:info, "Opening: Not placing new orders, #{maker.base.upcase} target not met") if alert?(:crypto, :stop))
+      if alert?(:fiat, :stop)
+        log(:info, :bot, :stop, "Not placing new orders, #{maker.quote.upcase} target not met")
+        return true
+      end
+
+      return false unless alert?(:crypto, :stop)
+
+      log(:info, :bot, :stop, "Not placing new orders, #{maker.base.upcase} target not met")
+      true
     end
 
     def check_balance_warning
@@ -255,11 +220,11 @@ module BitexBot
     end
 
     def notify(message, subj = 'Notice from your robot trader')
-      log(:info, "Sending mail with subject: #{subj}\n\n#{message}")
       return unless Settings.mailer.present?
 
+      log(:info, :bot, :trade, "Sending mail: { subject: #{subj}, error: #{message.split("\n").first} }")
       new_mail(subj, message).tap do |mail|
-        mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
+        mail.delivery_method(Settings.mailer.delivery_method, Settings.mailer.options.to_hash)
       end.deliver!
     end
 

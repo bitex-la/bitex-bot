@@ -13,6 +13,8 @@ module BitexBot
   class SellOpeningFlow < OpeningFlow
     has_many :opening_orders, class_name: 'OpeningAsk', foreign_key: :opening_flow_id
 
+    cattr_accessor(:trade_type) { :sell }
+
     # Start a workflow for selling crypto specie on maker market and buying on taker market. The quantity to be sold on maker
     # market is retrieved from Settings, if there is not enough CRYPTO on maker market or FIAT on the taker market no order will
     # be placed and an exception will be raised instead.
@@ -48,10 +50,9 @@ module BitexBot
       OpenSell
     end
 
-    def self.trade_type
-      :sell
+    def self.fx_rate
+      Settings.selling_fx_rate
     end
-    def_delegator self, :trade_type
 
     def self.profit
       store.try(:selling_profit) || Settings.selling.profit
@@ -67,10 +68,6 @@ module BitexBot
 
     def self.value_to_use
       store.try(:selling_quantity_to_sell_per_order) || Settings.selling.quantity_to_sell_per_order
-    end
-
-    def self.fx_rate
-      Settings.selling_fx_rate
     end
 
     def self.value_per_order

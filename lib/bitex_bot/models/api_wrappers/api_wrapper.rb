@@ -102,20 +102,20 @@ class ApiWrapper
   # @param [BigDecimal] amount. Crypto amount.
   #
   # @return [Order|OrderNotFound]
-  # rubocop:disable Metrics/AbcSize
-  def place_order(trade_type, price, amount)
+  def place_order(trade_type, price, amount) # rubocop:disable Metrics/AbcSize
     threshold = 1.minute.ago.utc
     order = send_order(trade_type, price, amount)
     return order unless order.nil? || order.try(:id).nil?
 
-    BitexBot::Robot.log(:error, "Captured error when placing order on #{name}")
     # Order may have gone through and be stuck somewhere in Wrapper's pipeline.
     # We just sleep for a bit and then look for the order.
     5.times do |i|
       BitexBot::Robot.log(
         :info,
-        "#{name} cauldn't place #{trade_type} order #{i} times for #{base.upcase}"\
-        " #{amount.truncate(8)} @ #{quote.upcase} #{price.truncate(8)}. Going to sleep 10 seconds."
+        :wrapper,
+        :look_lost,
+        "#{name} cauldn't place #{trade_type} order #{i} times for #{base.upcase} "\
+          "#{amount.truncate(8)} @ #{quote.upcase} #{price.truncate(8)}"
       )
 
       BitexBot::Robot.sleep_for(10)
@@ -125,7 +125,6 @@ class ApiWrapper
 
     raise OrderNotFound, "Closing: #{trade_type} order not found for #{base.upcase} #{amount} @ #{quote.upcase} #{price}."
   end
-  # rubocop:enable Metrics/AbcSize
 
   # Arguments could not be used in their entirety by the subclasses
   #

@@ -132,9 +132,12 @@ shared_examples_for 'OpeningFlows' do
 
     context 'succesful' do
       before(:each) do
+        allow(BitexBot::Robot).to receive(:logger).and_return(logger)
         allow(described_class).to receive(:enough_funds?).and_return(true)
         allow(maker).to receive_messages(base: 'maker_base', quote: 'maker_quote')
       end
+
+      let(:logger) { BitexBot::Logger.setup }
 
       it do
         expect(maker).to receive(:place_order).exactly(5).times

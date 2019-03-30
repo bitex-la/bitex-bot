@@ -1,6 +1,11 @@
 require 'spec_helper'
 
 describe BitexBot::OpeningBid do
+  before(:each) do
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+  end
+
   it_behaves_like 'OpeningOrders'
 
   describe '#finalise' do
@@ -83,12 +88,22 @@ describe BitexBot::OpeningBid do
     end
   end
 
-  describe '#resume' do
-    before(:each) { allow(BitexBot::BuyOpeningFlow).to receive(:fx_rate).and_return(10.to_d) }
+  describe '#summary' do
+    before(:each) do
+      allow(BitexBot::BuyOpeningFlow).to receive(:fx_rate).and_return(10.to_d)
 
-    subject { create(:opening_bid, order_id: 'order#45', price: 300, amount: 3).resume }
+      allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+    end
 
-    it { is_expected.to eq('buy: order#45, status: executing, price: 300.0, amount: 30.0') }
+    let(:logger) { BitexBot::Logger.setup }
+
+    subject { create(:opening_bid, order_id: 'order#45', price: 300, amount: 3).summary }
+
+    it do
+      is_expected.to eq(
+        'Buy flow #1: order_id: order#45, role: first_tip, status: executing, price: MAKER_BASE 3000.0, amount: MAKER_QUOTE 3.0.'
+      )
+    end
   end
 
   describe '#order' do

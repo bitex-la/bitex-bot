@@ -1,7 +1,7 @@
 # File to write log to. The log is rotated every 10.240.000 bytes, 10 oldest logs are kept around.
 # If you want to log to stdout you can set 'file' to nil or remove the key.
 # How much information to show in the log, valid values are: :debug, :info, :error
-log file: 'bitex_bot.log', level: :info
+log file: 'bitex_bot.log', level: :debug
 
 # Seconds to keep an order alive before recalculating the price and replacing it.
 # Given the way in which the robot tries to find the safest price to place an order, if the time to live is too long the price is
