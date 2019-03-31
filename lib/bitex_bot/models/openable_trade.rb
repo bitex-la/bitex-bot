@@ -8,6 +8,8 @@ module BitexBot
 
       after_commit -> { Robot.log(:info, :opening, :sync, hit_summary) }, on: :create
 
+      validates_presence_of :amount, :quantity, :price, :transaction_id
+
       private
 
       def hit_summary

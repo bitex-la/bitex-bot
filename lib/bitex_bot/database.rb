@@ -34,10 +34,10 @@ module BitexBot
         create_table :open_buys do |t|
           t.belongs_to :opening_flow
           t.belongs_to :closing_flow
-          t.decimal    :price,         precision: 30, scale: 15
-          t.decimal    :amount,        precision: 30, scale: 15
-          t.decimal    :quantity,      precision: 30, scale: 15
-          t.integer    :transaction_id
+          t.decimal    :price,         precision: 30, scale: 15, null: false
+          t.decimal    :amount,        precision: 30, scale: 15, null: false
+          t.decimal    :quantity,      precision: 30, scale: 15, null: false
+          t.integer    :transaction_id, null: false
           t.timestamps null: true
         end
         add_index :open_buys, :transaction_id
