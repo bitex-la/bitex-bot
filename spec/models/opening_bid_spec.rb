@@ -97,9 +97,9 @@ describe BitexBot::OpeningBid do
 
     let(:logger) { BitexBot::Logger.setup }
 
-    subject { create(:opening_bid, order_id: 'order#45', price: 300, amount: 3).summary }
+    subject(:opening_order) { create(:opening_bid, order_id: 'order#45', price: 300, amount: 3) }
 
-    it do
+    its(:summary) do
       is_expected.to eq(
         'Buy flow #1: order_id: order#45, role: first_tip, status: executing, price: MAKER_BASE 3000.0, amount: MAKER_QUOTE 3.0.'
       )

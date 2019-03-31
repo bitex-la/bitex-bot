@@ -63,13 +63,15 @@ module BitexStubs
   #
   # return [BitexApiWrapper::BalanceSummary]
   def stub_bitex_balance(crypto: {}, fiat: {}, trading_fee: 0.05)
-    allow_any_instance_of(BitexApiWrapper).to receive(:balance) do
-      BitexApiWrapper::BalanceSummary.new(
-        build_bitex_balance(crypto),
-        build_bitex_balance(fiat),
-        trading_fee.to_d
-      )
-    end
+    allow_any_instance_of(BitexApiWrapper).to receive(:balance).and_return(build_bitex_balance_summary(crypto, fiat, trading_fee))
+  end
+
+  def build_bitex_balance_summary(crypto, fiat, trading_fee)
+    BitexApiWrapper::BalanceSummary.new(
+      build_bitex_balance(crypto),
+      build_bitex_balance(fiat),
+      trading_fee.to_d
+    )
   end
 
   def build_bitex_balance(balance)

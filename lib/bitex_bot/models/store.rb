@@ -4,8 +4,8 @@ module BitexBot
     def sync(maker_balance, taker_balance)
       with_log do
         update(
-          maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
-          taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
+          maker_fiat: maker_balance.fiat.available, maker_crypto: maker_balance.crypto.available,
+          taker_fiat: taker_balance.fiat.available, taker_crypto: taker_balance.crypto.available,
           log: Robot.logger.history.join("\n").truncate(1_000)
         )
       end
