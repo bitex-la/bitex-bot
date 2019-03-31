@@ -77,17 +77,17 @@ module BitexBot
 
         create_table :close_buys do |t|
           t.belongs_to :closing_flow
-          t.decimal    :amount,      precision: 30, scale: 15
-          t.decimal    :quantity,    precision: 30, scale: 15
-          t.string     :order_id,    null: false
+          t.decimal    :amount,   precision: 30, scale: 15, default: 0
+          t.decimal    :quantity, precision: 30, scale: 15, default: 0
+          t.string     :order_id, null: false
           t.timestamps null: true
         end
         add_index :close_buys, :order_id
 
         create_table :close_sells do |t|
           t.belongs_to :closing_flow
-          t.decimal    :amount,      precision: 30, scale: 15
-          t.decimal    :quantity,    precision: 30, scale: 15
+          t.decimal    :amount,   precision: 30, scale: 15, default: 0
+          t.decimal    :quantity, precision: 30, scale: 15, default: 0
           t.string     :order_id,    null: false
           t.timestamps null: true
         end
