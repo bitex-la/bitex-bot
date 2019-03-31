@@ -58,8 +58,8 @@ describe BitexBot::BuyClosingFlow do
 
         close_trade = flow.close_positions.first
         expect(close_trade.order_id).to be_present
-        expect(close_trade.amount).to be_nil
-        expect(close_trade.quantity).to be_nil
+        expect(close_trade.amount).to be_zero
+        expect(close_trade.quantity).to be_zero
       end
     end
   end
@@ -98,8 +98,8 @@ describe BitexBot::BuyClosingFlow do
 
         close_trade = flow.close_positions.first
         expect(close_trade.order_id).to be_present
-        expect(close_trade.amount).to be_nil
-        expect(close_trade.quantity).to be_nil
+        expect(close_trade.amount).to be_zero
+        expect(close_trade.quantity).to be_zero
       end
     end
   end
