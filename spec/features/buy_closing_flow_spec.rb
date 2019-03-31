@@ -266,7 +266,7 @@ describe BitexBot::BuyClosingFlow do
     end
 
     it 'retries until it finds the lost order' do
-      order = build_bitstamp_order(:sell, 310, 2, 1.minute.ago)
+      order = build_bitstamp_order(:sell, 310, 2)
       allow_any_instance_of(BitstampApiWrapper).to receive(:orders).and_return([order])
 
       open_trade = create(:open_buy)
