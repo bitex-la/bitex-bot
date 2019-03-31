@@ -6,6 +6,19 @@ describe BitexBot::SellClosingFlow do
     allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
   end
 
+  describe 'has a valid factory' do
+    subject(:flow) { create(:sell_closing_flow) }
+
+    its(:valid?) { is_expected.to be_truthy }
+    its(:desired_price) { is_expected.to eq(110) }
+    its(:quantity) { is_expected.to eq(2) }
+    its(:amount) { is_expected.to eq(220) }
+    its(:done) { is_expected.to be_truthy }
+    its(:crypto_profit) { is_expected.to eq(1) }
+    its(:fiat_profit) { is_expected.to eq(10) }
+    its(:fx_rate) { is_expected.to eq(1) }
+  end
+
   describe '.active' do
     before(:each) do
       create(:sell_closing_flow, id: 1, done: true)
@@ -326,6 +339,14 @@ describe BitexBot::SellClosingFlow do
 
     it { is_expected.to eq(70) }
     it { is_expected.to be_a(BigDecimal) }
+  end
+
+  describe '#earning_summary' do
+    subject(:flow) { create(:sell_closing_flow) }
+
+    its(:earning_summary) do
+      is_expected.to eq("BitexBot::SellClosingFlow ##{flow.id} earned: fiat profit: 10.0, crypto profit: 1.0.")
+    end
   end
 
   describe '#estimate_fiat_profit' do
