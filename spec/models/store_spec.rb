@@ -41,6 +41,8 @@ describe BitexBot::Store do
   end
 
   describe '#sync' do
+    before(:each) { Timecop.freeze('2019-03-31 14:40:38') }
+
     let(:maker_balance) { build_bitex_balance_summary({ total: 100, available: 30 }, { total: 200, available: 60 }, 0.5) }
     let(:taker_balance) { build_bitex_balance_summary({ total: 300, available: 90 }, { total: 400, available: 120 }, 0.75) }
 
@@ -50,6 +52,18 @@ describe BitexBot::Store do
         .and change(subject, :maker_crypto).from(0).to(30)
         .and change(subject, :taker_fiat).from(0).to(120)
         .and change(subject, :taker_crypto).from(0).to(90)
+        .and change(subject, :log)
+          .from(nil)
+          .to(
+            'INFO   '\
+            '03/31 14:40:38.000  '\
+            'BOT      '\
+            'SYNC_STORE     '\
+            'BitexBot::Store: ['\
+            '{ maker: maker_name, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }, '\
+            '{ taker: taker_name, crypto: TAKER_CRYPTO 0.0, fiat: TAKER_FIAT 0.0 }'\
+            "]\n"
+          )
     end
   end
 
