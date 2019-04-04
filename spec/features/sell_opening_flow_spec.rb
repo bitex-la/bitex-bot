@@ -14,19 +14,15 @@ describe BitexBot::SellOpeningFlow do
       .to receive(:taker)
       .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
 
-    allow(BitexBot::Robot).to receive(:logger).and_return(logger)
+    allow(BitexBot::Robot).to receive(:logger).and_return(BitexBot::Logger.setup)
 
-    described_class.store = create(:store)
+    allow(BitexBot::Robot).to receive(:store).and_return(create(:store))
   end
 
   after(:each) do
     stub_bitstamp_reset
     stub_bitex_reset
   end
-
-  let(:maker) { BitexBot::Robot.maker }
-  let(:taker) { BitexBot::Robot.taker }
-  let(:logger) { BitexBot::Logger.setup }
 
   describe 'when creating a buying flow' do
     before(:each) do
@@ -41,14 +37,23 @@ describe BitexBot::SellOpeningFlow do
 
     subject(:flow) do
       described_class.open_market(
-        taker_balance, 1_000.to_d, taker.market.asks, taker.transactions, 0.5.to_d, 0.25.to_d
+        taker_balance,
+        1_000.to_d,
+        BitexBot::Robot.taker.market.asks,
+        BitexBot::Robot.taker.transactions,
+        0.5.to_d,
+        0.25.to_d
       )
     end
 
     let(:taker_balance) { 1_000.to_d }
 
     context 'sells 2 crypto' do
-      before(:each) { allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(2.to_d) }
+      before(:each) do
+        allow(BitexBot::Settings)
+          .to receive_message_chain(:selling, :quantity_to_sell_per_order)
+          .and_return(2.to_d)
+      end
 
       its(:value_to_use) { is_expected.to eq(2) }
       its(:suggested_closing_price) { is_expected.to eq(20) }
@@ -80,7 +85,11 @@ describe BitexBot::SellOpeningFlow do
       end
 
       context 'prioritizes profit from store' do
-        before(:each) { described_class.store = create(:store, selling_profit: 10.to_d) }
+        before(:each) do
+          allow(BitexBot::Robot)
+            .to receive(:store)
+            .and_return(create(:store, selling_profit: 10))
+        end
 
         it 'rounded price' do
           expect(flow.price.round(14)).to eq('22.16541353383459'.to_d)

@@ -48,10 +48,10 @@ describe BitexBot::Store do
 
     it do
       expect { subject.sync(maker_balance, taker_balance) }
-        .to change(subject, :maker_fiat).from(0).to(60)
-        .and change(subject, :maker_crypto).from(0).to(30)
-        .and change(subject, :taker_fiat).from(0).to(120)
-        .and change(subject, :taker_crypto).from(0).to(90)
+        .to change(subject, :maker_fiat).from(0).to(200)
+        .and change(subject, :maker_crypto).from(0).to(100)
+        .and change(subject, :taker_fiat).from(0).to(400)
+        .and change(subject, :taker_crypto).from(0).to(300)
         .and change(subject, :log)
           .from(nil)
           .to(
@@ -67,10 +67,7 @@ describe BitexBot::Store do
     end
   end
 
-  describe '#summary_for' do
-    it do
-      expect(subject.send(:summary_for, :maker))
-        .to eq('{ maker: maker_name, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }')
-    end
+  it '#summary_for' do
+    expect(subject.send(:summary_for, :maker)).to eq('{ maker: maker_name, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }')
   end
 end

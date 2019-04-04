@@ -9,6 +9,7 @@ describe BitexBot::Settings do
         close_time_to_live: 30,
         buying: { amount_to_spend_per_order: 10, profit: 0.5 },
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
+        store_expire_warning: 30,
         buying_foreign_exchange_rate: 1,
         selling_foreign_exchange_rate: 1,
 

@@ -19,14 +19,23 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
     cattr_accessor :logger
+    cattr_accessor :store
+    def_delegator self, :store
 
     def self.setup
       log(:info, :bot, :setup, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
 
       self.logger = Logger.setup
+      self.store =
+        Store.first ||
+        Store.create(
+          fiat_warning: Settings.fiat_warning,
+          crypto_warning: Settings.crypto_warning,
+          fiat_stop: Settings.fiat_stop,
+          crypto_stop: Settings.crypto_stop
+        )
       self.maker = Settings.maker_class.new(Settings.maker_settings)
       self.taker = Settings.taker_class.new(Settings.taker_settings)
-
       new
     end
 
@@ -49,6 +58,11 @@ module BitexBot
     end
     def_delegator self, :sleep_for
 
+    def self.log(level, stage, step, details)
+      logger.send(level, stage: stage, step: step, details: details)
+    end
+    def_delegator self, :log
+
     def self.with_cooldown
       yield.tap do
         self.current_cooldowns += 1
@@ -56,6 +70,26 @@ module BitexBot
       end
     end
     def_delegator self, :with_cooldown
+
+    def self.notify(message, subj = 'Notice from your robot trader')
+      return unless Settings.mailer.present?
+
+      log(:info, :bot, :trade, "Sending mail: { subject: #{subj}, error: #{message.split("\n").first} }")
+      new_mail(subj, message).tap do |mail|
+        mail.delivery_method(Settings.mailer.delivery_method, Settings.mailer.options.to_hash)
+      end.deliver!
+    end
+    def_delegator self, :notify
+
+    def self.new_mail(subj, message)
+      Mail.new do
+        from Settings.mailer.from
+        to Settings.mailer.to
+        subject subj
+        body message
+      end
+    end
+    def_delegator self, :new_mail
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def trade!
@@ -65,7 +99,7 @@ module BitexBot
       start_closing_flows if open_positions?
       sync_closing_flows if active_closing_flows?
 
-      return log(:debug, :bot, :trade, 'Not placing new orders, Store is hold') if store.reload.hold?
+      return log(:debug, :bot, :trade, 'Not placing new orders, Store is hold') if store.hold?
       return log(:debug, :bot, :trade, 'Not placing new orders, has active closing flows.') if active_closing_flows?
       return log(:debug, :bot, :trade, 'Not placing new orders, shutting down.') if turn_off?
 
@@ -95,16 +129,6 @@ module BitexBot
     def active_opening_flows?
       [BuyOpeningFlow, SellOpeningFlow].map(&:active).any?(&:exists?)
     end
-
-    # The trader has a Store
-    def store
-      @store ||= Store.first || Store.create
-    end
-
-    def self.log(level, stage, step, details)
-      logger.send(level, stage: stage, step: step, details: details)
-    end
-    def_delegator self, :log
 
     private
 
@@ -150,91 +174,37 @@ module BitexBot
       [BuyClosingFlow, SellClosingFlow].each(&:sync_positions)
     end
 
-    def start_opening_flows_if_needed # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
-      recent_buying, recent_selling = recent_openings
-      return log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.') if recent_buying && recent_selling
-
+    def start_opening_flows_if_needed # rubocop:disable Metrics/AbcSize
       maker_balance = with_cooldown { maker.balance }
       taker_balance = with_cooldown { taker.balance }
-
       store.sync(maker_balance, taker_balance)
-
-      check_balance_warning if expired_last_warning?
-      return if stop_opening_flows?
+      store.check_balance_warning
 
       taker_market = with_cooldown { taker.market }
       taker_transactions = with_cooldown { taker.transactions }
+      opening_flow_args = [taker_transactions, maker_balance.fee, taker_balance.fee]
 
-      OpeningFlow.store = store
-      args = [taker_transactions, maker_balance.fee, taker_balance.fee]
+      recent_buying, recent_selling = recent_openings
 
-      buying_args = [taker_balance.crypto.available, maker_balance.fiat.available, taker_market.bids] + args
-      BuyOpeningFlow.open_market(*buying_args) unless recent_buying
+      if recent_buying.present?
+        log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.')
+      elsif !store.balance_stop?(:fiat)
+        buying_args = [taker_balance.crypto.available, maker_balance.fiat.available, taker_market.bids] + opening_flow_args
+        BuyOpeningFlow.open_market(*buying_args)
+      end
 
-      selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + args
-      SellOpeningFlow.open_market(*selling_args) unless recent_selling
+      if recent_selling.present?
+        log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.')
+      elsif !store.balance_stop?(:crypto)
+        selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + opening_flow_args
+        SellOpeningFlow.open_market(*selling_args)
+      end
     end
 
     def recent_openings
       threshold = (Settings.time_to_live / 2).seconds.ago.utc
 
       [BuyOpeningFlow, SellOpeningFlow].map { |kind| kind.recents(threshold).first }
-    end
-
-    def expired_last_warning?
-      store.last_warning.nil? || store.last_warning < 30.minutes.ago
-    end
-
-    # TODO: move to store responsibility
-    def stop_opening_flows?
-      if alert?(:fiat, :stop)
-        log(:info, :bot, :stop, "Not placing new orders, #{maker.quote.upcase} target not met")
-        return true
-      end
-
-      return false unless alert?(:crypto, :stop)
-
-      log(:info, :bot, :stop, "Not placing new orders, #{maker.base.upcase} target not met")
-      true
-    end
-
-    def check_balance_warning
-      notify_balance_warning(maker.base, balance(:crypto), store.crypto_warning) if alert?(:crypto, :warning)
-      notify_balance_warning(maker.quote, balance(:fiat), store.fiat_warning) if alert?(:fiat, :warning)
-    end
-
-    def alert?(currency, flag)
-      return unless store.send("#{currency}_#{flag}").present?
-
-      balance(currency) <= store.send("#{currency}_#{flag}")
-    end
-
-    def balance(currency)
-      fx_rate = currency == :fiat ? Settings.buying_fx_rate : 1
-      store.send("maker_#{currency}") / fx_rate + store.send("taker_#{currency}")
-    end
-
-    def notify_balance_warning(currency, amount, warning_amount)
-      notify("#{currency.upcase} balance is too low, it's #{amount}, make it #{warning_amount} to stop this warning.")
-      store.update(last_warning: Time.now)
-    end
-
-    def notify(message, subj = 'Notice from your robot trader')
-      return unless Settings.mailer.present?
-
-      log(:info, :bot, :trade, "Sending mail: { subject: #{subj}, error: #{message.split("\n").first} }")
-      new_mail(subj, message).tap do |mail|
-        mail.delivery_method(Settings.mailer.delivery_method, Settings.mailer.options.to_hash)
-      end.deliver!
-    end
-
-    def new_mail(subj, message)
-      Mail.new do
-        from Settings.mailer.from
-        to Settings.mailer.to
-        subject subj
-        body message
-      end
     end
   end
 end

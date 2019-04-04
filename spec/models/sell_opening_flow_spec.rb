@@ -49,14 +49,18 @@ describe BitexBot::SellOpeningFlow do
     subject(:profit) { described_class.profit }
 
     context 'with store' do
-      before(:each) { described_class.store = create(:store, selling_profit: 10) }
+      before(:each) do
+        allow(BitexBot::Robot)
+          .to receive(:store)
+          .and_return(create(:store, selling_profit: 10))
+      end
 
       it { is_expected.to eq(10) }
     end
 
     context 'without store' do
       before(:each) do
-        allow(described_class).to receive(:store).and_return(nil)
+        allow(BitexBot::Robot).to receive(:store).and_return(nil)
         allow(BitexBot::Settings).to receive_message_chain(:selling, :profit).and_return(20)
       end
 
@@ -90,14 +94,18 @@ describe BitexBot::SellOpeningFlow do
     subject(:value) { described_class.value_to_use }
 
     context 'with store' do
-      before(:each) { described_class.store = create(:store, selling_quantity_to_sell_per_order: 10) }
+      before(:each) do
+        allow(BitexBot::Robot)
+          .to receive(:store)
+          .and_return(create(:store, selling_quantity_to_sell_per_order: 10))
+      end
 
       it { is_expected.to eq(10) }
     end
 
     context 'without store' do
       before(:each) do
-        allow(described_class).to receive(:store).and_return(nil)
+        allow(BitexBot::Robot).to receive(:store).and_return(nil)
         allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(20.to_d)
       end
 

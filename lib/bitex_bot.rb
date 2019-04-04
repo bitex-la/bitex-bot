@@ -44,6 +44,9 @@ require 'bitex_bot/models/close_sell'
 
 require 'bitex_bot/models/orderbook_simulator'
 require 'bitex_bot/models/store'
+require 'bitex_bot/models/balance_checker'
+require 'bitex_bot/models/stop_checker'
+require 'bitex_bot/models/warning_checker'
 
 require 'bitex_bot/robot'
 

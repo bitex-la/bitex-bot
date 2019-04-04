@@ -13,6 +13,9 @@ time_to_live 60
 # To close market, about 30 seconds is a good number here.
 close_time_to_live 30
 
+# Flag to check store warnings, about 30 minutes is a good number here.
+store_expire_warning 30
+
 # Settings for buying on maker and selling on taker.
 # amount_to_spend_per_order:
 #   Dollars to spend on each initial maker bid.

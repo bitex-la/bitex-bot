@@ -5,6 +5,11 @@ describe BitexBot::Robot do
     stub_bitex_reset
     stub_bitstamp_reset
 
+    allow(BitexBot::Settings).to receive(:fiat_warning).and_return(10.to_d)
+    allow(BitexBot::Settings).to receive(:crypto_warning).and_return(0.1.to_d)
+    allow(BitexBot::Settings).to receive(:fiat_stop).and_return(1.to_d)
+    allow(BitexBot::Settings).to receive(:crypto_stop).and_return(0.01.to_d)
+
     allow(BitexBot::Settings)
       .to receive(:maker_settings)
       .and_return(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd'))
@@ -15,6 +20,7 @@ describe BitexBot::Robot do
 
     allow(BitexBot::Settings).to receive(:time_to_live).and_return(60)
     allow(BitexBot::Settings).to receive(:close_time_to_live).and_return(30)
+    allow(BitexBot::Settings).to receive(:store_expire_warning).and_return(30)
 
     allow(BitexBot::Settings).to receive_message_chain(:buying, :amount_to_spend_per_order).and_return(50.to_d)
     allow(BitexBot::Settings).to receive_message_chain(:buying, :profit).and_return(0)
@@ -155,7 +161,7 @@ describe BitexBot::Robot do
       stub_bitstamp_balance(10, 10, 0.05)
     end
 
-    let(:other_bot) { described_class.new  }
+    let(:other_bot) { described_class.new }
 
     it 'does not place new opening flows when ordered to hold' do
       other_bot.store.update(hold: true)

@@ -5,9 +5,6 @@ module BitexBot
   class OpeningFlow < ActiveRecord::Base
     self.abstract_class = true
 
-    # TODO: Make robot accessor
-    cattr_accessor :store
-
     scope :active, -> { where.not(status: :finalised) }
     scope :old_active, ->(threshold) { active.where('created_at < ?', threshold) }
     scope :recents, ->(threshold) { active.where('created_at >= ?', threshold) }

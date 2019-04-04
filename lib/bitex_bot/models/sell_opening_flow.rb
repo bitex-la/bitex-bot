@@ -55,7 +55,7 @@ module BitexBot
     end
 
     def self.profit
-      store.try(:selling_profit) || Settings.selling.profit
+      Robot.store.try(:selling_profit) || Settings.selling.profit
     end
 
     def self.remote_value_to_use(value_to_use_needed, safest_price)
@@ -67,7 +67,7 @@ module BitexBot
     end
 
     def self.value_to_use
-      store.try(:selling_quantity_to_sell_per_order) || Settings.selling.quantity_to_sell_per_order
+      Robot.store.try(:selling_quantity_to_sell_per_order) || Settings.selling.quantity_to_sell_per_order
     end
 
     def self.value_per_order
