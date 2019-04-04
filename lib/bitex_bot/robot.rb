@@ -19,6 +19,7 @@ module BitexBot
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
     cattr_accessor :logger
+    cattr_accessor :notifier
     cattr_accessor :store
     def_delegator self, :store
 
@@ -26,6 +27,7 @@ module BitexBot
       log(:info, :bot, :setup, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
 
       self.logger = Logger.setup
+      self.notifier = Notifier if Settings.mailer.present?
       self.store =
         Store.first ||
         Store.create(
@@ -58,6 +60,10 @@ module BitexBot
     end
     def_delegator self, :sleep_for
 
+    def self.notify(*args)
+      notifier.notify(*args)
+    end
+
     def self.log(level, stage, step, details)
       logger.send(level, stage: stage, step: step, details: details)
     end
@@ -70,26 +76,6 @@ module BitexBot
       end
     end
     def_delegator self, :with_cooldown
-
-    def self.notify(message, subj = 'Notice from your robot trader')
-      return unless Settings.mailer.present?
-
-      log(:info, :bot, :trade, "Sending mail: { subject: #{subj}, error: #{message.split("\n").first} }")
-      new_mail(subj, message).tap do |mail|
-        mail.delivery_method(Settings.mailer.delivery_method, Settings.mailer.options.to_hash)
-      end.deliver!
-    end
-    def_delegator self, :notify
-
-    def self.new_mail(subj, message)
-      Mail.new do
-        from Settings.mailer.from
-        to Settings.mailer.to
-        subject subj
-        body message
-      end
-    end
-    def_delegator self, :new_mail
 
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     def trade!
@@ -105,19 +91,19 @@ module BitexBot
 
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 3)
     rescue Curl::Err::TimeoutError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
     rescue OrderNotFound => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue ApiWrapperError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue OrderArgumentError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(60 * 2)
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
