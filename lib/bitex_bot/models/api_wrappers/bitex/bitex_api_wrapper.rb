@@ -23,7 +23,7 @@ class BitexApiWrapper < ApiWrapper
 
   def initialize(settings)
     self.client = Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
-    self.trading_fee = settings.trading_fee.to_d
+    self.trading_fee = settings.trading_fee.try(:to_d) || 0.to_d
     currency_pair(settings.orderbook_code)
   end
 
