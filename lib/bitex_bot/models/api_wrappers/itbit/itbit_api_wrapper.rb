@@ -147,9 +147,9 @@ class ItbitApiWrapper < ApiWrapper
 
   def rounded_price(type, price)
     if type == :buy
-      price - price % 0.25
+      price - (price % 0.25)
     else
-      price + price % 0.25
+      price + 0.25 - (price % 0.25)
     end
   end
 end
