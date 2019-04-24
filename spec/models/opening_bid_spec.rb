@@ -20,7 +20,7 @@ describe BitexBot::OpeningBid do
 
       subject(:opening_order) { create(:opening_bid, status: :executing, order_id: '1', role: role) }
 
-      let(:order) { BitexBot::Exchanges::Order.new('1', :bid, 400, 2, Time.now.to_i, order_status, double) }
+      let(:order) { BitexBot::Exchanges::Order.new('1', :bid, 400, 2, Time.now.to_i, order_status, 'client_order_id', double) }
 
       context 'with order finalisable' do
         before(:each) { allow_any_instance_of(described_class).to receive(:order_finalisable?).and_return(true) }
@@ -111,7 +111,7 @@ describe BitexBot::OpeningBid do
 
     subject { create(:opening_bid, order_id: '1') }
 
-    let(:order) { BitexBot::Exchanges::Order.new('1', :bid, 400, 2, Time.now.to_i, :status, double) }
+    let(:order) { BitexBot::Exchanges::Order.new('1', :bid, 400, 2, Time.now.to_i, :status, 'client_order_id', double) }
 
     its(:order) { is_expected.to eq(order) }
   end

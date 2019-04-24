@@ -141,7 +141,7 @@ module BitexStubs
       created_at: created_at
     )
 
-    BitexBot::Exchanges::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, status, raw)
+    BitexBot::Exchanges::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, status, 'client_order_id', raw)
   end
 
   def stub_bitex_reset

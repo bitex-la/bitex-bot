@@ -105,7 +105,7 @@ module BitstampStubs
     )
 
     order_type = type == :buy ? :bid : :ask
-    BitexBot::Exchanges::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, :executing, raw)
+    BitexBot::Exchanges::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, :executing, 'client_order_id', raw)
   end
 
   # @param [Numeric] id. IDs trade.

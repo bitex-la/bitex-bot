@@ -5,7 +5,7 @@ module BitexBot
     class Kraken < Exchange
       require 'kraken_client'
 
-      attr_accessor :client
+      attr_accessor :client, :client_order_id
 
       MIN_AMOUNT = 0.002.to_d
 
@@ -13,7 +13,6 @@ module BitexBot
         HTTParty::Basement.headers('User-Agent' => BitexBot.user_agent)
         self.client ||= KrakenClient.load(api_key: settings.api_key, api_secret: settings.api_secret)
         @orderbook_code = settings.orderbook_code
-        @last_order_id = ''
       end
 
       def balance
@@ -195,8 +194,16 @@ module BitexBot
       #
       # @return [BitexBot::Exchanges::Order]
       def send_order(type, price, amount)
-        next_order_id
-        raw = client.private.add_order(pair: currency_pair.altname, type: type, ordertype: 'limit', price: price, volume: amount)
+        client_order_id = closed_orders.first.try(:id)
+
+        raw = client.private.add_order(
+          pair: currency_pair.altname,
+          type: type,
+          ordertype: 'limit',
+          price: price,
+          volume: amount
+        )
+
         order_by_id(raw[:txid]) if raw.present?
       end
 
@@ -208,17 +215,13 @@ module BitexBot
         order_parser(*raw) if raw.present?
       end
 
-      def next_order_id
-        @last_order_id = closed_orders.first.try(:id)
-      end
-
       def find_lost(type, price, amount, threshold)
         price = price.truncate(5)
         order = find_lost_order(orders, type, price, amount, threshold)
-        return order if order.present? && order.id != @last_order_id
+        return order if order.present? && order.id != client_order_id
 
         order = find_lost_order(closed_orders, type, price, amount, threshold)
-        order if order.present? && order.id != @last_order_id
+        order if order.present? && order.id != client_order_id
       end
 
       def find_lost_order(orders_to_query, type, price, amount, threshold)

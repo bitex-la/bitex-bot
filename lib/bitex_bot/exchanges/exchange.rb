@@ -9,13 +9,14 @@ module BitexBot
     )
 
     Order = Struct.new(
-      :id,        # String
-      :type,      # Symbol <:bid|:ask|:undefined>
-      :price,     # Decimal
-      :amount,    # Decimal
-      :timestamp, # Integer
-      :status,    # Symbol <:executing|:completed|:cancelled|:undefined>
-      :raw        # Actual order object
+      :id,              # String
+      :type,            # Symbol <:bid|:ask|:undefined>
+      :price,           # Decimal
+      :amount,          # Decimal
+      :timestamp,       # Integer
+      :status,          # Symbol <:executing|:completed|:cancelled|:undefined>
+      :client_order_id, # String
+      :raw              # Actual order object
     )
 
     Orderbook = Struct.new(

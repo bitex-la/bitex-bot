@@ -122,7 +122,7 @@ shared_examples_for 'OpeningFlows' do
     subject(:open_market) do
       described_class.open_market(
         1_000.to_d,
-        [BitexBot::Exchanges::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, :executing, 'raw_order')],
+        [BitexBot::Exchanges::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, :executing, 'client_order_id', 'raw_order')],
         [BitexBot::Exchanges::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')],
         0.25.to_d,
         0.50.to_d
