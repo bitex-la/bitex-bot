@@ -99,7 +99,7 @@ module BitexBot
     rescue Curl::Err::TimeoutError => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
-    rescue Exchanges::OrderNotFound => e
+    rescue Exchanges::OrderNotFound, Exchanges::OrderError => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")

@@ -145,7 +145,11 @@ module BitexBot
           price: price.truncate(2)
         )
 
-        order_parser(raw) if raw.present? && raw.error.nil?
+        return unless raw.present?
+
+        raise OrderError, raw.reason['__all__'].join if raw.status.present? && raw.status.inquiry.error?
+
+        order_parser(raw)
       end
 
       # Try to search a lost order in open orders,

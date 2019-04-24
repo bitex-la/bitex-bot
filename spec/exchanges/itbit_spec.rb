@@ -172,16 +172,16 @@ describe BitexBot::Exchanges::Itbit do
   end
 
   describe '#enough_order_size?' do
-    it { expect(described_class::MIN_AMOUNT).to be_a(BigDecimal).and eq(5) }
+    it { expect(described_class::MIN_AMOUNT).to be_a(BigDecimal).and eq(10) }
 
     context 'enough' do
-      it { expect(exchange.enough_order_size?(1, 5, nil)).to be_truthy }
-      it { expect(exchange.enough_order_size?(5, 1, nil)).to be_truthy }
+      it { expect(exchange.enough_order_size?(1, 10, nil)).to be_truthy }
+      it { expect(exchange.enough_order_size?(10, 1, nil)).to be_truthy }
     end
 
     context 'not enough' do
-      it { expect(exchange.enough_order_size?(0.99, 5, nil)).to be_falsey }
-      it { expect(exchange.enough_order_size?(4.99, 1, nil)).to be_falsey }
+      it { expect(exchange.enough_order_size?(0.99, 10, nil)).to be_falsey }
+      it { expect(exchange.enough_order_size?(10, 0.99, nil)).to be_falsey }
     end
   end
 

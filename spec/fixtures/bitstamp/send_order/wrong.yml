@@ -1,0 +1,86 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://www.bitstamp.net/api/v2/buy/btcusd/
+    body:
+      encoding: UTF-8
+      string: currency_pair=btcusd&amount=0.004&price=1000.0&type=0&key=apikey&nonce=15561247917219&signature=3C75EB40B029A3C8CCDE26F0F1B62C72A2D36EDC98F136CE67D995D627150380
+    headers:
+      Accept:
+      - "*/*"
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - Bitexbot/0.9.2 (https://github.com/bitex-la/bitex-bot)
+      Content-Length:
+      - '186'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - www.bitstamp.net
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Access-Control-Allow-Headers:
+      - x-requested-with, Content-Type, origin, accept, cache-control
+      Access-Control-Allow-Methods:
+      - POST, GET
+      Access-Control-Allow-Origin:
+      - "*"
+      Cache-Control:
+      - max-age=0
+      Content-Language:
+      - en
+      Content-Security-Policy-Report-Only:
+      - 'default-src ''self'' ''unsafe-inline'' ''report-sample''; connect-src ''self''
+        wss://ws.pusherapp.com wss://ws.bitstamp.net *.pusher.com *.trackjs.com *.google-analytics.com
+        stats.g.doubleclick.net ; font-src ''self'' data: fonts.gstatic.com www.google.com
+        ; frame-ancestors ''self''; frame-src ''self'' pixel-a.basis.net 8720977.fls.doubleclick.net
+        *.ledgerwallet.com *.google.com www.googletagmanager.com pixel.sitescout.com
+        ctpe.net ; img-src * data:; report-uri /api/report-csp/; script-src ''self''
+        ''unsafe-inline'' js-agent.newrelic.com *.google-analytics.com *.pusher.com
+        d3dy5gmtp8yhk7.cloudfront.net www.googleadservices.com www.googletagmanager.com
+        www.gstatic.com www.recaptcha.net code.highcharts.com/stock/highstock.js bam.nr-data.net
+        ; style-src ''self'' ''unsafe-inline'' fonts.googleapis.com'
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 24 Apr 2019 16:53:21 GMT
+      Expires:
+      - Wed, 24 Apr 2019 16:53:21 GMT
+      Last-Modified:
+      - Wed, 24 Apr 2019 16:53:21 GMT
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains
+      Vary:
+      - Authorization,Accept-Language
+      X-Frame-Options:
+      - SAMEORIGIN
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - incap_ses_788_99025=D/ulchkxSwEhjpnIlorvCoCUwFwAAAAAk4rShTfJVMuUACVeCViVMg==;
+        path=/; Domain=.bitstamp.net
+      - nlbi_99025=Gm8NadoxwHnxAlhQSF244gAAAACOmvkahvXl+wOKFJ99Tw03; path=/; Domain=.bitstamp.net
+      - visid_incap_99025=yChpL1QPTQ+J8dHqUtVTK4CUwFwAAAAAQUIPAAAAAACRKAk9nqerrcQwszzUQDHX;
+        expires=Thu, 23 Apr 2020 09:26:05 GMT; path=/; Domain=.bitstamp.net
+      X-Iinfo:
+      - 14-10323628-10226449 PNNN RT(1556124800329 75) q(0 0 0 -1) r(2 2) U6
+      X-Cdn:
+      - Incapsula
+      Content-Encoding:
+      - gzip
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        H4sIAAAAAAAA/6tWKi5JLCktVrJSUEotKsovUtJRUCpKTSzOzwMKVSvFxyfm5MTHA9nRSr6ZeZm5pbkK+UUpqUUKxZlVqQqZxQqmegYKocEuekqxtbUAV2JQv04AAAA=
+    http_version: 
+  recorded_at: Wed, 24 Apr 2019 16:53:12 GMT
+recorded_with: VCR 4.0.0

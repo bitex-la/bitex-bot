@@ -145,16 +145,16 @@ describe BitexBot::Exchanges::Bitstamp do
   end
 
   describe '#enough_order_size?' do
-    it { expect(described_class::MIN_AMOUNT).to be_a(BigDecimal).and eq(5) }
+    it { expect(described_class::MIN_AMOUNT).to be_a(BigDecimal).and eq(10) }
 
     context 'enough' do
-      it { expect(exchange.enough_order_size?(1, 5, nil)).to be_truthy }
-      it { expect(exchange.enough_order_size?(5, 1, nil)).to be_truthy }
+      it { expect(exchange.enough_order_size?(1, 10, nil)).to be_truthy }
+      it { expect(exchange.enough_order_size?(10, 1, nil)).to be_truthy }
     end
 
     context 'not enough' do
-      it { expect(exchange.enough_order_size?(0.99, 5, nil)).to be_falsey }
-      it { expect(exchange.enough_order_size?(4.99, 1, nil)).to be_falsey }
+      it { expect(exchange.enough_order_size?(0.99, 10, nil)).to be_falsey }
+      it { expect(exchange.enough_order_size?(10, 0.99, nil)).to be_falsey }
     end
   end
 
@@ -186,17 +186,27 @@ describe BitexBot::Exchanges::Bitstamp do
     end
   end
 
-  describe '#send_order', vcr: { cassette_name: 'bitstamp/send_order' } do
-    subject { exchange.send(:send_order, :buy, 10, 1) }
+  describe '#send_order' do
+    context 'successful', vcr: { cassette_name: 'bitstamp/send_order/successful' } do
+      subject(:order) { exchange.send(:send_order, :buy, 10, 1) }
 
-    it { is_expected.to be_a(BitexBot::Exchanges::Order) }
+      it { is_expected.to be_a(BitexBot::Exchanges::Order) }
 
-    its(:id) { is_expected.to be_present }
-    its(:type) { is_expected.to eq(:bid) }
-    its(:price) { is_expected.to eq(10) }
-    its(:amount) { is_expected.to eq(1) }
-    its(:timestamp) { is_expected.to be_present }
-    its(:raw) { is_expected.to be_a(::Bitstamp::Order) }
+      its(:id) { is_expected.to be_present }
+      its(:type) { is_expected.to eq(:bid) }
+      its(:price) { is_expected.to eq(10) }
+      its(:amount) { is_expected.to eq(1) }
+      its(:timestamp) { is_expected.to be_present }
+      its(:raw) { is_expected.to be_a(::Bitstamp::Order) }
+    end
+
+    context 'wrong', vcr: { cassette_name: 'bitstamp/send_order/wrong' } do
+
+      it do
+        expect { exchange.send(:send_order, :buy, 1000, 0.004) }
+          .to raise_error(BitexBot::Exchanges::OrderError, 'Minimum order size is 5.0 USD.')
+      end
+    end
   end
 
   describe '#find_lost' do

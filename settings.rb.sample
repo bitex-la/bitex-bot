@@ -60,7 +60,7 @@ maker bitex: { api_key: 'your_bitex_api_key', sandbox: false, orderbook_code: 'b
 # Turn on and off the chosen Bitex, Bitstamp, Itbit or Kraken market with comments.
 
 # These are passed in to the bitstamp gem: see https://github.com/kojnapp/bitstamp for more info.
-# Supported values for order_book: 'btcusd', 'btceur', 'eurusd', 'xrpusd', 'xrpeur', 'xrpbtc', 'ltcusd', 'ltceur', 'ltcbtc',
+# Supported values for orderbook_code: 'btcusd', 'btceur', 'eurusd', 'xrpusd', 'xrpeur', 'xrpbtc', 'ltcusd', 'ltceur', 'ltcbtc',
 # 'ethusd', 'etheur', 'ethbtc', 'bchusd', 'bcheur', 'bchbtc'
 #
 taker bitstamp: { api_key: 'YOUR_API_KEY', secret: 'YOUR_API_SECRET', client_id: 'YOUR_BITSTAMP_USERNAME', orderbook_code: 'btcusd' }
