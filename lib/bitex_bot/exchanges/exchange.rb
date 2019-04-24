@@ -108,7 +108,7 @@ module BitexBot
           return order if order.present?
         end
 
-        raise OrderNotFound, "#{trade_type.capitalize} order for #{base} #{amount} @ #{quote} #{price}."
+        raise OrderNotFound, "Not found #{trade_type} order for #{base} #{amount} @ #{quote} #{price}."
       end
 
       # @return [BalanceSummary]

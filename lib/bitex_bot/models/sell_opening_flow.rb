@@ -32,7 +32,7 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of CRYPTO on maker market
     # or out of FIAT on taker market.
-    def self.open_market(taker_fiat_balance, maker_crypto_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
+    def self.open_market(taker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
       super
     end
 
@@ -41,7 +41,7 @@ module BitexBot
       fiat_to_spend_re_buying * fx_rate / value_to_use * (1 + profit / 100)
     end
 
-    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Exchanges::UserTransaction] trade.
     def self.expected_kind_trade?(trade)
       trade.type.inquiry.sells?
     end
@@ -78,23 +78,15 @@ module BitexBot
       OpeningAsk.find_by_order_id(order_id).try(:opening_flow)
     end
 
-    def self.maker_specie_to_spend
-      Robot.maker.base.upcase
-    end
-
-    def self.maker_specie_to_obtain
-      Robot.maker.quote.upcase
-    end
-
     def self.taker_specie_to_spend
-      Robot.taker.quote.upcase
+      Robot.taker.quote
     end
 
     # Find order on maker asks.
     #
     # @param [String] order_id.
     #
-    # @return [ApiWrapper::Order]
+    # @return [Exchanges::Order]
     def find_maker_order(order_id)
       Robot.maker.ask_by_id(order_id)
     end

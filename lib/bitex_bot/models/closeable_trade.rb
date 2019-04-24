@@ -38,9 +38,9 @@ module BitexBot
       def summary
         "#{closing_flow.class} ##{closing_flow.id}: "\
           "order_id: #{order_id}, "\
-          "desired_price: #{Robot.maker.quote.upcase} #{closing_flow.desired_price}, "\
-          "amount: #{Robot.maker.base.upcase} #{amount}, "\
-          "quantity: #{Robot.maker.quote.upcase} #{quantity}."
+          "desired_price: #{Robot.maker.quote} #{closing_flow.desired_price}, "\
+          "amount: #{Robot.maker.base} #{amount}, "\
+          "quantity: #{Robot.maker.quote} #{quantity}."
       end
     end
   end

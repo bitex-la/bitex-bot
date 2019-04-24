@@ -20,7 +20,7 @@ describe BitexBot::Settings do
             api_key: 'YOUR_API_KEY',
             secret: 'YOUR_API_SECRET',
             client_id: 'YOUR_BITSTAMP_USERNAME',
-            order_book: 'btcusd'
+            orderbook_code: 'btcusd'
           }
         },
 
@@ -89,7 +89,7 @@ describe BitexBot::Settings do
         before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
 
         let(:taker_hash) { { market => market_settings } }
-        let(:taker_class) { "#{market.capitalize}ApiWrapper".constantize }
+        let(:taker_class) { "BitexBot::Exchanges::#{market.capitalize}".constantize }
 
         context "for #{market}" do
           it { described_class.taker.to_hash.should eq(taker_hash) }
@@ -99,9 +99,9 @@ describe BitexBot::Settings do
     end
 
     context 'currencies by default' do
-      let(:order_book) { described_class.maker.bitex.order_book.to_s }
-      let(:base) { order_book.split('_')[0] }
-      let(:quote) { order_book.split('_')[1] }
+      let(:orderbook_code) { described_class.maker.bitex.orderbook_code.to_s }
+      let(:base) { orderbook_code.split('_')[0] }
+      let(:quote) { orderbook_code.split('_')[1] }
 
       it { described_class.base.should eq(base) }
       it { described_class.quote.should eq(quote) }

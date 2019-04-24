@@ -23,6 +23,7 @@ group :test, :development do
   gem 'rspec-mocks'
   gem 'rspec_junit_formatter'
   gem 'rubocop'
+  gem 'rubocop-performance'
   gem 'shoulda-matchers'
   gem 'timecop'
   gem 'vcr'

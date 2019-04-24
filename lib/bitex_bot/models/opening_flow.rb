@@ -9,13 +9,7 @@ module BitexBot
     scope :old_active, ->(threshold) { active.where('created_at < ?', threshold) }
     scope :recents, ->(threshold) { active.where('created_at >= ?', threshold) }
 
-    def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
-      unless enough_funds?(maker_balance, value_per_order)
-        raise CannotCreateFlow,
-              "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on maker to place this "\
-              "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
-      end
-
+    def self.open_market(taker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       taker_amount, taker_safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
       price = maker_price(taker_amount)
 
@@ -75,8 +69,8 @@ module BitexBot
     # @param [BigDecimal] taker_balance. Its represent available amountn on crypto/fiat.
     # @param [BigDecimal] maker_fee.
     # @param [BigDecimal] taker_fee.
-    # @param [Array<ApiWrapper::Order>] taker_orders. List of taker bids/asks.
-    # @param [Array<ApiWrapper::Transaction>] taker_orders. List of taker transactions.
+    # @param [Array<Exchanges::Order>] taker_orders. List of taker bids/asks.
+    # @param [Array<Exchanges::Transaction>] taker_orders. List of taker transactions.
     #
     # @return [Array[BigDecimal, BigDecimal]]
     def self.calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
@@ -120,7 +114,7 @@ module BitexBot
       end
     end
 
-    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Exchanges::UserTransaction] trade.
     # @param [Time] threshold.
     #
     # @return [Boolean]
@@ -128,7 +122,7 @@ module BitexBot
       expected_kind_trade?(trade) && !active_trade?(trade, threshold) && !syncronized?(trade) && expected_orderbook?(trade)
     end
 
-    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Exchanges::UserTransaction] trade.
     # @param [Time] threshold.
     #
     # @return [Boolean]
@@ -136,7 +130,7 @@ module BitexBot
       threshold.present? && trade.timestamp < (threshold - 30.minutes).to_i
     end
 
-    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Exchanges::UserTransaction] trade.
     #
     # @return [Boolean]
     def self.syncronized?(trade)
@@ -144,11 +138,11 @@ module BitexBot
       open_position_class.find_by_transaction_id(trade.order_id).present?
     end
 
-    # @param [ApiWrapper::UserTransaction] trade.
+    # @param [Exchanges::UserTransaction] trade.
     #
     # @return [Boolean]
     def self.expected_orderbook?(trade)
-      trade.raw.orderbook_code.to_s == Robot.maker.base_quote
+      trade.raw.orderbook_code.to_s == Robot.maker.base_quote.downcase
     end
 
     # Statuses:

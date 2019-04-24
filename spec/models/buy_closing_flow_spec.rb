@@ -82,7 +82,7 @@ describe BitexBot::BuyClosingFlow do
 
         before(:each) do
           allow(described_class).to receive(:fx_rate).and_return(2.to_d)
-          allow(BitexBot::Robot).to receive_message_chain(:taker, :place_order).with(:sell, 2, 10).and_return(ApiWrapper::Order.new('65'))
+          allow(BitexBot::Robot).to receive_message_chain(:taker, :place_order).with(:sell, 2, 10).and_return(BitexBot::Exchanges::Order.new('65'))
 
           allow(BitexBot::Robot).to receive(:logger).and_return(logger)
         end
@@ -125,7 +125,7 @@ describe BitexBot::BuyClosingFlow do
           create(:close_buy, id: 128, amount: 0, quantity: 0, order_id: '245', closing_flow: described_class.find(123))
         end
 
-        let(:order) { ApiWrapper::Order.new('245') }
+        let(:order) { BitexBot::Exchanges::Order.new('245') }
 
         context 'and cancellable position' do
           before(:each) do
@@ -215,7 +215,7 @@ describe BitexBot::BuyClosingFlow do
               allow(BitexBot::Robot)
                 .to receive_message_chain(:taker, :place_order)
                 .with(:sell, 20, 10)
-                .and_return(ApiWrapper::Order.new('8787'))
+                .and_return(BitexBot::Exchanges::Order.new('8787'))
             end
 
             context 'with executed order' do

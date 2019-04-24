@@ -20,8 +20,8 @@ require 'bitex_bot/database'
 require 'bitex_bot/logger'
 require 'bitex_bot/notifier'
 
-require 'bitex_bot/models/api_wrappers/api_wrapper'
-Dir[File.dirname(__FILE__) + '/bitex_bot/models/api_wrappers/**/*.rb'].each { |file| require file }
+require 'bitex_bot/exchanges/exchange'
+Dir[File.dirname(__FILE__) + '/bitex_bot/exchanges/*.rb'].each { |file| require file }
 
 require 'bitex_bot/models/opening_flow'
 require 'bitex_bot/models/sell_opening_flow'

@@ -83,7 +83,7 @@ describe BitexBot::BuyOpeningFlow do
     let(:transactions) { double }
     let(:orders) { double }
 
-    it 'forward to OrderbookSimulator with nil quantity_target' do
+    it 'forward to OrderbookSimulator with nil cypto_target' do
       expect(BitexBot::OrderbookSimulator).to receive(:run).with(30, transactions, orders, 100, nil, 0.5)
 
       described_class.safest_price(transactions, orders, 100.to_d)
@@ -134,16 +134,14 @@ describe BitexBot::BuyOpeningFlow do
 
   describe 'markets species' do
     before(:each) do
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('maker_crypto')
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('maker_fiat')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_CRYPTO')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_FIAT')
       # On taker market, BuyOpeningFlow spend taker base specie
-      allow(BitexBot::Robot).to receive_message_chain(:taker, :base).and_return('taker_crypto')
+      allow(BitexBot::Robot).to receive_message_chain(:taker, :base).and_return('TAKER_CRYPTO')
     end
 
     subject { described_class }
 
-    its(:maker_specie_to_obtain) { is_expected.to eq('MAKER_CRYPTO') }
-    its(:maker_specie_to_spend) { is_expected.to eq('MAKER_FIAT') }
     its(:taker_specie_to_spend) { is_expected.to eq('TAKER_CRYPTO') }
   end
 
@@ -289,7 +287,7 @@ describe BitexBot::BuyOpeningFlow do
       allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
     end
 
-    let(:maker_market) { instance_double(ApiWrapper) }
+    let(:maker_market) { instance_double(BitexBot::Exchanges::Exchange) }
     let(:logger) { BitexBot::Logger.setup }
 
     subject(:place_order) { create(:buy_opening_flow).place_order(:no_role, 100.to_d, 200.to_d) }
@@ -303,7 +301,7 @@ describe BitexBot::BuyOpeningFlow do
 
       it do
         expect do
-          expect(place_order).to be_a(BitexApiWrapper::Order)
+          expect(place_order).to be_a(BitexBot::Exchanges::Order)
         end.to change { BitexBot::OpeningBid.count }.by(1)
       end
     end
@@ -325,7 +323,7 @@ describe BitexBot::BuyOpeningFlow do
     before(:each) do
       allow(BitexBot::Robot).to receive(:logger).and_return(logger)
 
-      maker_market = instance_double(ApiWrapper)
+      maker_market = instance_double(BitexBot::Exchanges::Exchange)
       allow(BitexBot::Robot).to receive(:maker).and_return(maker_market)
       allow(maker_market).to receive_messages(base: 'maker_base', quote: 'maker_quote')
 

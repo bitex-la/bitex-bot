@@ -40,11 +40,11 @@ module BitexBot
     end
 
     def base
-      order_book_currencies[:base]
+      orderbook_currencies[:base]
     end
 
     def quote
-      order_book_currencies[:quote]
+      orderbook_currencies[:quote]
     end
 
     def maker_class
@@ -82,8 +82,8 @@ module BitexBot
       exit 1
     end
 
-    def order_book_currencies
-      {}.tap { |currencies| currencies[:base], currencies[:quote] = maker_settings.order_book.to_s.split('_') }
+    def orderbook_currencies
+      {}.tap { |currencies| currencies[:base], currencies[:quote] = maker_settings.orderbook_code.to_s.split('_') }
     end
 
     def exchange_name(exchange)
@@ -91,7 +91,7 @@ module BitexBot
     end
 
     def exchange_class(exchange)
-      "#{exchange_name(exchange).capitalize}ApiWrapper".constantize
+      "BitexBot::Exchanges::#{exchange_name(exchange).capitalize}".constantize
     end
 
     def exchange_settings(exchange)

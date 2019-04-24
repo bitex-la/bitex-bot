@@ -16,7 +16,7 @@ describe BitexBot::Robot do
 
     allow(BitexBot::Settings)
       .to receive(:taker_settings)
-      .and_return(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd'))
+      .and_return(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', orderbook_code: 'btcusd'))
 
     allow(BitexBot::Settings).to receive(:time_to_live).and_return(60)
     allow(BitexBot::Settings).to receive(:close_time_to_live).and_return(30)
@@ -43,7 +43,7 @@ describe BitexBot::Robot do
     stub_bitstamp_balance
     stub_bitstamp_market
     stub_bitstamp_transactions
-    allow_any_instance_of(BitstampApiWrapper).to receive(:user_transactions).and_return([])
+    allow_any_instance_of(BitexBot::Exchanges::Bitstamp).to receive(:user_transactions).and_return([])
 
     BitexBot::Robot.setup
   end
@@ -66,7 +66,7 @@ describe BitexBot::Robot do
     expect(buying).to be_executing
     expect(selling).to be_executing
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
+    allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades) do
       [
         build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
         build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
@@ -85,7 +85,7 @@ describe BitexBot::Robot do
   end
 
   it 'creates alternating opening flows' do
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([])
+    allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades).and_return([])
     bot.trade!
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
@@ -99,7 +99,7 @@ describe BitexBot::Robot do
 
     # When transactions appear, all opening flows should get old and die.
     # We stub our finder to make it so all orders have been successfully cancelled.
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
+    allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades) do
       [
         build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
         build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
@@ -110,7 +110,7 @@ describe BitexBot::Robot do
     2.times { bot.trade! }
     expect(BitexBot::BuyOpeningFlow.active.count).to eq(1)
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
+    allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades) do
       [
         build_bitex_user_transaction(:buy, 3, 600, 2, 300, 0.05, :btc_usd),
         build_bitex_user_transaction(:sell, 4, 600, 2, 300, 0.05, :btc_usd)
@@ -125,7 +125,7 @@ describe BitexBot::Robot do
   it 'does not place new opening flows until all closing flows are done' do
     expect { bot.trade! }.to change { BitexBot::BuyOpeningFlow.count }.by(1)
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
+    allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades) do
       [
         build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
         build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
@@ -151,7 +151,6 @@ describe BitexBot::Robot do
 
   context 'stops trading when' do
     before(:each) do
-
       stub_bitex_balance(
         fiat: { total: 10, available: 10 },
         crypto: { total: 10, available: 10 },
@@ -167,12 +166,13 @@ describe BitexBot::Robot do
       other_bot.store.update(hold: true)
 
       expect { bot.trade! }.not_to change { BitexBot::BuyOpeningFlow.count }
+      expect { bot.trade! }.not_to change { BitexBot::SellOpeningFlow.count }
     end
 
     it 'crypto stop is reached' do
       other_bot.store.update(crypto_stop: 30)
 
-      expect { bot.trade! }.not_to change { BitexBot::BuyOpeningFlow.count }
+      expect { bot.trade! }.not_to change { BitexBot::SellOpeningFlow.count }
     end
 
     it 'fiat stop is reached' do
@@ -190,7 +190,7 @@ describe BitexBot::Robot do
         trading_fee: 0.5
       )
 
-      allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([])
+      allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades).and_return([])
       stub_bitstamp_balance(100, 100, 0.5)
       other_bot.store.update(crypto_warning: 0, fiat_warning: 0)
     end
@@ -199,11 +199,11 @@ describe BitexBot::Robot do
       expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
 
       Timecop.travel(1.minute.from_now)
-      stub_bitstamp_market # Re-stub so order book does not get old
+      stub_bitstamp_market # Re-stub so orderbook does not get old
       expect { bot.trade! }.not_to change { Mail::TestMailer.deliveries.count }
 
       Timecop.travel(31.minutes.from_now)
-      stub_bitstamp_market # Re-stub so order book does not get old
+      stub_bitstamp_market # Re-stub so orderbook does not get old
       expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
     end
 
@@ -226,7 +226,7 @@ describe BitexBot::Robot do
   end
 
   it 'notifies exceptions and sleeps' do
-    allow_any_instance_of(BitstampApiWrapper).to receive(:balance) { raise StandardError.new('oh moova') }
+    allow_any_instance_of(BitexBot::Exchanges::Bitstamp).to receive(:balance) { raise StandardError.new('oh moova') }
 
     expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
   end

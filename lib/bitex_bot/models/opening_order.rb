@@ -35,8 +35,8 @@ module BitexBot
         "order_id: #{order_id}, "\
         "role: #{role}, "\
         "status: #{status}, "\
-        "price: #{Robot.maker.base.upcase} #{price * opening_flow.class.fx_rate}, "\
-        "amount: #{Robot.maker.quote.upcase} #{amount}."
+        "price: #{Robot.maker.base} #{price * opening_flow.class.fx_rate}, "\
+        "amount: #{Robot.maker.quote} #{amount}."
     end
 
     def order_finalisable?

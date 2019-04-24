@@ -4,14 +4,11 @@ describe BitexBot::Store do
   before(:each) do
     allow(BitexBot::Robot).to receive(:logger).and_return(BitexBot::Logger.setup)
 
-    allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('maker_crypto')
-    allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('maker_fiat')
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_CRYPTO')
+    allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_FIAT')
 
-    allow(BitexBot::Robot).to receive_message_chain(:taker, :base).and_return('taker_crypto')
-    allow(BitexBot::Robot).to receive_message_chain(:taker, :quote).and_return('taker_fiat')
-
-    allow(BitexBot::Robot).to receive_message_chain(:maker, :name).and_return('maker_name')
-    allow(BitexBot::Robot).to receive_message_chain(:taker, :name).and_return('taker_name')
+    allow(BitexBot::Robot).to receive_message_chain(:taker, :base).and_return('TAKER_CRYPTO')
+    allow(BitexBot::Robot).to receive_message_chain(:taker, :quote).and_return('TAKER_FIAT')
   end
 
   subject(:store) { create(:store) }
@@ -60,14 +57,14 @@ describe BitexBot::Store do
             'BOT      '\
             'SYNC_STORE     '\
             'BitexBot::Store: ['\
-            '{ maker: maker_name, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }, '\
-            '{ taker: taker_name, crypto: TAKER_CRYPTO 0.0, fiat: TAKER_FIAT 0.0 }'\
+            '{ maker: Double, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }, '\
+            '{ taker: Double, crypto: TAKER_CRYPTO 0.0, fiat: TAKER_FIAT 0.0 }'\
             "]\n"
           )
     end
   end
 
   it '#summary_for' do
-    expect(subject.send(:summary_for, :maker)).to eq('{ maker: maker_name, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }')
+    expect(subject.send(:summary_for, :maker)).to eq('{ maker: Double, crypto: MAKER_CRYPTO 0.0, fiat: MAKER_FIAT 0.0 }')
   end
 end

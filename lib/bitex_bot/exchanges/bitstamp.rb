@@ -7,7 +7,7 @@ module BitexBot
         ::Bitstamp.setup do |config|
           config.key = settings.api_key
           config.secret = settings.secret
-          config.client_id = settings.user_id
+          config.client_id = settings.client_id
         end
 
         self.currency_pair = Hashie::Mash.new(

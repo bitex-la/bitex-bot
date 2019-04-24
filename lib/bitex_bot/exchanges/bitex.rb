@@ -10,7 +10,7 @@ module BitexBot
 
       def initialize(settings)
         self.client = ::Bitex::Client.new(api_key: settings.api_key, sandbox: settings.sandbox)
-        self.trading_fee = settings.trading_fee.to_d
+        self.trading_fee = settings.trading_fee.try(:to_d) || 0
         self.currency_pair = Hashie::Mash.new(
           code: settings.orderbook_code.to_sym,
           base: settings.orderbook_code.split('_').first.to_sym,

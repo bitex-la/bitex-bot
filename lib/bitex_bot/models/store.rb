@@ -30,9 +30,9 @@ module BitexBot
 
     # @param [Symbol] market. <:maker|:taker>
     def summary_for(market_role)
-      "{ #{market_role}: #{Robot.send(market_role).name}, "\
-        "crypto: #{Robot.send(market_role).base.upcase} #{send("#{market_role}_crypto").to_d}, "\
-        "fiat: #{Robot.send(market_role).quote.upcase} #{send("#{market_role}_fiat").to_d} }"\
+      "{ #{market_role}: #{Robot.send(market_role).class.name.demodulize}, "\
+        "crypto: #{Robot.send(market_role).base} #{send("#{market_role}_crypto").to_d}, "\
+        "fiat: #{Robot.send(market_role).quote} #{send("#{market_role}_fiat").to_d} }"\
     end
 
     def expired_last_warning?

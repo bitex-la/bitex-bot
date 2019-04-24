@@ -3,7 +3,7 @@ require 'spec_helper'
 describe BitexBot::Exchanges::Itbit do
   let(:exchange) do
     settings = BitexBot::SettingsClass.new(
-     api_key: 'apikey',
+     client_key: 'apikey',
      secret: 'secret',
      user_id: 'USER-ID',
      default_wallet_id: '7118de95-4bdd-4196-b674-f267154906d8',
@@ -208,7 +208,7 @@ describe BitexBot::Exchanges::Itbit do
       context 'and not retrieved' do
         before(:each) { allow_any_instance_of(described_class).to receive(:find_lost).and_return(nil) }
 
-        it { expect { subject }.to raise_error(BitexBot::Exchanges::OrderNotFound, 'Buy order for XBT 2 @ USD 3500.') }
+        it { expect { subject }.to raise_error(BitexBot::Exchanges::OrderNotFound, 'Not found buy order for XBT 2 @ USD 3500.') }
       end
     end
   end

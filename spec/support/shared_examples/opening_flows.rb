@@ -117,14 +117,13 @@ shared_examples_for 'OpeningFlows' do
       end
     end
 
-    let(:maker) { instance_double(ApiWrapper) }
+    let(:maker) { instance_double(BitexBot::Exchanges::Exchange) }
 
     subject(:open_market) do
       described_class.open_market(
         1_000.to_d,
-        2_000.to_d,
-        [ApiWrapper::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')],
-        [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')],
+        [BitexBot::Exchanges::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, :executing, 'raw_order')],
+        [BitexBot::Exchanges::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')],
         0.25.to_d,
         0.50.to_d
       )
@@ -133,8 +132,7 @@ shared_examples_for 'OpeningFlows' do
     context 'succesful' do
       before(:each) do
         allow(BitexBot::Robot).to receive(:logger).and_return(logger)
-        allow(described_class).to receive(:enough_funds?).and_return(true)
-        allow(maker).to receive_messages(base: 'maker_base', quote: 'maker_quote')
+        allow(maker).to receive_messages(base: 'MAKER_BASE', quote: 'MAKER_QUOTE')
       end
 
       let(:logger) { BitexBot::Logger.setup }
@@ -154,32 +152,9 @@ shared_examples_for 'OpeningFlows' do
     end
 
     context 'cannot create' do
-      before(:each) do
-        allow(described_class).to receive(:maker_specie_to_spend).and_return('MAKER_SPECIE_TO_SPEND')
-        allow(described_class).to receive(:maker_specie_to_obtain).and_return('MAKER_SPECIE_TO_OBTAIN')
-        allow(described_class).to receive(:enough_funds?).with(2_000, 10_000).and_return(true)
-        allow(described_class).to receive(:create!) { raise StandardError, 'any reason'}
-      end
+      before(:each) { allow(described_class).to receive(:create!) { raise StandardError, 'any reason'} } 
 
-      context 'by some reason' do
-        it { expect { open_market }.to raise_error(StandardError, 'any reason') }
-      end
-
-      context 'by not enough funds' do
-        before(:each) do
-          allow(described_class).to receive(:enough_funds?).and_return(false)
-          allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE')
-          allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
-        end
-
-        it do
-          expect { open_market }
-            .to raise_error(
-              BitexBot::CannotCreateFlow,
-              'Needed SPECIE 10000.0 on maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
-            )
-        end
-      end
+      it { expect { open_market }.to raise_error(StandardError, 'any reason') }
     end
   end
 

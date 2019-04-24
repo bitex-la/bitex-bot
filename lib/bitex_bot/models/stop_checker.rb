@@ -6,7 +6,7 @@ module BitexBot
     end
 
     def self.currency_code(currency_type)
-      { fiat: Robot.maker.quote, crypto: Robot.maker.base }[currency_type].upcase
+      { fiat: Robot.maker.quote, crypto: Robot.maker.base }[currency_type]
     end
 
     def self.balance_flag_for(currency_type)

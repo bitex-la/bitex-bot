@@ -47,8 +47,8 @@ describe BitexBot::StopChecker do
 
   describe '.alert_message' do
     before(:each) do
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('maker_base')
-      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('maker_quote')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :base).and_return('MAKER_BASE')
+      allow(BitexBot::Robot).to receive_message_chain(:maker, :quote).and_return('MAKER_QUOTE')
     end
 
     shared_examples_for 'for currency type' do |currency_type, currency_code|

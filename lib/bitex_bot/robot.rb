@@ -24,10 +24,11 @@ module BitexBot
     def_delegator self, :store
 
     def self.setup
+      self.logger = Logger.setup
       log(:info, :bot, :setup, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
 
-      self.logger = Logger.setup
       self.notifier = Notifier if Settings.mailer.present?
+
       self.store =
         Store.first ||
         Store.create(
@@ -36,8 +37,10 @@ module BitexBot
           fiat_stop: Settings.fiat_stop,
           crypto_stop: Settings.crypto_stop
         )
+
       self.maker = Settings.maker_class.new(Settings.maker_settings)
       self.taker = Settings.taker_class.new(Settings.taker_settings)
+
       new
     end
 
@@ -96,11 +99,7 @@ module BitexBot
     rescue Curl::Err::TimeoutError => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(15)
-    rescue OrderNotFound => e
-      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-    rescue ApiWrapperError => e
-      notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-    rescue OrderArgumentError => e
+    rescue Exchanges::OrderNotFound => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
@@ -175,15 +174,13 @@ module BitexBot
       if recent_buying.present?
         log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.')
       elsif !store.balance_stop?(:fiat)
-        buying_args = [taker_balance.crypto.available, maker_balance.fiat.available, taker_market.bids] + opening_flow_args
-        BuyOpeningFlow.open_market(*buying_args)
+        BuyOpeningFlow.open_market(*[taker_balance.crypto.available, taker_market.bids] + opening_flow_args)
       end
 
       if recent_selling.present?
         log(:debug, :bot, :trade, 'Not placing new orders, recent ones exist.')
       elsif !store.balance_stop?(:crypto)
-        selling_args = [taker_balance.fiat.available, maker_balance.crypto.available, taker_market.asks] + opening_flow_args
-        SellOpeningFlow.open_market(*selling_args)
+        SellOpeningFlow.open_market(*[taker_balance.fiat.available, taker_market.asks] + opening_flow_args)
       end
     end
 

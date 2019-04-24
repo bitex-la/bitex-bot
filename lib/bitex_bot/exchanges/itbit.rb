@@ -5,7 +5,7 @@ module BitexBot
     class Itbit < Exchange
       def initialize(settings)
         ::Itbit.tap do |conf|
-          conf.client_key = settings.api_key
+          conf.client_key = settings.client_key
           conf.secret = settings.secret
           conf.user_id = settings.user_id
           conf.default_wallet_id = settings.default_wallet_id

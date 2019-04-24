@@ -8,11 +8,11 @@ describe BitexBot::SellOpeningFlow do
 
     allow(BitexBot::Robot)
       .to receive(:maker)
-      .and_return(BitexApiWrapper.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
+      .and_return(BitexBot::Exchanges::Bitex.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
 
     allow(BitexBot::Robot)
       .to receive(:taker)
-      .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
+      .and_return(BitexBot::Exchanges::Bitstamp.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', orderbook_code: 'btcusd')))
 
     allow(BitexBot::Robot).to receive(:logger).and_return(BitexBot::Logger.setup)
 
@@ -37,7 +37,6 @@ describe BitexBot::SellOpeningFlow do
 
     subject(:flow) do
       described_class.open_market(
-        taker_balance,
         1_000.to_d,
         BitexBot::Robot.taker.market.asks,
         BitexBot::Robot.taker.transactions,
@@ -45,8 +44,6 @@ describe BitexBot::SellOpeningFlow do
         0.25.to_d
       )
     end
-
-    let(:taker_balance) { 1_000.to_d }
 
     context 'sells 2 crypto' do
       before(:each) do
@@ -145,20 +142,6 @@ describe BitexBot::SellOpeningFlow do
           end.not_to change { BitexBot::OpeningAsk.count }
         end
       end
-
-      context 'fails when taker not enough fiat to spend in the other exchange' do
-        let(:taker_balance) { 1.to_d }
-
-        it 'fails' do
-          expect do
-            expect(flow).to be_nil
-            expect(described_class.count).to be_zero
-          end.to raise_exception(
-            BitexBot::CannotCreateFlow,
-            'Needed USD 100.75187969 on taker to close this sell position but you only have USD 1.0.'
-          )
-        end
-      end
     end
   end
 
@@ -201,7 +184,7 @@ describe BitexBot::SellOpeningFlow do
 
       it 'does not register buys from another order book' do
         trade = build_bitex_user_transaction(:sell, 777, 600, 2, 300, 0.05, :boo_shit)
-        allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
+        allow_any_instance_of(BitexBot::Exchanges::Bitex).to receive(:trades).and_return([trade])
 
         expect { described_class.sync_positions }.not_to change { BitexBot::OpenSell.count }
       end

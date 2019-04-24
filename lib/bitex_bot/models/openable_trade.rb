@@ -14,7 +14,7 @@ module BitexBot
 
       def hit_summary
         "#{opening_flow.class} ##{opening_flow.id} on order_id ##{transaction_id} was hit for "\
-          "#{Robot.maker.base.upcase} #{quantity} @ #{Robot.maker.quote.upcase} #{price}."
+          "#{Robot.maker.base} #{quantity} @ #{Robot.maker.quote} #{price}."
       end
     end
   end

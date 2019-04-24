@@ -173,7 +173,7 @@ describe BitexBot::Exchanges::Bitex do
       context 'and not retrieved' do
         before(:each) { allow_any_instance_of(described_class).to receive(:find_lost).and_return(nil) }
 
-        it { expect { subject }.to raise_error(BitexBot::Exchanges::OrderNotFound, 'Buy order for BTC 2 @ USD 3500.') }
+        it { expect { subject }.to raise_error(BitexBot::Exchanges::OrderNotFound, 'Not found buy order for BTC 2 @ USD 3500.') }
       end
     end
   end

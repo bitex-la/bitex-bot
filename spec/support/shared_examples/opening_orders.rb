@@ -10,7 +10,7 @@ shared_examples_for 'OpeningOrders' do
   describe '#order_finalisable?' do
     before(:each) { allow_any_instance_of(described_class).to receive(:order).and_return(order) }
 
-    let(:order) { BitexApiWrapper::Order.new('doncare', :type, 400, 2, Time.now.to_i, status, double) }
+    let(:order) { BitexBot::Exchanges::Order.new('dontcare', :type, 400, 2, Time.now.to_i, status, double) }
 
     context 'with cancelled order status' do
       let(:status) { :cancelled }
