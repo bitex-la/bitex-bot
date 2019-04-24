@@ -1,7 +1,7 @@
-# Wrapper implementation for Kraken API.
-# https://www.kraken.com/en-us/help/api
 module BitexBot
   module Exchanges
+    # Wrapper implementation for Kraken API.
+    # https://www.kraken.com/en-us/help/api
     class Kraken < Exchange
       require 'kraken_client'
 

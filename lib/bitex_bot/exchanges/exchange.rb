@@ -1,5 +1,4 @@
 module BitexBot
-  # This class represents the general behaviour for trading platform wrappers.
   module Exchanges
     Transaction = Struct.new(
       :id,        # String
@@ -48,15 +47,16 @@ module BitexBot
       :crypto,      # Decimal
       :price,       # Decimal
       :fee,         # Decimal
-      :type,        # String <:buy|:sell> # TODO En bitstamp no sabemos que tipo de trade es
+      :type,        # String <:buy|:sell> # TODO On Bitstamp can't retrive trade type in a simple request.
       :timestamp,   # Epoch Integer
       :raw
     )
 
+    # General behaviour for trading platform wrappers.
     class Exchange
       attr_accessor :currency_pair
 
-      MIN_AMOUNT = 5.to_d
+      MIN_AMOUNT = 10.to_d
 
       def base_quote
         @base_quote ||= "#{base}_#{quote}".freeze
@@ -151,5 +151,6 @@ module BitexBot
     end
 
     class OrderNotFound < StandardError; end
+    class OrderError < StandardError; end
   end
 end

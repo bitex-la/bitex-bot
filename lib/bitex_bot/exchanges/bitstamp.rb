@@ -1,7 +1,7 @@
-# Wrapper implementation for Bitstamp API.
-# https://www.bitstamp.net/api/
 module BitexBot
   module Exchanges
+    # Wrapper implementation for Bitstamp API.
+    # https://www.bitstamp.net/api/
     class Bitstamp < Exchange
       def initialize(settings)
         ::Bitstamp.setup do |config|

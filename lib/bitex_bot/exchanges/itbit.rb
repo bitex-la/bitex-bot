@@ -1,7 +1,7 @@
-# Wrapper implementation for Itbit API.
-# https://api.itbit.com/docs
 module BitexBot
   module Exchanges
+    # Wrapper implementation for Itbit API.
+    # https://api.itbit.com/docs
     class Itbit < Exchange
       def initialize(settings)
         ::Itbit.tap do |conf|
