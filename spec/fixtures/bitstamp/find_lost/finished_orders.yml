@@ -1,0 +1,168 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://www.bitstamp.net/api/v2/open_orders/btcusd/
+    body:
+      encoding: UTF-8
+      string: key=apikey&nonce=15550873278310&signature=D521A33B19C489821A82F85759C83AB1750420ECF5C8F3CC797FCC4F2CFEFFF5
+    headers:
+      Accept:
+      - "*/*"
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - Bitexbot/0.9.2 (https://github.com/bitex-la/bitex-bot)
+      Content-Length:
+      - '132'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - www.bitstamp.net
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Access-Control-Allow-Headers:
+      - x-requested-with, Content-Type, origin, accept, cache-control
+      Access-Control-Allow-Methods:
+      - POST, GET
+      Access-Control-Allow-Origin:
+      - "*"
+      Cache-Control:
+      - max-age=0
+      Content-Language:
+      - en
+      Content-Security-Policy-Report-Only:
+      - 'default-src ''self'' ''unsafe-inline'' ''report-sample''; connect-src ''self''
+        wss://ws.pusherapp.com wss://ws.bitstamp.net *.pusher.com *.trackjs.com *.google-analytics.com
+        stats.g.doubleclick.net ; font-src ''self'' data: fonts.gstatic.com www.google.com
+        ; frame-ancestors ''self''; frame-src ''self'' pixel-a.basis.net 8720977.fls.doubleclick.net
+        *.ledgerwallet.com *.google.com www.googletagmanager.com pixel.sitescout.com
+        ctpe.net ; img-src * data:; report-uri /api/report-csp/; script-src ''self''
+        ''unsafe-inline'' js-agent.newrelic.com *.google-analytics.com *.pusher.com
+        d3dy5gmtp8yhk7.cloudfront.net www.googleadservices.com www.googletagmanager.com
+        www.gstatic.com www.recaptcha.net code.highcharts.com/stock/highstock.js bam.nr-data.net
+        ; style-src ''self'' ''unsafe-inline'' fonts.googleapis.com'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 12 Apr 2019 16:42:10 GMT
+      Expires:
+      - Fri, 12 Apr 2019 16:42:10 GMT
+      Last-Modified:
+      - Fri, 12 Apr 2019 16:42:10 GMT
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains
+      Vary:
+      - Authorization,Accept-Language
+      X-Frame-Options:
+      - SAMEORIGIN
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - incap_ses_1242_99025=0+lLWONJkk4QnwBmeXg8EeK/sFwAAAAAIZwo0N5vHATnTuYOFeeR0w==;
+        path=/; Domain=.bitstamp.net
+      - nlbi_99025=6ZkLdwhn1liNI0l+SF244gAAAAD6QzKoFUBlETjLsp8DsKQ/; path=/; Domain=.bitstamp.net
+      - visid_incap_99025=nXV93FjMSl64/ppn+jEjV+G/sFwAAAAAQUIPAAAAAABUul790WJk3G1d1AxLVPYy;
+        expires=Sat, 11 Apr 2020 09:52:18 GMT; path=/; Domain=.bitstamp.net
+      X-Iinfo:
+      - 14-68869786-68851009 PNNN RT(1555087329855 127) q(0 0 0 0) r(3 3) U6
+      X-Cdn:
+      - Incapsula
+      Content-Encoding:
+      - gzip
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        H4sIAAAAAAAA/4uOBQApu0wNAgAAAA==
+    http_version: 
+  recorded_at: Fri, 12 Apr 2019 16:42:08 GMT
+- request:
+    method: post
+    uri: https://www.bitstamp.net/api/v2/user_transactions/btcusd/
+    body:
+      encoding: UTF-8
+      string: currency_pair=btcusd&key=apikey&nonce=15550873283667&signature=9C8468290301660B565D7122C6C56C1A76F26CE9EC560128F9862814DE25B4DF
+    headers:
+      Accept:
+      - "*/*"
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - Bitexbot/0.9.2 (https://github.com/bitex-la/bitex-bot)
+      Content-Length:
+      - '153'
+      Content-Type:
+      - application/x-www-form-urlencoded
+      Host:
+      - www.bitstamp.net
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Access-Control-Allow-Headers:
+      - x-requested-with, Content-Type, origin, accept, cache-control
+      Access-Control-Allow-Methods:
+      - POST, GET
+      Access-Control-Allow-Origin:
+      - "*"
+      Cache-Control:
+      - max-age=0
+      Content-Language:
+      - en
+      Content-Security-Policy-Report-Only:
+      - 'default-src ''self'' ''unsafe-inline'' ''report-sample''; connect-src ''self''
+        wss://ws.pusherapp.com wss://ws.bitstamp.net *.pusher.com *.trackjs.com *.google-analytics.com
+        stats.g.doubleclick.net ; font-src ''self'' data: fonts.gstatic.com www.google.com
+        ; frame-ancestors ''self''; frame-src ''self'' pixel-a.basis.net 8720977.fls.doubleclick.net
+        *.ledgerwallet.com *.google.com www.googletagmanager.com pixel.sitescout.com
+        ctpe.net ; img-src * data:; report-uri /api/report-csp/; script-src ''self''
+        ''unsafe-inline'' js-agent.newrelic.com *.google-analytics.com *.pusher.com
+        d3dy5gmtp8yhk7.cloudfront.net www.googleadservices.com www.googletagmanager.com
+        www.gstatic.com www.recaptcha.net code.highcharts.com/stock/highstock.js bam.nr-data.net
+        ; style-src ''self'' ''unsafe-inline'' fonts.googleapis.com'
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 12 Apr 2019 16:42:11 GMT
+      Expires:
+      - Fri, 12 Apr 2019 16:42:11 GMT
+      Last-Modified:
+      - Fri, 12 Apr 2019 16:42:11 GMT
+      Server:
+      - Apache
+      Strict-Transport-Security:
+      - max-age=63072000; includeSubDomains
+      Vary:
+      - Authorization,Accept-Language
+      X-Frame-Options:
+      - SAMEORIGIN
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - incap_ses_1242_99025=BW/QPRAWhT8QnwBmeXg8EeK/sFwAAAAAoa78kPxrElEKy6UlHgCXmA==;
+        path=/; Domain=.bitstamp.net
+      - nlbi_99025=GgJsG+hAeSqp9ahPSF244gAAAAAfE/bqpjEytIPF7RBB9+xV; path=/; Domain=.bitstamp.net
+      - visid_incap_99025=nXV93FjMSl64/ppn+jEjV+G/sFwAAAAAQUIPAAAAAABUul790WJk3G1d1AxLVPYy;
+        expires=Sat, 11 Apr 2020 09:52:19 GMT; path=/; Domain=.bitstamp.net
+      X-Iinfo:
+      - 8-26146925-26146328 PNNN RT(1555087330325 98) q(0 0 0 0) r(2 4) U6
+      X-Cdn:
+      - Incapsula
+      Content-Encoding:
+      - gzip
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        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
+    http_version: 
+  recorded_at: Fri, 12 Apr 2019 16:42:09 GMT

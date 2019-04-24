@@ -1,0 +1,114 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.itbit.com/v1/wallets/7118de95-4bdd-4196-b674-f267154906d8/orders
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept:
+      - "*/*"
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - Bitexbot/0.9.2 (https://github.com/bitex-la/bitex-bot)
+      Authorization:
+      - apikey:apikey
+      X-Auth-Timestamp:
+      - '1554839704837'
+      X-Auth-Nonce:
+      - '1554839704837'
+      Content-Type:
+      - application/json
+      Host:
+      - api.itbit.com
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Access-Control-Allow-Headers:
+      - authorization,content-type,x-auth-nonce,x-auth-timestamp,x-requested-with
+      Access-Control-Allow-Methods:
+      - GET,HEAD,PUT,POST,DELETE
+      Access-Control-Expose-Headers:
+      - X-Requested-With
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Ratelimit-Limit:
+      - '20000'
+      X-Ratelimit-Remaining:
+      - '19999'
+      X-Ratelimit-Reset:
+      - '1554839768'
+      Vary:
+      - Accept-Encoding
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '2420'
+      Date:
+      - Tue, 09 Apr 2019 19:55:08 GMT
+      Connection:
+      - keep-alive
+      Content-Security-Policy:
+      - 'default-src ''self''; script-src ''self'' ''unsafe-inline'' ''unsafe-eval''
+        data: *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net *.hs-scripts.com
+        *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com *.hsleadflows.net
+        *.hubspot.com *.hsstatic.net *.interssl.com *.geotrust.com *.jquery.com oss.maxcdn.com
+        *.googleapis.com *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        img-src ''self'' data: *.interssl.com *.geotrust.com *.jquery.com oss.maxcdn.com
+        stats.g.doubleclick.net *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        style-src ''self'' ''unsafe-inline'' *.hubspot.net *.itbit.com *.hs-analytics.net
+        *.hsforms.net *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com
+        *.facebook.com *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com
+        *.googleapis.com *.jquery.com oss.maxcdn.com stats.g.doubleclick.net *.google-analytics.com
+        *.googleadservices.com *.google.com https://chart.googleapis.com/chart https://www.google.com/ads
+        https://fonts.googleapis.com/ https://fonts.gstatic.com/ https://themes.googleusercontent.com/
+        *.googleusercontent.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/
+        *.cloudflare.com; child-src ''self'' *.interssl.com *.jquery.com oss.maxcdn.com
+        stats.g.doubleclick.net *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        frame-src ''self'' *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net
+        *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com
+        *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com *.paypal.com  *.jquery.com
+        *.google-analytics.com *.googleadservices.com *.google.com https://chart.googleapis.com/chart
+        https://www.google.com/ads https://fonts.googleapis.com/ https://fonts.gstatic.com/
+        https://themes.googleusercontent.com/ *.googleusercontent.com https://www.google.com/recaptcha/
+        https://www.gstatic.com/recaptcha/ *.cloudflare.com; form-action ''self''
+        products.geotrust.com *.interssl.com *.jquery.com *.cloudflare.com; font-src
+        ''self'' data: *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net
+        *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com
+        *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com interssl.com
+        https://fonts.googleapis.com/ https://fonts.gstatic.com/ https://themes.googleusercontent.com/
+        *.googleusercontent.com fonts.gstatic.com;'
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Access-Control-Allow-Origin:
+      - "*"
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Download-Options:
+      - noopen
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Strict-Transport-Security:
+      - max-age=15768000 ; includeSubDomains ; preload
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        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
+    http_version: 
+  recorded_at: Tue, 09 Apr 2019 19:55:06 GMT
+recorded_with: VCR 4.0.0

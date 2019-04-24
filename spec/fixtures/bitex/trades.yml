@@ -10,7 +10,7 @@ http_interactions:
       User-Agent:
       - Faraday v0.15.4
       Authorization:
-      - 468d230658a4f6285ecd0ba31366eb72c001b2fe48393e7824adb25f1d85171d1363a7cff0415f9a
+      - your_magic_api_key
       Version:
       - '2.1'
       Content-Type:

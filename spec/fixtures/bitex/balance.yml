@@ -1,0 +1,131 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/coin_wallets/btc
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Fri, 12 Apr 2019 22:27:47 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d5efa7cf68190ab35e32c2e2e21bc45a41555108066; expires=Sat, 11-Apr-20
+        22:27:46 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=bDVSV1NMRyswOFZ5d0dRc0dSYS91RERkSVFPRkwxdmFjY2xMZlNzQVE5aVdhaFJyVlJ2ZEVNNzJ5OHBETTRTVkhQS2t1Qm9LeThEaEMwS2JqSXBjMWc9PS0tdGJsZG9hc0VqaDBkc0dOa1krNythZz09--95be53d9d089b163cda4b12b1a3340ed58b934f7;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"d0f97003b5150b18ed0abd42f3097a04"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - e207c0bf-2434-4f41-adf3-3f5baf3f1f21
+      X-Runtime:
+      - '0.139051'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4c68a1285dfb67a3-EZE
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"7347","type":"coin_wallets","attributes":{"balance":23.10785424,"available":23.08342157,"currency":"btc","address":"mu4DKZpadxMgHtRSLwQpaQ9eTTXDEjWZUF","auto_sell_address":"msmet4V5WzBjCR4tr17cxqHKw1LJiRnhHH"}}}'
+    http_version: 
+  recorded_at: Fri, 12 Apr 2019 22:27:44 GMT
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/cash_wallets/usd
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Fri, 12 Apr 2019 22:27:49 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d195df9e0e530433b93fc5596b5ee7ac11555108068; expires=Sat, 11-Apr-20
+        22:27:48 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=Zm4yZHhqeURlUVFWM3hvM1JhY0ovaXFPSTg5Q0p1ZVhUakdBTkhpbkEzWUh0NVI3NjBJSWVHMzZIYUZtdVpNZ0xFdHg3ZlRiclF6aytYVG1qc2M5M0E9PS0tTGhPRE5oK1BQSVNOUENZaUk4dkdJQT09--7a8b969e851f74fd107ab1ceb8302c554f8758c6;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"6c0b24b8af86812351bb67e9d95022bd"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 29977c2e-fd38-430b-ad59-3e381c66b326
+      X-Runtime:
+      - '0.174649'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4c68a134287b681b-EZE
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"7349","type":"cash_wallets","attributes":{"balance":4919992.91,"available":4919992.91,"currency":"usd"}}}'
+    http_version: 
+  recorded_at: Fri, 12 Apr 2019 22:27:46 GMT
+recorded_with: VCR 4.0.0

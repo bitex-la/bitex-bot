@@ -1,0 +1,195 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/bids?filter%5Borderbook_code%5D=btc_usd
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - yout_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 15 Apr 2019 16:18:57 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d92535c57b62df396f58a72602d9507381555345136; expires=Tue, 14-Apr-20
+        16:18:56 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=Mk92cG5WbGVrRDdQNmZyaFRqK1J5b2pOVXo2eFY3WnJGc2NaeCsyNVJWSzB0M3RGYnRKVm5TNzNWMWlmQUorYmxaNEwwV1N4Z2pZdHI5S0picCtvVlE9PS0tZFBXNFZQWStMNUhSVmNiVmNxYk96Zz09--7bf1eaf36ea4252dc71d1e2c73a38a4c4cc4eba2;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"e0234245cb00aa260ccfa99a9a0b235e"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 2563ee1b-e314-4fcf-90a7-62b95a4cea68
+      X-Runtime:
+      - '0.092798'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4c7f3d010932d032-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[]}'
+    http_version: 
+  recorded_at: Mon, 15 Apr 2019 16:18:53 GMT
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/buys?filter%5Borderbook_code%5D=btc_usd
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 15 Apr 2019 16:18:58 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=d3f95ecf60d7549a5bf08c06af1cc42fa1555345137; expires=Tue, 14-Apr-20
+        16:18:57 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=djhSZHdBdUw2TXV0a2xpZUNoOThSNm93c3F2RnptNmRVUUF6MHcvNHBFd0dWblNFclJEZVhiK29YL3JYTkpsL2JvZmIzd2lJcXZyays1M1N3OEdjSHc9PS0tbE5teHRIUThqRkVqOFhkWE5wcnkwdz09--6e7ab4cf058e7cc3b0475a300023e5bc1666f07d;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"bf3a64ac8a1d1eacca180475d1dfdf39"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 713fb8ac-21f7-46ba-9995-15fc40a8ba8f
+      X-Runtime:
+      - '0.375658'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4c7f3d062860d032-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"id":"2066","type":"buys","attributes":{"created_at":"2019-04-15T16:15:54.530Z","coin_amount":0.00046395,"cash_amount":2.0,"fee":0.00000116,"price":4300.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"5035","type":"bids"}}}},{"id":"2041","type":"buys","attributes":{"created_at":"2019-04-05T17:41:54.430Z","coin_amount":0.00002267,"cash_amount":0.1,"fee":0.00000005,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"5014","type":"bids"}}}},{"id":"1711","type":"buys","attributes":{"created_at":"2019-03-14T00:48:19.146Z","coin_amount":0.9975,"cash_amount":4400.0,"fee":0.0025,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4308","type":"bids"}}}},{"id":"1690","type":"buys","attributes":{"created_at":"2019-03-13T19:20:46.002Z","coin_amount":0.9975,"cash_amount":4400.0,"fee":0.0025,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4274","type":"bids"}}}},{"id":"1679","type":"buys","attributes":{"created_at":"2019-03-13T17:36:56.076Z","coin_amount":0.68011364,"cash_amount":3000.0,"fee":0.00170454,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4267","type":"bids"}}}},{"id":"1658","type":"buys","attributes":{"created_at":"2019-02-07T20:07:46.073Z","coin_amount":0.00022671,"cash_amount":1.0,"fee":0.00000056,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4260","type":"bids"}}}},{"id":"1654","type":"buys","attributes":{"created_at":"2019-02-04T15:37:47.868Z","coin_amount":0.00022671,"cash_amount":1.0,"fee":0.00000056,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4255","type":"bids"}}}},{"id":"1653","type":"buys","attributes":{"created_at":"2019-02-04T15:37:42.669Z","coin_amount":0.00045341,"cash_amount":2.0,"fee":0.00000113,"price":4400.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4254","type":"bids"}}}},{"id":"1648","type":"buys","attributes":{"created_at":"2019-02-01T20:44:19.960Z","coin_amount":19.70893752,"cash_amount":82985.00007,"fee":0.04939583,"price":4200.0,"fee_currency":"BTC","fee_decimals":8,"orderbook_code":"btc_usd"},"relationships":{"order":{"data":{"id":"4252","type":"bids"}}}}]}'
+    http_version: 
+  recorded_at: Mon, 15 Apr 2019 16:18:55 GMT
+- request:
+    method: get
+    uri: https://sandbox.bitex.la/api/bids/5035
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Faraday v0.15.4
+      Authorization:
+      - your_magic_api_key
+      Version:
+      - '2.1'
+      Content-Type:
+      - application/vnd.api+json
+      Accept:
+      - application/vnd.api+json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 15 Apr 2019 16:19:17 GMT
+      Content-Type:
+      - application/vnd.api+json; charset=utf-8
+      Transfer-Encoding:
+      - chunked
+      Connection:
+      - keep-alive
+      Set-Cookie:
+      - __cfduid=df1a5c021c90a1038404632d4aac972c41555345156; expires=Tue, 14-Apr-20
+        16:19:16 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=cmNQVzI5aWllUS8wNzVxOERad0UxaWhqSmNPblpMR3VzazRtd3ZGSGtBNXFiaDVMNVp3dmxhNjY1MUFmb2p1S24zRUoxYjRScFpOMDZndExjTnJXSWc9PS0tMm1ZOUNpT0Qvb0FFcm5ZVnJKT0I2dz09--8ee01d4cc27367a183c7750ef1e7a3cdbc16628d;
+        path=/; secure; HttpOnly
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Xss-Protection:
+      - 1; mode=block
+      X-Content-Type-Options:
+      - nosniff
+      Etag:
+      - W/"a2e4c880e0476234a7d2af247d37bac3"
+      Cache-Control:
+      - max-age=0, private, must-revalidate
+      X-Request-Id:
+      - 7a15d30d-d668-4cd8-8dca-e4a50bf20efc
+      X-Runtime:
+      - '0.197269'
+      Strict-Transport-Security:
+      - max-age=15552000; includeSubDomains; preload
+      Expect-Ct:
+      - max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+      Server:
+      - cloudflare
+      Cf-Ray:
+      - 4c7f3d7caf52d00e-GRU
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"5035","type":"bids","attributes":{"amount":2.0,"remaining_amount":0.0,"price":4300.0,"status":"completed","orderbook_code":"btc_usd","created_at":"2019-04-15T16:13:40.434Z"},"relationships":{"user":{"data":{"id":"571","type":"users"}}}}}'
+    http_version: 
+  recorded_at: Mon, 15 Apr 2019 16:19:13 GMT
+recorded_with: VCR 4.0.0

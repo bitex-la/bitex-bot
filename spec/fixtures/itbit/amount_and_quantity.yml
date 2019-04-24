@@ -1,0 +1,114 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.itbit.com/v1/wallets/7118de95-4bdd-4196-b674-f267154906d8/orders/b2b09f54-9ea2-48c4-a41f-ee9a92a723d9
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      Accept:
+      - "*/*"
+      Accept-Encoding:
+      - gzip, deflate
+      User-Agent:
+      - Bitexbot/0.9.2 (https://github.com/bitex-la/bitex-bot)
+      Authorization:
+      - apikey:apikey
+      X-Auth-Timestamp:
+      - '1554842741444'
+      X-Auth-Nonce:
+      - '1554842741444'
+      Content-Type:
+      - application/json
+      Host:
+      - api.itbit.com
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Access-Control-Allow-Headers:
+      - authorization,content-type,x-auth-nonce,x-auth-timestamp,x-requested-with
+      Access-Control-Allow-Methods:
+      - GET,HEAD,PUT,POST,DELETE
+      Access-Control-Expose-Headers:
+      - X-Requested-With
+      Content-Type:
+      - application/json; charset=utf-8
+      X-Ratelimit-Limit:
+      - '20000'
+      X-Ratelimit-Remaining:
+      - '19999'
+      X-Ratelimit-Reset:
+      - '1554842804'
+      Vary:
+      - Accept-Encoding
+      Content-Encoding:
+      - gzip
+      Content-Length:
+      - '297'
+      Date:
+      - Tue, 09 Apr 2019 20:45:44 GMT
+      Connection:
+      - keep-alive
+      Content-Security-Policy:
+      - 'default-src ''self''; script-src ''self'' ''unsafe-inline'' ''unsafe-eval''
+        data: *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net *.hs-scripts.com
+        *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com *.hsleadflows.net
+        *.hubspot.com *.hsstatic.net *.interssl.com *.geotrust.com *.jquery.com oss.maxcdn.com
+        *.googleapis.com *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        img-src ''self'' data: *.interssl.com *.geotrust.com *.jquery.com oss.maxcdn.com
+        stats.g.doubleclick.net *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        style-src ''self'' ''unsafe-inline'' *.hubspot.net *.itbit.com *.hs-analytics.net
+        *.hsforms.net *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com
+        *.facebook.com *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com
+        *.googleapis.com *.jquery.com oss.maxcdn.com stats.g.doubleclick.net *.google-analytics.com
+        *.googleadservices.com *.google.com https://chart.googleapis.com/chart https://www.google.com/ads
+        https://fonts.googleapis.com/ https://fonts.gstatic.com/ https://themes.googleusercontent.com/
+        *.googleusercontent.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/
+        *.cloudflare.com; child-src ''self'' *.interssl.com *.jquery.com oss.maxcdn.com
+        stats.g.doubleclick.net *.google-analytics.com *.googleadservices.com *.google.com
+        https://chart.googleapis.com/chart https://www.google.com/ads https://fonts.googleapis.com/
+        https://fonts.gstatic.com/ https://themes.googleusercontent.com/ *.googleusercontent.com
+        https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ *.cloudflare.com;
+        frame-src ''self'' *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net
+        *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com
+        *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com *.paypal.com  *.jquery.com
+        *.google-analytics.com *.googleadservices.com *.google.com https://chart.googleapis.com/chart
+        https://www.google.com/ads https://fonts.googleapis.com/ https://fonts.gstatic.com/
+        https://themes.googleusercontent.com/ *.googleusercontent.com https://www.google.com/recaptcha/
+        https://www.gstatic.com/recaptcha/ *.cloudflare.com; form-action ''self''
+        products.geotrust.com *.interssl.com *.jquery.com *.cloudflare.com; font-src
+        ''self'' data: *.hubspot.net *.itbit.com *.hs-analytics.net *.hsforms.net
+        *.hs-scripts.com *.desk.com *.newrelic.com *.linkedin.com *.twitter.com *.facebook.com
+        *.hsleadflows.net *.hubspot.com *.hsstatic.net *.interssl.com interssl.com
+        https://fonts.googleapis.com/ https://fonts.gstatic.com/ https://themes.googleusercontent.com/
+        *.googleusercontent.com fonts.gstatic.com;'
+      Referrer-Policy:
+      - no-referrer-when-downgrade
+      Access-Control-Allow-Origin:
+      - "*"
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Download-Options:
+      - noopen
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Strict-Transport-Security:
+      - max-age=15768000 ; includeSubDomains ; preload
+    body:
+      encoding: ASCII-8BIT
+      string: !binary |-
+        H4sIAAAAAAAAAHWQTUsDMRCG/0vOTUliumn2VpFCTxWsKN5mO7M1kN0uSbZSSv+7s1U8iOaUefJ+MLmIgKIWjWmUbxdWegIj7XJvJVjdSiIP3oAzd+jFTHxAjFQ2k8NpvUTyC2kbRGm1r2RTOStbUzm9sF5VuGRHDkiszhQjT6HPJY0d9YXZ6/3u+emBaTkPkyaGLhQeoTuON4GaK2W04sMUQx4inFd/Pg4p7KcI65yf2xu98dMxctsLhcN7IVydKMGBHv8Rf/WuA6+Ivwv2iYATdqGbnEZpL5WVyuy0rm1VazOvlJu0b9POBcqYWdd+Zc1EO/aYvzN/+oZjLts+npmvIWZi1FEBhAKivly5NAb+qW1CShvkW2gDJVH3Y4zXT0NpIRm4AQAA
+    http_version: 
+  recorded_at: Tue, 09 Apr 2019 20:45:42 GMT
+recorded_with: VCR 4.0.0

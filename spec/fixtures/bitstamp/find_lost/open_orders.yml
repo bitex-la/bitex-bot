@@ -2,10 +2,10 @@
 http_interactions:
 - request:
     method: post
-    uri: https://www.bitstamp.net/api/v2/balance/btcusd/
+    uri: https://www.bitstamp.net/api/v2/open_orders/btcusd/
     body:
       encoding: UTF-8
-      string: key=apikey&nonce=15549102157206&signature=3DDE63417AD025A50053C9B6E07456C89552A1A816CEF0BE8A9A78AAE171473B
+      string: key=apiKey&nonce=15550143000371&signature=A9178FFAD8556E16594AB27F8E7B85B743FA17F66688AEB10164640A08F216A4
     headers:
       Accept:
       - "*/*"
@@ -48,11 +48,11 @@ http_interactions:
       Content-Type:
       - application/json
       Date:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Thu, 11 Apr 2019 20:25:03 GMT
       Expires:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Thu, 11 Apr 2019 20:25:03 GMT
       Last-Modified:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Thu, 11 Apr 2019 20:25:03 GMT
       Server:
       - Apache
       Strict-Transport-Security:
@@ -66,14 +66,13 @@ http_interactions:
       Connection:
       - keep-alive
       Set-Cookie:
-      - incap_ses_788_99025=TC/pK17echyNKtB2jYrvCgkMrlwAAAAAsj/PWpI2kVU1P4om+cRhaQ==;
+      - incap_ses_788_99025=hdq9ATcRvxoo3E54jYrvCp6ir1wAAAAAXyh2klq4BgikYtTb4zkqFA==;
         path=/; Domain=.bitstamp.net
-      - nlbi_99025=lKsaJggUPgpfqjZqSF244gAAAACxFPglAXKP9nTSD8eaYIwF; path=/; Domain=.bitstamp.net
-      - visid_incap_99025=KRBqaaFwTAiwpLtShuxTngkMrlwAAAAAQUIPAAAAAACYtgZ5hdAhjLlrLfbkQi+U;
-        expires=Thu, 09 Apr 2020 14:08:57 GMT; path=/; Domain=.bitstamp.net
+      - nlbi_99025=D87zIub26RLdIVGYSF244gAAAADxC2uE7Wx2FWZcSJMHC+PU; path=/; Domain=.bitstamp.net
+      - visid_incap_99025=JOuA3IKVRQKYU6+rI+JdL52ir1wAAAAAQUIPAAAAAAB95qS+B5CYMNPyhfeIK7hO;
+        expires=Fri, 10 Apr 2020 14:08:58 GMT; path=/; Domain=.bitstamp.net
       X-Iinfo:
-      - 10-1021075-1021100 NNNN CT(0 0 0) RT(1554910217141 80) q(0 0 0 -1) r(2 2)
-        U6
+      - 10-14104070-14089881 PNNN RT(1555014302592 79) q(0 0 0 0) r(2 2) U6
       X-Cdn:
       - Incapsula
       Content-Encoding:
@@ -81,7 +80,7 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        H4sIAAAAAAAA/6tWSipJjk8sS8zMSUzKSVWyUlAy0DOAAiUdBbB0UmJOYl4yDsmi1OLUorLUFEzZtFSQFgM9I1MDAyC3tDgF1SIjPQNzJagEkhXIwuiGK9UCAFOc30yxAAAA
+        H4sIAAAAAAAA/4uuViooykxOVbJSUDI00DMwUNJRUErMzS/NKwELAUUgACReUlkAVgjmZKaAmMaGhkam5uYGRhYgsZTEktSSzFywIiMDQ0tdAxNdQwMFQwsrI3MrUxOl2lgACeRxPXAAAAA=
     http_version: 
-  recorded_at: Wed, 10 Apr 2019 15:30:16 GMT
+  recorded_at: Thu, 11 Apr 2019 20:25:00 GMT
 recorded_with: VCR 4.0.0

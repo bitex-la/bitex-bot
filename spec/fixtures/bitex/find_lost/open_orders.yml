@@ -2,7 +2,7 @@
 http_interactions:
 - request:
     method: get
-    uri: https://sandbox.bitex.la/api/orders
+    uri: https://sandbox.bitex.la/api/bids?filter%5Borderbook_code%5D=btc_usd
     body:
       encoding: US-ASCII
       string: ''
@@ -25,7 +25,7 @@ http_interactions:
       message: OK
     headers:
       Date:
-      - Mon, 04 Feb 2019 17:24:57 GMT
+      - Mon, 15 Apr 2019 16:14:05 GMT
       Content-Type:
       - application/vnd.api+json; charset=utf-8
       Transfer-Encoding:
@@ -33,9 +33,9 @@ http_interactions:
       Connection:
       - keep-alive
       Set-Cookie:
-      - __cfduid=dd55902b3882a05dde8f3d210fe31f9591549301097; expires=Tue, 04-Feb-20
-        17:24:57 GMT; path=/; domain=.bitex.la; HttpOnly
-      - _bitex_la_session=eGI5N2RKT2pmK29pRWhiSXRTSU9DZDNTajgrK3ZEUUxaQU1tRFM1VzU0U0huSm5QUHI1Vkl1QXhxQXMrMEJwWElEYWxvY1BiM1VIeWl4Sk9nalJyZ09pQTRUTjczbnBwdkZDYm5sL2FSMnNlSCtpMmZGVnZRQmJBU3VaYXRmL0dPSXZZK1FYcFhkU3gvMXJTbG5UL3RtSHNIc2hWSUY1SjFyOU0yNUpPN2I4PS0tNEFVQzVZNFVMQjVuYU5sQVFUT1haZz09--e50f1de1ddfe2e1f67563aba5aae7bb5b64228fa;
+      - __cfduid=dabe71d4d1bbfc6d2c884d2b11bd338ae1555344844; expires=Tue, 14-Apr-20
+        16:14:04 GMT; path=/; domain=.bitex.la; HttpOnly
+      - _bitex_la_session=eFdVSVhaZFRoTmdDSFBGSCtITlI0TkhqWDFEYm1WdDl2Z1ZhazBXL1ZZQU1TdU54MlU1R0UxNU5sVXZ6aXN3Y3J1a3lsdzVxQWxGVW9sYW8zb04xelE9PS0tc1ZiOForSGI4TFBHdzNybUptR1g2QT09--5bc0771d68be69bce6120b70fd2eae74aff0049d;
         path=/; secure; HttpOnly
       X-Frame-Options:
       - SAMEORIGIN
@@ -44,13 +44,13 @@ http_interactions:
       X-Content-Type-Options:
       - nosniff
       Etag:
-      - W/"b6e18b1bdc28d51e433d58cff4a1d813"
+      - W/"320c2b309ba188ea9eac5129a7833c26"
       Cache-Control:
       - max-age=0, private, must-revalidate
       X-Request-Id:
-      - 979775e3-8e1a-427f-b15d-b7bc09267ff4
+      - e3e9ce58-c584-4167-82eb-5569d1305b90
       X-Runtime:
-      - '0.130197'
+      - '0.115066'
       Strict-Transport-Security:
       - max-age=15552000; includeSubDomains; preload
       Expect-Ct:
@@ -58,10 +58,10 @@ http_interactions:
       Server:
       - cloudflare
       Cf-Ray:
-      - 4a3ed5703dbe4adf-GRU
+      - 4c7f35e00886cffa-GRU
     body:
       encoding: ASCII-8BIT
-      string: '{"data":[{"id":"4253","type":"bids","attributes":{"amount":12000.0,"remaining_amount":12000.0,"price":4050.0,"status":"executing","orderbook_code":"btc_usd","created_at":"2019-01-16T19:45:37.160Z"},"relationships":{"user":{"data":{"id":"571","type":"users"}}}}]}'
+      string: '{"data":[{"id":"5035","type":"bids","attributes":{"amount":2.0,"remaining_amount":2.0,"price":4300.0,"status":"executing","orderbook_code":"btc_usd","created_at":"2019-04-15T16:13:40.434Z"},"relationships":{"user":{"data":{"id":"571","type":"users"}}}}]}'
     http_version: 
-  recorded_at: Mon, 04 Feb 2019 17:24:55 GMT
+  recorded_at: Mon, 15 Apr 2019 16:14:02 GMT
 recorded_with: VCR 4.0.0

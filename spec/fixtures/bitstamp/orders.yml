@@ -2,10 +2,10 @@
 http_interactions:
 - request:
     method: post
-    uri: https://www.bitstamp.net/api/v2/balance/btcusd/
+    uri: https://www.bitstamp.net/api/v2/open_orders/btcusd/
     body:
       encoding: UTF-8
-      string: key=apikey&nonce=15549102157206&signature=3DDE63417AD025A50053C9B6E07456C89552A1A816CEF0BE8A9A78AAE171473B
+      string: key=apikey&nonce=15549169819922&signature=C9F4E386663CDA5B28E6D20BC8F5DB12180DA8BB7E05D0D2105A72F67D6BE732
     headers:
       Accept:
       - "*/*"
@@ -48,11 +48,11 @@ http_interactions:
       Content-Type:
       - application/json
       Date:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Wed, 10 Apr 2019 17:23:05 GMT
       Expires:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Wed, 10 Apr 2019 17:23:05 GMT
       Last-Modified:
-      - Wed, 10 Apr 2019 15:30:17 GMT
+      - Wed, 10 Apr 2019 17:23:05 GMT
       Server:
       - Apache
       Strict-Transport-Security:
@@ -66,14 +66,13 @@ http_interactions:
       Connection:
       - keep-alive
       Set-Cookie:
-      - incap_ses_788_99025=TC/pK17echyNKtB2jYrvCgkMrlwAAAAAsj/PWpI2kVU1P4om+cRhaQ==;
+      - incap_ses_788_99025=ajuaYiVvWyPzVe52jYrvCngmrlwAAAAA6TS7kHV8oK6ARpxL8LSD3w==;
         path=/; Domain=.bitstamp.net
-      - nlbi_99025=lKsaJggUPgpfqjZqSF244gAAAACxFPglAXKP9nTSD8eaYIwF; path=/; Domain=.bitstamp.net
-      - visid_incap_99025=KRBqaaFwTAiwpLtShuxTngkMrlwAAAAAQUIPAAAAAACYtgZ5hdAhjLlrLfbkQi+U;
+      - nlbi_99025=SKblYZ0LO0yv/WAeSF244gAAAAANr641obbaHrAiRMGaXMGm; path=/; Domain=.bitstamp.net
+      - visid_incap_99025=tqNkmiLSReSDsQy8FONzbngmrlwAAAAAQUIPAAAAAADMvqxk78YJiQ8LD6D5fbqP;
         expires=Thu, 09 Apr 2020 14:08:57 GMT; path=/; Domain=.bitstamp.net
       X-Iinfo:
-      - 10-1021075-1021100 NNNN CT(0 0 0) RT(1554910217141 80) q(0 0 0 -1) r(2 2)
-        U6
+      - 4-1512902-1512957 NNNN CT(0 0 0) RT(1554916984169 329) q(0 1 1 2) r(3 3) U6
       X-Cdn:
       - Incapsula
       Content-Encoding:
@@ -81,7 +80,7 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: !binary |-
-        H4sIAAAAAAAA/6tWSipJjk8sS8zMSUzKSVWyUlAy0DOAAiUdBbB0UmJOYl4yDsmi1OLUorLUFEzZtFSQFgM9I1MDAyC3tDgF1SIjPQNzJagEkhXIwuiGK9UCAFOc30yxAAAA
+        H4sIAAAAAAAA/4uuViooykxOVbJSUDI00DMwUNJRUErMzS/NKwELAUUgACReUlkAVgjmZKaAmMaGhkZGlqaW5sYgsZTEktSSzFywIiMDQ0tdAxNdQwMFQzMrU0srQ1Ol2lgA7dpbF3AAAAA=
     http_version: 
-  recorded_at: Wed, 10 Apr 2019 15:30:16 GMT
+  recorded_at: Wed, 10 Apr 2019 17:23:03 GMT
 recorded_with: VCR 4.0.0
