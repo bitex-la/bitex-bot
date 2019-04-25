@@ -35,8 +35,9 @@ class ItbitApiWrapper < ApiWrapper
     balance_summary_parser(wallet[:balances])
   end
 
-  def find_lost(type, price, _amount, threshold)
-    orders.find { |o| o.type == type && o.price == price && o.timestamp >= threshold.to_i }
+  def find_lost(type, price, _quantity)
+    price = rounded_price(type, price)
+    orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
   end
 
   def market
@@ -48,6 +49,7 @@ class ItbitApiWrapper < ApiWrapper
   end
 
   def send_order(type, price, quantity)
+    price = rounded_price(type, price)
     order = Itbit::Order.create!(
       type,
       currency_pair[:name],
@@ -141,5 +143,13 @@ class ItbitApiWrapper < ApiWrapper
       base: order_book.slice(0..2),
       quote: order_book.slice(3..6)
     }
+  end
+
+  def rounded_price(type, price)
+    if type == :buy
+      price - (price % 0.25)
+    else
+      price + 0.25 - (price % 0.25)
+    end
   end
 end

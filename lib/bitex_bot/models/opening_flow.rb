@@ -15,11 +15,11 @@ module BitexBot
     cattr_accessor :store
 
     def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
-      unless enough_funds?(maker_balance, value_per_order)
-        raise CannotCreateFlow,
-              "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on maker to place this "\
-              "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
-      end
+      #unless enough_funds?(maker_balance, value_per_order)
+      #  raise CannotCreateFlow,
+      #        "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on maker to place this "\
+      #        "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
+      #end
 
       taker_amount, taker_safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
       price = maker_price(taker_amount)
