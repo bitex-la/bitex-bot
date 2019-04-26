@@ -15,6 +15,38 @@ module BitexBot
         @orderbook_code = settings.orderbook_code
       end
 
+      # This accessor si custom for this exchange, uses its own nomenclature.
+      #
+      # {
+      #   'XBTUSD' => {
+      #     'altname' => 'XBTUSD',
+      #     'aclass_base' => 'currency',
+      #     'base' => 'XXBT',
+      #     'aclass_quote' => 'currency',
+      #     'quote' => 'ZUSD',
+      #     'lot' => 'unit',
+      #     'pair_decimals' => 1,
+      #     'lot_decimals' => 8,
+      #     'lot_multiplier' => 1,
+      #     'leverage_buy' => [2, 3, 4, 5],
+      #     'leverage_sell' => [2, 3, 4, 5],
+      #     'fees' => [[0, 0.26], .., [250_000, 0.2]],
+      #     'fees_maker' => [[0, 0.16], .., [250_000, 0.1]],
+      #     'fee_volume_currency' => 'ZUSD',
+      #     'margin_call' => 80,
+      #     'margin_stop' => 40
+      #   }
+      # }
+      #
+      # @returns [Hashie::Mash(:code, :base, :quote, :altname)]
+      def currency_pair
+        @currency_pair ||= Hashie::Mash.new(
+          client.public.asset_pairs.map do |code, data|
+            [data[:altname], data.slice(:altname, :base, :quote).merge(code: code)]
+          end.to_h[@orderbook_code.upcase]
+        )
+      end
+
       def balance
         balance_summary_parser(client.private.balance)
       rescue KrakenClient::ErrorResponse, Net::ReadTimeout
@@ -56,38 +88,6 @@ module BitexBot
       end
 
       private
-
-      # This accessor si custom for this exchange, uses its own nomenclature.
-      #
-      # {
-      #   'XBTUSD' => {
-      #     'altname' => 'XBTUSD',
-      #     'aclass_base' => 'currency',
-      #     'base' => 'XXBT',
-      #     'aclass_quote' => 'currency',
-      #     'quote' => 'ZUSD',
-      #     'lot' => 'unit',
-      #     'pair_decimals' => 1,
-      #     'lot_decimals' => 8,
-      #     'lot_multiplier' => 1,
-      #     'leverage_buy' => [2, 3, 4, 5],
-      #     'leverage_sell' => [2, 3, 4, 5],
-      #     'fees' => [[0, 0.26], .., [250_000, 0.2]],
-      #     'fees_maker' => [[0, 0.16], .., [250_000, 0.1]],
-      #     'fee_volume_currency' => 'ZUSD',
-      #     'margin_call' => 80,
-      #     'margin_stop' => 40
-      #   }
-      # }
-      #
-      # @returns [Hashie::Mash(:code, :base, :quote, :altname)]
-      def currency_pair
-        @currency_pair ||= Hashie::Mash.new(
-          client.public.asset_pairs.map do |code, data|
-            [data[:altname], data.slice(:altname, :base, :quote).merge(code: code)]
-          end.to_h[@orderbook_code.upcase]
-        )
-      end
 
       # @param [Array<Hash(String:id, Hash:data)>] raw_orders.
       #

@@ -25,7 +25,7 @@ module BitexBot
 
     def self.setup
       self.logger = Logger.setup
-      log(:info, :bot, :setup, 'Loading trading robot, ctrl+c *once* to exit gracefully.')
+      log(:info, :bot, :setup, "Loading trading bot version: #{VERSION}, ctrl+c *once* to exit gracefully.")
 
       self.notifier = Notifier if Settings.mailer.present?
 
