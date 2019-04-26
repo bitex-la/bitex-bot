@@ -126,7 +126,16 @@ module BitexBot
       #
       # @returns [BitexBot::Exchanges::Bitex::Order]
       def order_parser(raw)
-        Order.new(raw.id, order_types[raw.type], raw.price, raw.amount, raw.created_at.to_i, raw.status, raw)
+        Order.new(
+          raw.id,
+          order_types[raw.type],
+          raw.price,
+          raw.amount,
+          raw.created_at.to_i,
+          raw.status,
+          client_order_id,
+          raw
+        )
       end
 
       def order_types

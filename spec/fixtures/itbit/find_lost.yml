@@ -2,7 +2,7 @@
 http_interactions:
 - request:
     method: get
-    uri: https://api.itbit.com/v1/wallets/7118de95-4bdd-4196-b674-f267154906d8/orders
+    uri: https://api.itbit.com/v1/wallets/7118de95-4bdd-4196-b674-f267154906d8/orders?instrument=XBTUSD&status=open
     body:
       encoding: US-ASCII
       string: ''

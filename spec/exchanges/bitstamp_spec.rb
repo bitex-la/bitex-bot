@@ -133,6 +133,7 @@ describe BitexBot::Exchanges::Bitstamp do
         its(:amount) { is_expected.to be_a(BigDecimal).and eq(1) }
         its(:timestamp) { is_expected.to be_a(Integer).and eq(1_554_915_555) }
         its(:status) { is_expected.to eq(:executing) }
+        its(:client_order_id) { is_expected.to be_nil }
         its(:raw) { is_expected.to be_a(::Bitstamp::Order) }
       end
 

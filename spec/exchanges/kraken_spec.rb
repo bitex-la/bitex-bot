@@ -202,6 +202,7 @@ describe BitexBot::Exchanges::Kraken do
     its(:amount) { is_expected.to eq(0.005) }
     its(:timestamp) { is_expected.to be_present }
     its(:status) { is_expected.to eq(:executing) }
+    its(:client_order_id) { is_expected.to be_nil }
     its(:raw) { is_expected.to be_a(Hash) }
   end
 

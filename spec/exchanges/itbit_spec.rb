@@ -7,11 +7,6 @@ describe BitexBot::Exchanges::Itbit do
      secret: 'secret',
      user_id: 'USER-ID',
      default_wallet_id: '7118de95-4bdd-4196-b674-f267154906d8',
-
-    #api_key: 'ijnnvRqBOsNYBpwTF7BJTA',
-    #secret: 'd9CseuJDDV71zfSf1gSzbXFb38r/EbFhkjBa/FdgVG0',
-    #user_id: 'B2365BBE-6EF8-42D1-BED5-5CB0F51AD56F',
-
      orderbook_code: 'xbtusd'
     )
 
@@ -144,6 +139,7 @@ describe BitexBot::Exchanges::Itbit do
       let(:raw_order) { ::Itbit::Order.all(instrument: :xbtusd, status: :open).first }
 
       describe '#order_parser' do
+        before(:each) { allow_any_instance_of(described_class).to receive(:client_order_id).and_return('UStni6kW4bt36') }
         subject(:order) { exchange.send(:order_parser, raw_order) }
 
         it { is_expected.to be_a(BitexBot::Exchanges::Order) }
@@ -154,6 +150,7 @@ describe BitexBot::Exchanges::Itbit do
         its(:amount) { is_expected.to be_a(BigDecimal).and eq(0.003) }
         its(:timestamp) { is_expected.to be_a(Integer).and eq(1_554_821_976) }
         its(:status) { is_expected.to eq(:executing) }
+        its(:client_order_id) { is_expected.to be_nil }
         its(:raw) { is_expected.to be_a(::Itbit::Order) }
       end
 
@@ -214,6 +211,8 @@ describe BitexBot::Exchanges::Itbit do
   end
 
   describe '#send_order', vcr: { cassette_name: 'itbit/send_order' } do
+    before(:each) { allow_any_instance_of(described_class).to receive(:client_order_id).and_return('USmrZej4UQuhY') }
+
     subject(:order) { exchange.send(:send_order, :buy, 100, 0.2) }
 
     it { is_expected.to be_a(BitexBot::Exchanges::Order) }
@@ -224,12 +223,12 @@ describe BitexBot::Exchanges::Itbit do
     its(:amount) { is_expected.to eq(0.2) }
     its(:timestamp) { is_expected.to be_present }
     its(:status) { is_expected.to eq(:executing) }
+    its(:client_order_id) { is_expected.to eq('my_beta_identifier') }
     its(:raw) { is_expected.to be_a(::Itbit::Order) }
-    its(:'raw.client_order_identifier') { is_expected.to eq('my_beta_identifier') }
   end
 
   describe '#find_lost', vcr: { cassette_name: 'itbit/find_lost' } do
-    before(:each) { exchange.instance_variable_set(:@last_order_id, 'B2sL5T806Y3wU') }
+    before(:each) { allow_any_instance_of(described_class).to receive(:client_order_id).and_return('B2sL5T806Y3wU') }
 
     subject(:lost) { exchange.send(:find_lost, :buy, 1_000.to_d, 0.1.to_d, 1.minutes.ago.utc) }
 

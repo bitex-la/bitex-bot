@@ -55,7 +55,7 @@ module BitexBot
 
     # General behaviour for trading platform wrappers.
     class Exchange
-      attr_accessor :currency_pair
+      attr_accessor :currency_pair, :client_order_id
 
       MIN_AMOUNT = 10.to_d
 

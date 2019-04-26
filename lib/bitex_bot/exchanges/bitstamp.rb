@@ -125,7 +125,16 @@ module BitexBot
       #
       # @returns [BitexBot::Exchanges::Bitstamp::Order]
       def order_parser(raw, status: :executing)
-        Order.new(raw.id, order_types[raw.type], raw.price.to_d, raw.amount.to_d, raw.datetime.to_datetime.to_i, status, raw)
+        Order.new(
+          raw.id,
+          order_types[raw.type],
+          raw.price.to_d,
+          raw.amount.to_d,
+          raw.datetime.to_datetime.to_i,
+          status,
+          client_order_id,
+          raw
+        )
       end
 
       def order_types

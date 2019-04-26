@@ -3,8 +3,6 @@ module BitexBot
     # Wrapper implementation for Itbit API.
     # https://api.itbit.com/docs
     class Itbit < Exchange
-      attr_accessor :client_order_id
-
       def initialize(settings)
         ::Itbit.tap do |conf|
           conf.client_key = settings.client_key
@@ -116,7 +114,16 @@ module BitexBot
       #
       # @returns [BitexBot::Exchanges::Order]
       def order_parser(raw)
-        Order.new(raw.id, order_types[raw.side], raw.price, raw.amount, raw.created_time, order_statuses[raw.status], raw)
+        Order.new(
+          raw.id,
+          order_types[raw.side],
+          raw.price,
+          raw.amount,
+          raw.created_time,
+          order_statuses[raw.status],
+          raw.client_order_identifier,
+          raw
+        )
       end
 
       def order_statuses
@@ -150,7 +157,7 @@ module BitexBot
           price.round(2),
           wait: true,
           currency: currency_pair.base,
-          client_order_identifier: client_order_id
+          client_order_identifier: client_order_identifier
         )
 
         order_parser(raw) if raw.present?
@@ -167,17 +174,15 @@ module BitexBot
         type == :buy ? price : price + 0.25
       end
 
-      def client_order_id
-        @client_order_id = 1.second.from_now.utc.strftime('%N').crypt(::Itbit.user_id)
+      def client_order_identifier
+        self.client_order_id = 1.second.from_now.utc.strftime('%N').crypt(::Itbit.user_id)
       end
 
       # Don't care about order details, it will be searched by previous client order id setted when it tried to place order.
       #
       # @returns [BitexBot::Exchanges::Order]
       def find_lost(*)
-        raw = ::Itbit::Order.all.find { |raw_order| raw_order.client_order_identifier == client_order_id }
-
-        order_parser(raw) if raw.present?
+        orders.find { |order| order.client_order_id == client_order_id }
       end
     end
   end

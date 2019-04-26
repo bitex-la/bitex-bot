@@ -5,7 +5,7 @@ module BitexBot
     class Kraken < Exchange
       require 'kraken_client'
 
-      attr_accessor :client, :client_order_id
+      attr_accessor :client
 
       MIN_AMOUNT = 0.002.to_d
 
@@ -121,6 +121,7 @@ module BitexBot
           raw[:vol].to_d,
           raw[:opentm].truncate,
           order_statuses[raw[:status]],
+          raw[:client_order_id],
           Hashie::Mash.new(raw.merge(id: id))
         )
       end
@@ -202,7 +203,7 @@ module BitexBot
           ordertype: 'limit',
           price: price,
           volume: amount
-        )
+        ).merge(client_order_id: client_order_id)
 
         order_by_id(raw[:txid]) if raw.present?
       end
