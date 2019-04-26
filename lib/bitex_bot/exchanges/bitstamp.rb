@@ -121,7 +121,7 @@ module BitexBot
       # @param [::Bitstamp::Order] raw.
       # @param [Symbol] status. Optional: <:executing|:cancelled|:finalised>
       #
-      # <Bitstamp::Order @id='76', @type=0, @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
+      # <Bitstamp::Order @id='76', @type='0', @price='1.1', @amount='1.0', @datetime='2013-09-26 23:15:04'>
       #
       # @returns [BitexBot::Exchanges::Bitstamp::Order]
       def order_parser(raw, status: :executing)
