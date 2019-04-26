@@ -114,7 +114,7 @@ class BitstampApiWrapper < ApiWrapper
   #
   # @return [Symbol]
   def order_type(order)
-    order.type.zero? ? :bid : :ask
+    order.type.to_i.zero? ? :bid : :ask
   end
 
   def order_summary_parser(orders)
