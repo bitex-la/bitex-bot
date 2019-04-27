@@ -3,7 +3,7 @@ require 'spec_helper'
 describe BitexBot::SellOpeningFlow do
   it_behaves_like 'OpeningFlows'
 
-  describe '.maker_price' do
+ describe '.maker_price' do
     before(:each) do
       allow(described_class).to receive(:fx_rate).and_return(10.to_d)
       allow(described_class).to receive(:value_to_use).and_return(2.to_d)
@@ -24,7 +24,7 @@ describe BitexBot::SellOpeningFlow do
   describe '.expected_kind_trade?' do
     subject { described_class.expected_kind_trade?(trade) }
 
-    let(:trade) { build_bitex_user_transaction(type, 11, 11, 11, 111, 11, :dont_care) }
+    let(:trade) { build_bitex_user_transaction(type, 11, 11, 11, 11, 111, 11, :dont_care) }
 
     context 'expected' do
       let(:type) { :sell }
@@ -148,13 +148,13 @@ describe BitexBot::SellOpeningFlow do
 
     subject(:sought) { described_class.sought_transaction?(trade, threshold) }
 
-    let(:trade) { build_bitex_user_transaction(type, order_id, 600, 2, 300, 0.05, orderbook_code, created_at) }
+    let(:trade) { build_bitex_user_transaction(type, trade_id, 999, 600, 2, 300, 0.05, orderbook_code, created_at) }
 
     let(:threshold) { 2.minutes.ago }
 
     let(:type) { :sell }                # SellOpeningFlow kind trade
     let(:created_at) { Time.now.utc }   # Recent trade
-    let(:order_id) { 999_999 }          # Non syncronized position
+    let(:trade_id) { 999_999 }          # Non syncronized position
     let(:orderbook_code) { :fuck_yeah } # Expected orderbook
 
     it { is_expected.to be_truthy }
@@ -173,7 +173,7 @@ describe BitexBot::SellOpeningFlow do
       end
 
       context 'is syncronized position' do
-        before(:each) { create(:open_sell, transaction_id: order_id) }
+        before(:each) { create(:open_sell, transaction_id: trade_id) }
 
         it { is_expected.to be_falsey }
       end
@@ -195,10 +195,10 @@ describe BitexBot::SellOpeningFlow do
   describe '.syncronized?' do
     subject(:syncronized?) { described_class.syncronized?(trade) }
 
-    let(:trade) { build_bitex_user_transaction(:dont_care, '999_999', 11, 11, 111, 11, :dont_care) }
+    let(:trade) { build_bitex_user_transaction(:dont_care, 999_999, 999, 11, 11, 111, 11, :dont_care) }
 
     context 'is syncronized' do
-      before(:each) { create(:open_sell, transaction_id: trade.order_id) }
+      before(:each) { create(:open_sell, transaction_id: trade.id) }
 
       it { is_expected.to be_truthy }
     end
@@ -229,7 +229,7 @@ describe BitexBot::SellOpeningFlow do
         allow(BitexBot::Robot).to receive_message_chain(:maker, :trades).and_return([trade])
       end
 
-      let(:trade) { build_bitex_user_transaction(:sell, 999, 100, 2, 50, 0.05, :fuck_yeah, 2.minutes.ago) }
+      let(:trade) { build_bitex_user_transaction(:sell, 999, 123, 100, 2, 50, 0.05, :fuck_yeah, 2.minutes.ago) }
 
       context 'not sought, have syncronized open position' do
         # This trade is syncronized position
@@ -257,7 +257,7 @@ describe BitexBot::SellOpeningFlow do
         end
 
         it 'belong to any sell opening flow then syncs' do
-          flow = create(:sell_opening_flow, order_id: 999)
+          flow = create(:sell_opening_flow, order_id: 123)
 
           expect(BitexBot::OpenSell.count).to eq(1)
 
@@ -265,7 +265,7 @@ describe BitexBot::SellOpeningFlow do
             expect(sync.count).to eq(1)
 
             sync.find { |position| position.opening_flow == flow }.tap do |syncronized|
-              expect(syncronized.transaction_id.to_s).to eq(trade.order_id)
+              expect(syncronized.transaction_id.to_s).to eq(trade.id)
               expect(syncronized.closing_flow_id).to be_nil
             end
           end.to change { BitexBot::OpenSell.count }.by(1)

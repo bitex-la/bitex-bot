@@ -27,7 +27,7 @@ module BitexBot
     # @return [SellOpeningFlow] The newly created flow.
     # @raise [CannotCreateFlow] If there's any problem creating this flow, for example when you run out of CRYPTO on maker market
     # or out of FIAT on taker market.
-    def self.open_market(taker_fiat_balance, maker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
+    def self.open_market(taker_fiat_balance, taker_asks, taker_transactions, maker_fee, taker_fee)
       super
     end
 

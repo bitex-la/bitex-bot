@@ -30,11 +30,7 @@ describe BitexBot::BuyOpeningFlow do
       allow(BitexBot::Settings).to receive_message_chain(:buying, :profit).and_return(0)
     end
 
-    subject(:flow) do
-      described_class.open_market(
-        taker_balance, maker_balance, taker.market.bids, taker.transactions, 0.5.to_d , 0.25.to_d
-      )
-    end
+    subject(:flow) { described_class.open_market(taker_balance, taker.market.bids, taker.transactions, 0.5.to_d, 0.25.to_d) }
 
     let(:taker_balance) { 1_000.to_d }
     let(:maker_balance) { 1_000.to_d }
@@ -165,7 +161,7 @@ describe BitexBot::BuyOpeningFlow do
       it 'only gets buys' do
         expect do
           described_class.sync_positions.first.tap do |open_trade|
-            expect(open_trade.transaction_id).to eq(123)
+            expect(open_trade.transaction_id).to eq(1)
             expect(open_trade.amount).to eq(600)
             expect(open_trade.quantity).to eq(2)
             expect(open_trade.price).to eq(300)
@@ -179,8 +175,8 @@ describe BitexBot::BuyOpeningFlow do
 
         Timecop.travel(1.second.from_now)
 
-        other_flow = create(:buy_opening_flow, order_id: 789)
-        trade = build_bitex_user_transaction(:buy, 789, 600, 2, 300, 0.05, BitexBot::Robot.maker.base_quote.to_sym)
+        other_flow = create(:buy_opening_flow, order_id: 901)
+        trade = build_bitex_user_transaction(:buy, 789, 901, 600, 2, 300, 0.05, BitexBot::Robot.maker.base_quote.to_sym)
         stub_bitex_transactions(trade)
 
         expect do
@@ -191,7 +187,7 @@ describe BitexBot::BuyOpeningFlow do
       end
 
       it 'does not register buys from another order book' do
-        trade = build_bitex_user_transaction(:buy, 777, 600, 2, 300, 0.05, :boo_shit)
+        trade = build_bitex_user_transaction(:buy, 777, 888, 600, 2, 300, 0.05, :boo_shit)
         allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
 
         expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenBuy.count }

@@ -58,8 +58,8 @@ describe BitexBot::Robot do
 
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
-        build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
-        build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
+        build_bitex_user_transaction(:buy, 123, 1, 600, 2, 300, 0.05, :btc_usd),
+        build_bitex_user_transaction(:sell, 234, 2, 600, 2, 300, 0.05, :btc_usd)
       ]
     end
     buying = BitexBot::BuyOpeningFlow.last
@@ -93,8 +93,8 @@ describe BitexBot::Robot do
     # We stub our finder to make it so all orders have been successfully cancelled.
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
-        build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
-        build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
+        build_bitex_user_transaction(:buy, 123, 1, 600, 2, 300, 0.05, :btc_usd),
+        build_bitex_user_transaction(:sell, 234, 2, 600, 2, 300, 0.05, :btc_usd)
       ]
     end
 
@@ -104,8 +104,8 @@ describe BitexBot::Robot do
 
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
-        build_bitex_user_transaction(:buy, 3, 600, 2, 300, 0.05, :btc_usd),
-        build_bitex_user_transaction(:sell, 4, 600, 2, 300, 0.05, :btc_usd)
+        build_bitex_user_transaction(:buy, 345, 3, 600, 2, 300, 0.05, :btc_usd),
+        build_bitex_user_transaction(:sell, 456, 4, 600, 2, 300, 0.05, :btc_usd)
       ]
     end
 
@@ -118,8 +118,8 @@ describe BitexBot::Robot do
     bot.trade!
     allow_any_instance_of(BitexApiWrapper).to receive(:trades) do
       [
-        build_bitex_user_transaction(:buy, 1, 600, 2, 300, 0.05, :btc_usd),
-        build_bitex_user_transaction(:sell, 2, 600, 2, 300, 0.05, :btc_usd)
+        build_bitex_user_transaction(:buy, 123, 1, 600, 2, 300, 0.05, :btc_usd),
+        build_bitex_user_transaction(:sell, 234, 2, 600, 2, 300, 0.05, :btc_usd)
       ]
     end
 

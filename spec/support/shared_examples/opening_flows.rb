@@ -70,8 +70,8 @@ shared_examples_for 'OpeningFlows' do
       allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
     end
 
-    let(:order) { build_bitex_order(:dont_care_type, '111_111', 300, 10, :dont_care_orderbook) }
-    let(:trade) { build_bitex_user_transaction(:dont_care, '7_891_011', 11, 11, 11, 11, :dont_care_orderbook) }
+    let(:order) { build_bitex_order(:dont_care_type, 111_111, 300, 10, :dont_care_orderbook) }
+    let(:trade) { build_bitex_user_transaction(:dont_care, 7_891_011, 011_123, 11, 11, 11, 11, :dont_care_orderbook) }
 
     subject(:amount_and_price) { described_class.calc_taker_amount(1_000.to_d, 5.to_d, 10.to_d, [order], [trade]) }
 
@@ -114,9 +114,7 @@ shared_examples_for 'OpeningFlows' do
     let(:taker_transactions) { [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')] }
     let(:store) { BitexBot::Store.create }
 
-    subject(:open_market) do
-      described_class.open_market(1_000.to_d, 2_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d)
-    end
+    subject(:open_market) { described_class.open_market(1_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d) }
 
     context 'succesful' do
       before(:each) do
@@ -146,22 +144,6 @@ shared_examples_for 'OpeningFlows' do
       context 'by some reason' do
         it { expect { open_market }.to raise_error(StandardError, 'any reason') }
       end
-
-      context 'by not enough funds' do
-        before(:each) do
-          allow(described_class).to receive(:enough_funds?).and_return(false)
-          allow(described_class).to receive(:maker_specie_to_spend).and_return('SPECIE')
-          allow(described_class).to receive(:trade_type).and_return('TRADE_TYPE')
-        end
-
-        it do
-          expect { open_market }
-            .to raise_error(
-              BitexBot::CannotCreateFlow,
-              'Needed SPECIE 10000.0 on maker to place this TRADE_TYPE but you only have SPECIE 2000.0.'
-          )
-        end
-      end
     end
   end
 
@@ -170,7 +152,7 @@ shared_examples_for 'OpeningFlows' do
 
     subject(:expected?) { described_class.expected_orderbook?(trade) }
 
-    let(:trade) { build_bitex_user_transaction(:dont_care, '999_999', 10, 20, 100, 5, orderbook_code) }
+    let(:trade) { build_bitex_user_transaction(:dont_care, 999_999, 123, 10, 20, 100, 5, orderbook_code) }
 
     context 'expected' do
       let(:orderbook_code) { 'crypto_fiat' }
@@ -196,7 +178,7 @@ shared_examples_for 'OpeningFlows' do
     context 'with threshold' do
       subject(:active?) { Timecop.freeze(Time.now) { described_class.active_trade?(trade, Time.now) } }
 
-      let(:trade) { build_bitex_user_transaction(:dont_care, 11, 11, 11, 111, 11, :dont_care, created_at) }
+      let(:trade) { build_bitex_user_transaction(:dont_care, 11, 11, 11, 11, 111, 11, :dont_care, created_at) }
 
       context 'active' do
         let(:created_at) { 31.minutes.ago }
