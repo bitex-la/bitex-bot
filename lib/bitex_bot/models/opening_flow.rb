@@ -116,7 +116,7 @@ module BitexBot
         )
 
         open_position_class.create!(
-          transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
+          transaction_id: trade.id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
       end.compact
     end
@@ -142,7 +142,7 @@ module BitexBot
     #
     # @return [Boolean]
     def self.syncronized?(trade)
-      open_position_class.find_by_transaction_id(trade.order_id).present?
+      open_position_class.find_by_transaction_id(trade.id).present?
     end
 
     # @param [ApiWrapper::UserTransaction] trade.

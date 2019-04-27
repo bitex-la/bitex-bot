@@ -132,6 +132,7 @@ class BitstampApiWrapper < ApiWrapper
   # >
   def user_transaction_parser(user_transaction)
     UserTransaction.new(
+      user_transaction.id.to_s,
       user_transaction.order_id.to_s,
       user_transaction.send(quote).to_d,
       user_transaction.send(base).to_d,

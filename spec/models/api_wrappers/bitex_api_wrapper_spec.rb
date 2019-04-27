@@ -182,6 +182,7 @@ describe BitexApiWrapper do
     context 'about sample' do
       subject(:sample) { user_transactions.sample }
 
+      its(:id) { is_expected.to be_a(String) }
       its(:order_id) { is_expected.to be_a(String) }
       its(:fiat) { is_expected.to be_a(BigDecimal) }
       its(:crypto) { is_expected.to be_a(BigDecimal) }
@@ -211,7 +212,7 @@ describe BitexApiWrapper do
     context 'about sample' do
       subject(:sample) { trades.sample }
 
-      its(:order_id) { is_expected.to be_a(String) }
+      its(:id) { is_expected.to be_a(String) }
       its(:fiat) { is_expected.to be_a(BigDecimal) }
       its(:crypto) { is_expected.to be_a(BigDecimal) }
       its(:price) { is_expected.to be_a(BigDecimal) }
