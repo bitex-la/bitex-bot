@@ -54,7 +54,15 @@ module BitstampStubs
       fiat, crypto, trade_type = order.type == :bid ? [-fiat, order.amount, 'buys'] : [fiat, -order.amount, 'sells']
 
       BitstampStubs.user_transactions << BitstampApiWrapper::UserTransaction.new(
-        order.id, fiat * ratio, crypto * ratio, order.price, 0.5.to_d, trade_type, Time.now.strftime('%F %T'), double
+        rand(10).to_s,
+        order.id,
+        fiat * ratio,
+        crypto * ratio,
+        order.price,
+        0.5.to_d,
+        trade_type,
+        Time.now.strftime('%F %T'),
+        double
       )
     end
 

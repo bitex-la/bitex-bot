@@ -51,8 +51,8 @@ module BitexStubs
   def stub_bitex_transactions(*extra_trades)
     orderbook_code = BitexBot::Robot.maker.base_quote.to_sym
 
-    buy = build_bitex_user_transaction(:buy, 123, 600, 2, 300, 0.05, orderbook_code)
-    sell = build_bitex_user_transaction(:sell, 246, 600, 2, 300, 0.05, orderbook_code)
+    buy = build_bitex_user_transaction(:buy, 1, 123, 600, 2, 300, 0.05, orderbook_code)
+    sell = build_bitex_user_transaction(:sell, 2, 246, 600, 2, 300, 0.05, orderbook_code)
 
     allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return(extra_trades + [buy, sell])
   end
@@ -81,6 +81,7 @@ module BitexStubs
   end
 
   # @param [Symbol] type. <:buy|:sell>
+  # @param [Numeric] id.
   # @param [Numeric] order_id.
   # @param [Numeric] coin_amount.
   # @param [Numeric] cash_amount.
@@ -90,11 +91,11 @@ module BitexStubs
   # @param [Time] created_at. UTC
   #
   # return [ApiWrapper::UserTransaction]
-  def build_bitex_user_transaction(type, order_id, cash_amount, coin_amount, price, fee, orderbook_code, created_at = Time.now.utc)
+  def build_bitex_user_transaction(type, id, order_id, cash_amount, coin_amount, price, fee, orderbook_code, created_at = Time.now.utc)
     order_type = { buy: :bid, sell: :ask, dont_care: :dont_care }[type]
     raw = double(
       type: type.to_s.pluralize,
-      id: rand(1_000_000).to_s,
+      id: id.to_s,
       created_at: created_at,
       coin_amount: coin_amount.to_d,
       cash_amount: cash_amount.to_d,
@@ -113,7 +114,17 @@ module BitexStubs
       }
     )
 
-    ApiWrapper::UserTransaction.new(order_id.to_s, cash_amount.to_d, coin_amount.to_d, price, fee.to_d, raw.type, created_at.to_i, raw)
+    ApiWrapper::UserTransaction.new(
+      id.to_s,
+      order_id.to_s,
+      cash_amount.to_d,
+      coin_amount.to_d,
+      price,
+      fee.to_d,
+      raw.type,
+      created_at.to_i,
+      raw
+    )
   end
 
   # @param [Symbol] type. <:bid|:ask>

@@ -24,14 +24,7 @@ module BitexBot
     end
     # @!endgroup
 
-    # rubocop:disable Metrics/AbcSize
-    def self.open_market(taker_balance, maker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
-      #unless enough_funds?(maker_balance, value_per_order)
-      #  raise CannotCreateFlow,
-      #        "Needed #{maker_specie_to_spend} #{value_per_order.truncate(8)} on maker to place this "\
-      #        "#{trade_type} but you only have #{maker_specie_to_spend} #{maker_balance.truncate(8)}."
-      #end
-
+    def self.open_market(taker_balance, taker_orders, taker_transactions, maker_fee, taker_fee)
       taker_amount, taker_safest_price = calc_taker_amount(taker_balance, maker_fee, taker_fee, taker_orders, taker_transactions)
 
       price = maker_price(taker_amount)
@@ -52,7 +45,6 @@ module BitexBot
     rescue StandardError => e
       raise CannotCreateFlow, e.message
     end
-    # rubocop:enable Metrics/AbcSize
 
     # Checks if you have necessary funds for the amount you want to execute in the order.
     #   If BuyOpeningFlow, they must be in relation to the amounts and crypto funds.
@@ -116,7 +108,7 @@ module BitexBot
         )
 
         open_position_class.create!(
-          transaction_id: trade.order_id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
+          transaction_id: trade.id, price: trade.price, amount: trade.fiat, quantity: trade.crypto, opening_flow: flow
         )
       end.compact
     end
@@ -142,7 +134,7 @@ module BitexBot
     #
     # @return [Boolean]
     def self.syncronized?(trade)
-      open_position_class.find_by_transaction_id(trade.order_id).present?
+      open_position_class.find_by_transaction_id(trade.id).present?
     end
 
     # @param [ApiWrapper::UserTransaction] trade.

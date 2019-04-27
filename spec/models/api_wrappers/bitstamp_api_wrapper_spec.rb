@@ -147,8 +147,9 @@ describe BitstampApiWrapper do
 
     it { is_expected.to be_a(ApiWrapper::UserTransaction) }
 
-    its(:members) { is_expected.to eq(%i[order_id fiat crypto price fee type timestamp raw])  }
+    its(:members) { is_expected.to eq(%i[id order_id fiat crypto price fee type timestamp raw])  }
 
+    its(:id) { is_expected.to be_a(String) }
     its(:order_id) { is_expected.to be_a(String) }
     its(:fiat) { is_expected.to be_a(BigDecimal) }
     its(:crypto) { is_expected.to be_a(BigDecimal) }

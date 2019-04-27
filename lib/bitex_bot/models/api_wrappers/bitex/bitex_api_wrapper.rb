@@ -32,7 +32,7 @@ class BitexApiWrapper < ApiWrapper
   end
 
   def amount_and_quantity(order_id)
-    trades = user_transactions.select { |t| t.order_id.to_s == order_id }
+    trades = user_transactions.select { |t| t.order_id == order_id }
 
     [trades.sum(&:fiat).abs, trades.sum(&:crypto).abs]
   end
@@ -62,7 +62,15 @@ class BitexApiWrapper < ApiWrapper
   # TODO: symbolize and singularize trade type
   def user_transaction_parser(trade)
     UserTransaction.new(
-      order_id(trade), trade.cash_amount, trade.coin_amount, trade.price, trade.fee, trade.type, trade.created_at.to_i, trade
+      trade.id,
+      order_id(trade),
+      trade.cash_amount,
+      trade.coin_amount,
+      trade.price,
+      trade.fee,
+      trade.type,
+      trade.created_at.to_i,
+      trade
     )
   end
 

@@ -130,8 +130,9 @@ class BitstampApiWrapper < ApiWrapper
   #   @usd='-373.51', @btc='3.00781124', @btc_usd='124.18', @order_id=7623942, @fee='1.50', @type=2, @id=1444404,
   #   @datetime='2013-09-26 13:28:55'
   # >
-  def user_transaction_parser(user_transaction)
+  def user_transaction_parser(user_transaction) # rubocop:disable Metrics/AbcSize
     UserTransaction.new(
+      user_transaction.id.to_s,
       user_transaction.order_id.to_s,
       user_transaction.send(quote).to_d,
       user_transaction.send(base).to_d,
