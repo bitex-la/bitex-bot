@@ -38,6 +38,10 @@ module BitexBot
       # could it be interesting to return if the message was immediately notified or not?
     end
 
+    def self.reset
+      cache.clear
+    end
+
     def self.notify_internal(message, subj)
       log(:info, "Sending mail with subject: #{subj}\n\n#{message}")
       return unless Settings.mailer.present?
