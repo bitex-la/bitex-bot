@@ -23,3 +23,5 @@ staging.rb
 bitex_bot.db
 bitex_bot.log
 bitex_bot.db-journal
+.vscode/
+bin/
