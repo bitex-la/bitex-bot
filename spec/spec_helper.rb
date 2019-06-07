@@ -53,6 +53,7 @@ RSpec.configure do |config|
   config.after(:each) do
     DatabaseCleaner.clean
     Timecop.return
+    BitexBot::Notifier.reset
   end
 
   config.order = 'random'
