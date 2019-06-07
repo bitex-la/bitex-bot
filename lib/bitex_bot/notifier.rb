@@ -16,7 +16,7 @@ module BitexBot
       end
     end
 
-    def get_latest_entries_and_clear()
+    def self.get_latest_entries_and_clear
       logs = log_entries.join("\n")
       log_entries.clear
     end
