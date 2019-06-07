@@ -40,6 +40,8 @@ require 'bitex_bot/models/close_sell'
 require 'bitex_bot/models/orderbook_simulator'
 require 'bitex_bot/models/store'
 
+require 'bitex_bot/notifier'
+
 require 'bitex_bot/robot'
 
 # Get version and bitex-bot as user-agent
