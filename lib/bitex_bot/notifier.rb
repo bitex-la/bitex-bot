@@ -24,20 +24,9 @@ module BitexBot
 
     # rubocop:disable Metrics/AbcSize
     def self.notify(message, subj = 'Notice from your robot trader')
-      if cache[subj]
-        cache[subj][:counter] += 1
-        now = Time.now
-        elapsed = now - cache[subj][:last_notif]
-        if elapsed >= 1.hour
-          cache[subj][:counter] = 1
-          cache[subj][:last_notif] = now
-          notify_internal(message, subj)
-        end
-      else
-        cache[subj] = { counter: 1, last_notif: Time.now }
-        notify_internal(message, subj)
-      end
-      # could it be interesting to return if the message was immediately notified or not?
+      return if cache[subj].try{|hit| hit > 1.hour.ago }
+      cache[subj] = Time.now
+      notify_internal(message, subj)
     end
     # rubocop:enable Metrics/AbcSize
 
