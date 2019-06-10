@@ -73,10 +73,10 @@ module BitexBot
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-      sleep_for(3.minutes) #TODO: hardoded values
+      sleep_for(3.minutes) # TODO: hardoded values
     rescue Curl::Err::TimeoutError, ApiWrapperError => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-      sleep_for(15.seconds)    
+      sleep_for(15.seconds)
     rescue OrderNotFound, OrderArgumentError => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
@@ -227,6 +227,5 @@ module BitexBot
       Notifier.notify("#{currency.upcase} balance is too low, it's #{amount}, make it #{warning_amount} to stop this warning.")
       store.update(last_warning: Time.now)
     end
-
   end
 end

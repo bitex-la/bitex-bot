@@ -1,6 +1,6 @@
 module BitexBot
+  # It notifies via email and write logs
   class Notifier
-
     cattr_accessor(:cache) { {} }
     cattr_accessor(:log_entries) { [] }
 
@@ -16,11 +16,13 @@ module BitexBot
       end
     end
 
-    def self.get_latest_entries_and_clear
+    def self.latest_entries_and_clear
       logs = log_entries.join("\n")
       log_entries.clear
+      logs
     end
 
+    # rubocop:disable Metrics/AbcSize
     def self.notify(message, subj = 'Notice from your robot trader')
       if cache[subj]
         cache[subj][:counter] += 1
@@ -32,17 +34,17 @@ module BitexBot
           notify_internal(message, subj)
         end
       else
-        cache[subj] = {counter: 1, last_notif: Time.now}
+        cache[subj] = { counter: 1, last_notif: Time.now }
         notify_internal(message, subj)
       end
       # could it be interesting to return if the message was immediately notified or not?
     end
+    # rubocop:enable Metrics/AbcSize
 
     def self.reset
       cache.clear
     end
 
-  private
     def self.notify_internal(message, subj)
       log(:info, "Sending mail with subject: #{subj}\n\n#{message}")
       return unless Settings.mailer.present?
@@ -65,6 +67,5 @@ module BitexBot
       log_entries << "#{level.upcase} #{Time.now.strftime('%m/%d %H:%M:%S.%L')}: #{message}"
       logger.send(level, message)
     end
-
   end
 end
