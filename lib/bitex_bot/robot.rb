@@ -178,7 +178,7 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
-      logs = Notifier.get_latest_entries_and_clear
+      logs = Notifier.latest_entries_and_clear
       logs << "\nLast run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
 
       store.update(
