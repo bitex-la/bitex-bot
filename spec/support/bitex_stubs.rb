@@ -16,13 +16,13 @@ module BitexStubs
 
     allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
       found = bids.find { |bid| bid.id == id.to_s }
-      raise "Bid #{id} not found" unless found
+      raise "Bid #{id} not found in #{bids} (##{bids.object_id})" unless found
       found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
       found = asks.find { |ask| ask.id == id.to_s }
-      raise "Ask #{id} not found" unless found
+      raise "Ask #{id} not found in #{asks} (##{asks.object_id})" unless found
       found
     end
 

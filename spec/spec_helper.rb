@@ -60,7 +60,8 @@ RSpec.configure do |config|
     if example.exception
       BitexBot::Notifier.logger.debug("Dumping DB and stub state:")
       %i(order_ids bids asks active_bids active_asks).each do |attr|
-        BitexBot::Notifier.logger.debug("BitexStubs: #{BitexStubs.send(attr)}")
+        BitexBot::Notifier.logger
+          .debug("BitexStubs##{attr}: #{BitexStubs.send(attr)} (##{BitexStubs.send(attr).object_id}")
       end
       [BitexBot::BuyOpeningFlow, BitexBot::SellOpeningFlow].each do |cls|
         BitexBot::Notifier.logger.debug("#{cls}: #{cls.all.to_yaml}")
