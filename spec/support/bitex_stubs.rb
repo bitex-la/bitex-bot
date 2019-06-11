@@ -16,13 +16,13 @@ module BitexStubs
 
     allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
       found = bids.find { |bid| bid.id == id.to_s }
-      raise "Bid #{id} not found in #{bids} (##{bids.object_id})" unless found
+      raise "Bid #{id} not found in #{bids} (##{BitexStubs.bids.object_id} - ##{bids.object_id})" unless found
       found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
       found = asks.find { |ask| ask.id == id.to_s }
-      raise "Ask #{id} not found in #{asks} (##{asks.object_id})" unless found
+      raise "Ask #{id} not found in #{asks} (##{BitexStubs.asks.object_id} - ##{asks.object_id})" unless found
       found
     end
 
@@ -155,6 +155,7 @@ module BitexStubs
   end
 
   def stub_bitex_reset
+    BitexBot::Notifier.logger.debug("---- Resetting bitex stubs")
     BitexStubs.order_ids = '0'
     BitexStubs.bids = []
     BitexStubs.asks = []
