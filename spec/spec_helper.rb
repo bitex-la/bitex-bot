@@ -39,11 +39,17 @@ RSpec.configure do |config|
   end
 
   config.before(:all) do
-    BitexBot::Notifier.logger = Logger.new('test.log', level: :debug)
+    BitexBot::Notifier.logger = Logger.new(
+      'test.log',
+      level: :debug,
+      formatter: proc{|kind, _, __, msg| "#{kind.first}: #{msg}\n" }
+    )
   end
 
-  config.before(:each) do
+  config.before(:each) do |test|
     BitexBot::Robot.stub(:sleep_for)
+    BitexBot::Notifier.logger.debug("-" * 10)
+    BitexBot::Notifier.logger.debug("Example: #{test.full_description}")
   end
 
   config.before(:suite) do
