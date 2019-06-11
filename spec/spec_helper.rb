@@ -39,7 +39,7 @@ RSpec.configure do |config|
   end
 
   config.before(:all) do
-    BitexBot::Notifier.logger = Logger.new('/dev/null')
+    BitexBot::Notifier.logger = Logger.new('test.log', level: :debug)
   end
 
   config.before(:each) do
