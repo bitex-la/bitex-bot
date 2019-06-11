@@ -56,7 +56,17 @@ RSpec.configure do |config|
     DatabaseCleaner.clean
   end
 
-  config.after(:each) do
+  config.after(:each) do |example|
+    if example.exception
+      BitexBot::Notifier.logger.debug("Dumping DB and stub state:")
+      %i(order_ids bids asks active_bids active_asks).each do |attr|
+        BitexBot::Notifier.logger.debug("BitexStubs: #{BitexStubs.send(attr)}")
+      end
+      [BitexBot::BuyOpeningFlow, BitexBot::SellOpeningFlow].each do |cls|
+        BitexBot::Notifier.logger.debug("#{cls}: #{cls.all.to_yaml}")
+      end
+    end
+
     DatabaseCleaner.clean
     Timecop.return
     BitexBot::Notifier.reset

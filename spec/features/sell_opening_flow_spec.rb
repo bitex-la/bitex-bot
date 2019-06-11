@@ -36,13 +36,19 @@ describe BitexBot::SellOpeningFlow do
     let(:maker_balance) { 1_000.to_d }
 
     context 'sells 2 crypto' do
-      before(:each) { allow(BitexBot::Settings).to receive_message_chain(:selling, :quantity_to_sell_per_order).and_return(2.to_d) }
+      before(:each) do
+        allow(BitexBot::Settings).to(
+          receive_message_chain(:selling, :quantity_to_sell_per_order)
+            .and_return(2.to_d)
+        )
+      end
 
       its(:value_to_use) { is_expected.to eq(2) }
       its(:suggested_closing_price) { is_expected.to eq(20) }
       its(:price) { is_expected.to be >= 20 }
 
       it 'rounded price' do
+        raise 'ble'
         expect(flow.price.round(14)).to eq('20.15037593984962'.to_d)
       end
 
