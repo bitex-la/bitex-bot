@@ -60,6 +60,8 @@ RSpec.configure do |config|
     DatabaseCleaner.clean
     Timecop.return
     BitexBot::Notifier.reset
+    stub_bitex_reset
+    stub_bitstamp_reset
   end
 
   config.order = 'random'

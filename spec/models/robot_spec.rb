@@ -46,11 +46,6 @@ describe BitexBot::Robot do
     BitexBot::Robot.setup
   end
 
-  after(:each) do
-    stub_bitex_reset
-    stub_bitstamp_reset
-  end
-
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
