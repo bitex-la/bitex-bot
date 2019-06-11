@@ -11,18 +11,18 @@ module BitexStubs
 
   def stub_bitex_active_orders
     allow_any_instance_of(BitexApiWrapper).to receive(:orders) do
-      active_bids + active_asks
+      BitexStubs.active_bids + BitexStubs.active_asks
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
-      found = bids.find { |bid| bid.id == id.to_s }
-      raise "Bid #{id} not found in #{bids} (##{BitexStubs.bids.object_id} - ##{bids.object_id})" unless found
+      found = BitexStubs.bids.find { |bid| bid.id == id.to_s }
+      raise "Bid #{id} not found in #{BitexStubs.bids} (##{BitexStubs.bids.object_id} - ##{bids.object_id})" unless found
       found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
-      found = asks.find { |ask| ask.id == id.to_s }
-      raise "Ask #{id} not found in #{asks} (##{BitexStubs.asks.object_id} - ##{asks.object_id})" unless found
+      found = BitexStubs.asks.find { |ask| ask.id == id.to_s }
+      raise "Ask #{id} not found in #{BitexStubs.asks} (##{BitexStubs.asks.object_id} - ##{asks.object_id})" unless found
       found
     end
 
