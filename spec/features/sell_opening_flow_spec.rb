@@ -48,7 +48,6 @@ describe BitexBot::SellOpeningFlow do
       its(:price) { is_expected.to be >= 20 }
 
       it 'rounded price' do
-        raise 'ble'
         expect(flow.price.round(14)).to eq('20.15037593984962'.to_d)
       end
 
