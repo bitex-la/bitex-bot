@@ -55,13 +55,19 @@ describe BitexBot::BuyOpeningFlow do
         it { is_expected.to be_executing }
 
         context 'cancel one time' do
-          before(:each) { flow.finalise! }
+          before(:each) { 
+            BitexBot::Notifier.logger.debug("Finalise #58")
+            flow.finalise!
+          }
 
           it { expect(order.status).to eq(:cancelled) }
           it { is_expected.to be_settling }
 
           context 'cancels one more time' do
-            before(:each) { flow.finalise! }
+            before(:each) {
+              BitexBot::Notifier.logger.debug("Finalise #68")
+              flow.finalise!
+            }
 
             it { is_expected.to be_finalised }
           end
@@ -115,7 +121,7 @@ describe BitexBot::BuyOpeningFlow do
       context 'when there is a problem placing the bid on maker' do
         before(:each) do
           allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order) do
-            raise StandardError, 'boo shit'
+            raise StandardError, 'boo'
           end
         end
 
@@ -123,7 +129,7 @@ describe BitexBot::BuyOpeningFlow do
           expect do
             expect(flow).to be_nil
             expect(described_class.count).to be_zero
-          end.to raise_error(BitexBot::CannotCreateFlow, 'boo shit')
+          end.to raise_error(BitexBot::CannotCreateFlow, 'boo')
         end
       end
 
@@ -187,7 +193,7 @@ describe BitexBot::BuyOpeningFlow do
       end
 
       it 'does not register buys from another order book' do
-        trade = build_bitex_user_transaction(:buy, 777, 888, 600, 2, 300, 0.05, :boo_shit)
+        trade = build_bitex_user_transaction(:buy, 777, 888, 600, 2, 300, 0.05, :boo)
         allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
 
         expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenBuy.count }

@@ -47,11 +47,11 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do |test|
-    stub_bitex_reset
-    stub_bitstamp_reset
     BitexBot::Robot.stub(:sleep_for)
     BitexBot::Notifier.logger.debug("-" * 10)
     BitexBot::Notifier.logger.debug("Example: #{test.full_description}")
+    stub_bitex_reset
+    stub_bitstamp_reset
   end
 
   config.before(:suite) do
