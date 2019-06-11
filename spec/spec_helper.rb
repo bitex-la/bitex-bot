@@ -47,6 +47,8 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do |test|
+    stub_bitex_reset
+    stub_bitstamp_reset
     BitexBot::Robot.stub(:sleep_for)
     BitexBot::Notifier.logger.debug("-" * 10)
     BitexBot::Notifier.logger.debug("Example: #{test.full_description}")
@@ -60,8 +62,8 @@ RSpec.configure do |config|
     if example.exception
       BitexBot::Notifier.logger.debug("Dumping DB and stub state:")
       %i(order_ids bids asks active_bids active_asks).each do |attr|
-        BitexBot::Notifier.logger
-          .debug("BitexStubs##{attr}: #{BitexStubs.send(attr)} (##{BitexStubs.send(attr).object_id}")
+        BitexBot::Notifier.logger.debug(
+          "BitexStubs##{attr}: #{BitexStubs.send(attr)} (##{BitexStubs.send(attr).object_id})")
       end
       [BitexBot::BuyOpeningFlow, BitexBot::SellOpeningFlow].each do |cls|
         BitexBot::Notifier.logger.debug("#{cls}: #{cls.all.to_yaml}")
@@ -71,8 +73,6 @@ RSpec.configure do |config|
     DatabaseCleaner.clean
     Timecop.return
     BitexBot::Notifier.reset
-    stub_bitex_reset
-    stub_bitstamp_reset
   end
 
   config.order = 'random'

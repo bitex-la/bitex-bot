@@ -1,9 +1,9 @@
 module BitexStubs
-  mattr_accessor(:order_ids) { '0' }
-  mattr_accessor(:bids) { [] }
-  mattr_accessor(:asks) { [] }
-  mattr_accessor(:active_bids) { [] }
-  mattr_accessor(:active_asks) { [] }
+  mattr_accessor(:order_ids)
+  mattr_accessor(:bids)
+  mattr_accessor(:asks)
+  mattr_accessor(:active_bids)
+  mattr_accessor(:active_asks)
 
   def next_bitex_order_id
     self.order_ids = self.order_ids.next
@@ -156,10 +156,10 @@ module BitexStubs
 
   def stub_bitex_reset
     BitexStubs.order_ids = '0'
-    BitexStubs.bids.clear
-    BitexStubs.asks.clear
-    BitexStubs.active_bids.clear
-    BitexStubs.active_asks.clear
+    BitexStubs.bids = []
+    BitexStubs.asks = []
+    BitexStubs.active_bids = []
+    BitexStubs.active_asks = []
   end
 end
 

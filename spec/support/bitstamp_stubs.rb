@@ -1,10 +1,10 @@
 module BitstampStubs
-  mattr_accessor(:order_ids) { '0' }
-  mattr_accessor(:bids) { [] }
-  mattr_accessor(:asks) { [] }
-  mattr_accessor(:active_bids) { [] }
-  mattr_accessor(:active_asks) { [] }
-  mattr_accessor(:user_transactions) { [] }
+  mattr_accessor(:order_ids)
+  mattr_accessor(:bids)
+  mattr_accessor(:asks)
+  mattr_accessor(:active_bids)
+  mattr_accessor(:active_asks)
+  mattr_accessor(:user_transactions)
 
   def next_bitstamp_order_id
     self.order_ids = self.order_ids.next
@@ -129,11 +129,11 @@ module BitstampStubs
 
   def stub_bitstamp_reset
     BitstampStubs.order_ids = '0'
-    BitstampStubs.bids.clear
-    BitstampStubs.asks.clear
-    BitstampStubs.active_bids.clear
-    BitstampStubs.active_asks.clear
-    BitstampStubs.user_transactions.clear
+    BitstampStubs.bids = []
+    BitstampStubs.asks = []
+    BitstampStubs.active_bids = []
+    BitstampStubs.active_asks = []
+    BitstampStubs.user_transactions = []
   end
 end
 RSpec.configuration.include BitstampStubs
