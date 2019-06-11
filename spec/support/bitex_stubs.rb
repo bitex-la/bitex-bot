@@ -15,11 +15,15 @@ module BitexStubs
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
-      bids.find { |bid| bid.id == id.to_s }
+      found = bids.find { |bid| bid.id == id.to_s }
+      raise "Bid #{id} not found" unless found
+      found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
-      asks.find { |ask| ask.id == id.to_s }
+      found = asks.find { |ask| ask.id == id.to_s }
+      raise "Ask #{id} not found" unless found
+      found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:send_order) do |type, price, amount|
