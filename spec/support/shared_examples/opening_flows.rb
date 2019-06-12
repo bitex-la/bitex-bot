@@ -161,7 +161,7 @@ shared_examples_for 'OpeningFlows' do
     end
 
     context 'unexpected' do
-      let(:orderbook_code) { 'buu_shit' }
+      let(:orderbook_code) { 'buu' }
 
       it { is_expected.to be_falsey }
     end

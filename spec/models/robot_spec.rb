@@ -46,11 +46,6 @@ describe BitexBot::Robot do
     BitexBot::Robot.setup
   end
 
-  after(:each) do
-    stub_bitex_reset
-    stub_bitstamp_reset
-  end
-
   let(:bot) { BitexBot::Robot.new }
 
   it 'Starts out by creating opening flows that timeout' do
@@ -192,6 +187,8 @@ describe BitexBot::Robot do
 
       Timecop.travel(31.minutes.from_now)
       stub_bitstamp_market # Re-stub so order book does not get old
+
+      BitexBot::Notifier.reset
       expect { bot.trade! }.to change { Mail::TestMailer.deliveries.count }.by(1)
     end
 

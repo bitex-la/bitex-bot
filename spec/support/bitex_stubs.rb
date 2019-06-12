@@ -1,9 +1,9 @@
 module BitexStubs
-  mattr_accessor(:order_ids) { '0' }
-  mattr_accessor(:bids) { [] }
-  mattr_accessor(:asks) { [] }
-  mattr_accessor(:active_bids) { [] }
-  mattr_accessor(:active_asks) { [] }
+  mattr_accessor(:order_ids)
+  mattr_accessor(:bids)
+  mattr_accessor(:asks)
+  mattr_accessor(:active_bids)
+  mattr_accessor(:active_asks)
 
   def next_bitex_order_id
     self.order_ids = self.order_ids.next
@@ -11,15 +11,19 @@ module BitexStubs
 
   def stub_bitex_active_orders
     allow_any_instance_of(BitexApiWrapper).to receive(:orders) do
-      active_bids + active_asks
+      BitexStubs.active_bids + BitexStubs.active_asks
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
-      bids.find { |bid| bid.id == id.to_s }
+      found = BitexStubs.bids.find { |bid| bid.id == id.to_s }
+      raise "Bid #{id} not found in #{BitexStubs.bids} (##{BitexStubs.bids.object_id} - ##{bids.object_id})" unless found
+      found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
-      asks.find { |ask| ask.id == id.to_s }
+      found = BitexStubs.asks.find { |ask| ask.id == id.to_s }
+      raise "Ask #{id} not found in #{BitexStubs.asks} (##{BitexStubs.asks.object_id} - ##{asks.object_id})" unless found
+      found
     end
 
     allow_any_instance_of(BitexApiWrapper).to receive(:send_order) do |type, price, amount|
@@ -151,11 +155,12 @@ module BitexStubs
   end
 
   def stub_bitex_reset
+    BitexBot::Notifier.logger.debug("---- Resetting bitex stubs")
     BitexStubs.order_ids = '0'
-    BitexStubs.bids.clear
-    BitexStubs.asks.clear
-    BitexStubs.active_bids.clear
-    BitexStubs.active_asks.clear
+    BitexStubs.bids = []
+    BitexStubs.asks = []
+    BitexStubs.active_bids = []
+    BitexStubs.active_asks = []
   end
 end
 

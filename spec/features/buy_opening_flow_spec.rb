@@ -46,26 +46,23 @@ describe BitexBot::BuyOpeningFlow do
         expect(flow.price.round(14)).to eq('19.85074626865672'.to_d)
       end
 
-      context 'finalising flow cancels associated bid' do
-        subject(:flow) { create(:buy_opening_flow, order_id: order.id) }
+      it 'cancels associated bid when finalising a flow' do
+        order = maker.send_order(:buy, 20, 50)
+        flow = create(:buy_opening_flow, order_id: order.id)
+        expect(order.status).to eq(:executing)
 
-        let(:order) { maker.send_order(:buy, 20, 50) }
+        expect(flow).to be_executing
 
-        it { expect(order.status).to eq(:executing) }
-        it { is_expected.to be_executing }
+        # On the first call we try to cancel the order.
+        flow.finalise!
 
-        context 'cancel one time' do
-          before(:each) { flow.finalise! }
+        expect(order.status).to eq(:cancelled)
+        expect(flow).to be_settling
 
-          it { expect(order.status).to eq(:cancelled) }
-          it { is_expected.to be_settling }
-
-          context 'cancels one more time' do
-            before(:each) { flow.finalise! }
-
-            it { is_expected.to be_finalised }
-          end
-        end
+        # Second call will acknowledge order is cancelled, so it's finalised.
+        flow.finalise!
+        expect(order.status).to eq(:cancelled)
+        expect(flow).to be_finalised
       end
 
       context 'prioritizes profit from store' do
@@ -115,7 +112,7 @@ describe BitexBot::BuyOpeningFlow do
       context 'when there is a problem placing the bid on maker' do
         before(:each) do
           allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order) do
-            raise StandardError, 'boo shit'
+            raise StandardError, 'boo'
           end
         end
 
@@ -123,7 +120,7 @@ describe BitexBot::BuyOpeningFlow do
           expect do
             expect(flow).to be_nil
             expect(described_class.count).to be_zero
-          end.to raise_error(BitexBot::CannotCreateFlow, 'boo shit')
+          end.to raise_error(BitexBot::CannotCreateFlow, 'boo')
         end
       end
 
@@ -187,7 +184,7 @@ describe BitexBot::BuyOpeningFlow do
       end
 
       it 'does not register buys from another order book' do
-        trade = build_bitex_user_transaction(:buy, 777, 888, 600, 2, 300, 0.05, :boo_shit)
+        trade = build_bitex_user_transaction(:buy, 777, 888, 600, 2, 300, 0.05, :boo)
         allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
 
         expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenBuy.count }

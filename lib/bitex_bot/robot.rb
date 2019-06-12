@@ -19,19 +19,6 @@ module BitexBot
     cattr_accessor :graceful_shutdown
     cattr_accessor :cooldown_until
     cattr_accessor(:current_cooldowns) { 0 }
-    cattr_accessor(:last_log) { [] }
-
-    cattr_accessor(:logger) do
-      logdev = Settings.log.try(:file)
-      STDOUT.sync = true unless logdev.present?
-      Logger.new(logdev || STDOUT, 10, 10_240_000).tap do |log|
-        log.level = Logger.const_get(Settings.log.level.upcase)
-        log.formatter = proc do |severity, datetime, _progname, msg|
-          date = datetime.strftime('%m/%d %H:%M:%S.%L')
-          "#{format('%-6s', severity)} #{date}: #{msg}\n"
-        end
-      end
-    end
 
     def self.setup
       self.maker = Settings.maker_class.new(Settings.maker_settings)
@@ -58,8 +45,7 @@ module BitexBot
     def_delegator self, :sleep_for
 
     def self.log(level, message)
-      last_log << "#{level.upcase} #{Time.now.strftime('%m/%d %H:%M:%S.%L')}: #{message}"
-      logger.send(level, message)
+      Notifier.log(level, message)
     end
     def_delegator self, :log
 
@@ -86,20 +72,16 @@ module BitexBot
       sync_closing_flows if active_closing_flows?
       start_opening_flows_if_needed
     rescue CannotCreateFlow => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-      sleep_for(60 * 3)
-    rescue Curl::Err::TimeoutError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-      sleep_for(15)
-    rescue OrderNotFound => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-    rescue ApiWrapperError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-    rescue OrderArgumentError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      sleep_for(3.minutes) # TODO: hardoded values
+    rescue Curl::Err::TimeoutError, ApiWrapperError => e
+      Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      sleep_for(15.seconds)
+    rescue OrderNotFound, OrderArgumentError => e
+      Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
-      notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
-      sleep_for(60 * 2)
+      Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
+      sleep_for(2.minutes)
     end
     # rubocop:enable Metrics/AbcSize
 
@@ -196,9 +178,9 @@ module BitexBot
     # rubocop:disable Metrics/AbcSize
     def sync_log_and_store(maker_balance, taker_balance)
       log_balances('Store: Updating log, maker and taker balances...')
-      last_log << "Last run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
-      logs = last_log.join("\n")
-      last_log.clear
+      logs = Notifier.latest_entries_and_clear
+      logs << "\nLast run: #{Time.now.utc}, Open Bids: #{BuyOpeningFlow.resume}, Open Asks: #{SellOpeningFlow.resume}."
+
       store.update(
         maker_fiat: maker_balance.fiat.total, maker_crypto: maker_balance.crypto.total,
         taker_fiat: taker_balance.fiat.total, taker_crypto: taker_balance.crypto.total,
@@ -242,26 +224,8 @@ module BitexBot
     end
 
     def notify_balance_warning(currency, amount, warning_amount)
-      notify("#{currency.upcase} balance is too low, it's #{amount}, make it #{warning_amount} to stop this warning.")
+      Notifier.notify("#{currency.upcase} balance is too low, it's #{amount}, make it #{warning_amount} to stop this warning.")
       store.update(last_warning: Time.now)
-    end
-
-    def notify(message, subj = 'Notice from your robot trader')
-      log(:info, "Sending mail with subject: #{subj}\n\n#{message}")
-      return unless Settings.mailer.present?
-
-      new_mail(subj, message).tap do |mail|
-        mail.delivery_method(Settings.mailer.delivery_method.to_sym, Settings.mailer.options.to_hash)
-      end.deliver!
-    end
-
-    def new_mail(subj, message)
-      Mail.new do
-        from Settings.mailer.from
-        to Settings.mailer.to
-        subject subj
-        body message
-      end
     end
   end
 end

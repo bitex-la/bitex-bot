@@ -22,7 +22,7 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "bitex_bot.gemspec" }}-{{ checksum "Gemfile" }}
+          - v1-dependencies-{{ checksum "Gemfile" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
@@ -34,20 +34,17 @@ jobs:
       - save_cache:
           paths:
             - ./vendor/bundle
-          key: v1-dependencies-{{ checksum "bitex_bot.gemspec" }}-{{ checksum "Gemfile" }}
+          key: v1-dependencies-{{ checksum "Gemfile" }}
 
       # run tests!
       - run:
           name: run tests
           command: |
             mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
-
             bundle exec rspec --format progress \
                             --format RspecJunitFormatter \
                             --out /tmp/test-results/rspec.xml \
-                            --format progress \
-                            $TEST_FILES
+                            spec
 
       # run lints
       - run:
@@ -61,3 +58,5 @@ jobs:
       - store_artifacts:
           path: /tmp/test-results
           destination: test-results
+      - store_artifacts:
+          path: test.log

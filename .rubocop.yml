@@ -1,6 +1,12 @@
 Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
+Style/SpaceInsideBlockBraces:
+  Enabled: false
+
+Layout/SpaceBeforeBlockBraces:
+  Enabled: false
+
 Metrics/AbcSize:
   Max: 20
 

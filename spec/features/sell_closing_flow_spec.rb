@@ -14,11 +14,6 @@ describe BitexBot::SellClosingFlow do
     allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(1.to_d)
   end
 
-  after(:each) do
-    stub_bitstamp_reset
-    stub_bitex_reset
-  end
-
   let(:maker) { BitexBot::Robot.maker }
   let(:taker) { BitexBot::Robot.taker }
 

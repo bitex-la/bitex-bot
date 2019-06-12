@@ -39,20 +39,40 @@ RSpec.configure do |config|
   end
 
   config.before(:all) do
-    BitexBot::Robot.logger = Logger.new('/dev/null')
+    BitexBot::Notifier.logger = Logger.new(
+      'test.log',
+      level: :debug,
+      formatter: proc{|kind, _, __, msg| "#{kind.first}: #{msg}\n" }
+    )
   end
 
-  config.before(:each) do
+  config.before(:each) do |test|
     BitexBot::Robot.stub(:sleep_for)
+    BitexBot::Notifier.logger.debug("-" * 10)
+    BitexBot::Notifier.logger.debug("Example: #{test.full_description}")
+    stub_bitex_reset
+    stub_bitstamp_reset
   end
 
   config.before(:suite) do
     DatabaseCleaner.clean
   end
 
-  config.after(:each) do
+  config.after(:each) do |example|
+    if example.exception
+      BitexBot::Notifier.logger.debug("Dumping DB and stub state:")
+      %i(order_ids bids asks active_bids active_asks).each do |attr|
+        BitexBot::Notifier.logger.debug(
+          "BitexStubs##{attr}: #{BitexStubs.send(attr)} (##{BitexStubs.send(attr).object_id})")
+      end
+      [BitexBot::BuyOpeningFlow, BitexBot::SellOpeningFlow].each do |cls|
+        BitexBot::Notifier.logger.debug("#{cls}: #{cls.all.to_yaml}")
+      end
+    end
+
     DatabaseCleaner.clean
     Timecop.return
+    BitexBot::Notifier.reset
   end
 
   config.order = 'random'
