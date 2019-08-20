@@ -2,7 +2,7 @@
 class ApiWrapper
   attr_accessor :currency_pair
 
-  MIN_AMOUNT = 5
+  MIN_AMOUNT = 25
 
   Transaction = Struct.new(
     :id,        # Integer
