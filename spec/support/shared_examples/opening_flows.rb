@@ -100,11 +100,10 @@ shared_examples_for 'OpeningFlows' do
       allow(described_class).to receive(:calc_taker_amount).and_return([100.to_d, closing_price])
       allow(described_class).to receive(:maker_price).and_return(minimun_price)
       allow(described_class).to receive(:trade_type).and_return(:dont_care_trade_type)
-
-      # Don't care by another data fields.
-      maker_order = ApiWrapper::Order.new(order_id, :dont_care_trade_type, 300, 10, Time.now.to_i, 'raw_order')
       allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order).and_return(maker_order)
     end
+
+    let(:maker_order) { ApiWrapper::Order.new(order_id, :dont_care_trade_type, 300, 10, Time.now.to_i, 'raw_order') }
 
     let(:order_id) { '111111' }
     let(:minimun_price) { 300.to_d }
@@ -142,7 +141,10 @@ shared_examples_for 'OpeningFlows' do
       end
 
       context 'by some reason' do
-        it { expect { open_market }.to raise_error(StandardError, 'any reason') }
+        it 'cancels order' do
+          expect(BitexBot::Robot).to receive_message_chain(:maker, :cancel_order).with(maker_order)
+          expect { open_market }.to raise_error(BitexBot::CannotCreateFlow, 'any reason')
+        end
       end
     end
   end

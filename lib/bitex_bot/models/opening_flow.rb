@@ -35,15 +35,22 @@ module BitexBot
         " (#{maker_specie_to_obtain} #{taker_amount})."
       )
 
+      create_for(order, taker_safest_price)
+    rescue StandardError => e
+      raise CannotCreateFlow, e.message
+    end
+
+    def self.create_for(order, suggested_closing_price)
       create!(
-        price: price,
+        price: order.price,
         value_to_use: value_to_use,
-        suggested_closing_price: taker_safest_price,
+        suggested_closing_price: suggested_closing_price,
         status: :executing,
         order_id: order.id
       )
-    rescue StandardError => e
-      raise CannotCreateFlow, e.message
+    rescue => e
+      Robot.maker.cancel_order(order)
+      raise
     end
 
     # Checks if you have necessary funds for the amount you want to execute in the order.
