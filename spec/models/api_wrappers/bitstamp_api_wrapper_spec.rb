@@ -72,6 +72,10 @@ describe BitstampApiWrapper do
   end
 
   describe '#market', vcr: { cassette_name: 'bitstamp/market' } do
+    # Travel to cassette recording date, otherwise BitstampApiWrapper#market would consider
+    # the response to be stale.
+    before(:each) { Timecop.freeze(Date.new(2019, 02, 05)) }
+
     subject(:market) { wrapper.market }
 
     it { is_expected.to be_a(ApiWrapper::OrderBook) }

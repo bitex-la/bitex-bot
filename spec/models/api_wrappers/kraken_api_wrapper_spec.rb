@@ -1,7 +1,10 @@
 require 'spec_helper'
 
 describe KrakenApiWrapper do
-  before(:each) { BitexBot::Settings.stub(taker: BitexBot::SettingsClass.new(kraken: taker_settings)) }
+  before(:each) do
+    stub_assets
+    BitexBot::Settings.stub(taker: BitexBot::SettingsClass.new(kraken: taker_settings))
+  end
 
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
@@ -74,7 +77,6 @@ describe KrakenApiWrapper do
   end
 
   it 'Sends User-Agent header' do
-    stub_assets
     stub_stuff = stub_order_book
 
     # We don't care about the response
@@ -125,7 +127,6 @@ describe KrakenApiWrapper do
   end
 
   it '#balance' do
-    stub_assets
     stub_balance
     stub_orders
     stub_trade_volume
@@ -170,7 +171,6 @@ describe KrakenApiWrapper do
   end
 
   it '#market' do
-    stub_assets
     stub_order_book
 
     order_book = wrapper.market
@@ -254,7 +254,6 @@ describe KrakenApiWrapper do
   end
 
   it '#transactions' do
-    stub_assets
     stub_transactions
 
     wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
@@ -277,8 +276,6 @@ describe KrakenApiWrapper do
   end
 
   it '#currency_pair' do
-    stub_assets
-
     expect(wrapper.currency_pair[:altname]).to eq(taker_settings.order_book.upcase)
     expect(wrapper.currency_pair).to be_a(HashWithIndifferentAccess)
     expect(wrapper.currency_pair.keys).to include(*%w[altname base quote name])
