@@ -23,7 +23,7 @@ module BitexBot
     end
 
     def self.notify(message, subj = 'Notice from your robot trader')
-      return if cache[subj].try{|hit| hit > 1.hour.ago }
+      return if cache[subj].try { |hit| hit > 1.hour.ago }
 
       cache[subj] = Time.now
       notify_internal(message, subj)

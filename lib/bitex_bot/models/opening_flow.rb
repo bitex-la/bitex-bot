@@ -48,7 +48,7 @@ module BitexBot
         status: :executing,
         order_id: order.id
       )
-    rescue => e
+    rescue StandardError
       Robot.maker.cancel_order(order)
       raise
     end
