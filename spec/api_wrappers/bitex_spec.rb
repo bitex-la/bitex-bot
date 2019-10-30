@@ -12,7 +12,7 @@ describe BitexBot::ApiWrappers::Bitex do
     )
   end
 
-  let(:wrapper) { BitexBot::ApiWrappers::Bitex.new(taker_settings) }
+  let(:wrapper) { described_class.new(taker_settings) }
 
   it '#currency_pair' do
     expect(wrapper.currency_pair).to eq({ name: 'btc_usd', base: 'btc', quote: 'usd'})
