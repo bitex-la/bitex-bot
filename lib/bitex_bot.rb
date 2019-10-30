@@ -13,13 +13,14 @@ require 'mail'
 require 'bitex'
 require 'bitstamp'
 require 'itbit'
+require 'kraken_client'
 
 # BitexBot Models
 require 'bitex_bot/settings'
 require 'bitex_bot/database'
 
-require 'bitex_bot/models/api_wrappers/api_wrapper'
-Dir[File.dirname(__FILE__) + '/bitex_bot/models/api_wrappers/**/*.rb'].each { |file| require file }
+require 'bitex_bot/api_wrappers'
+Dir[__dir__ + '/bitex_bot/api_wrappers/*.rb'].each { |file| require file }
 
 require 'bitex_bot/models/opening_flow'
 require 'bitex_bot/models/sell_opening_flow'

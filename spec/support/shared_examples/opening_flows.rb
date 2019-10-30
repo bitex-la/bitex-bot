@@ -20,6 +20,7 @@ shared_examples_for 'OpeningFlows' do
 
     context 'old active' do
       before(:each) do
+        Timecop.freeze(Date.new(2000,1,1))
         allow(BitexBot::Settings).to receive(:time_to_live).and_return(60 * 60 * 24 * 2) # 2 days ago
         described_class.find(1).finalised!
         described_class.find(2).update(created_at: old_date)
@@ -103,14 +104,14 @@ shared_examples_for 'OpeningFlows' do
       allow(BitexBot::Robot).to receive_message_chain(:maker, :send_order).and_return(maker_order)
     end
 
-    let(:maker_order) { ApiWrapper::Order.new(order_id, :dont_care_trade_type, 300, 10, Time.now.to_i, 'raw_order') }
+    let(:maker_order) { BitexBot::ApiWrappers::Order.new(order_id, :dont_care_trade_type, 300, 10, Time.now.to_i, 'raw_order') }
 
     let(:order_id) { '111111' }
     let(:minimun_price) { 300.to_d }
     let(:closing_price) { 200.to_d }
 
-    let(:taker_orders) { [ApiWrapper::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')] }
-    let(:taker_transactions) { [ApiWrapper::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')] }
+    let(:taker_orders) { [BitexBot::ApiWrappers::Order.new('123456', :sell, 1234, 1234, Time.now.to_i, 'raw_order')] }
+    let(:taker_transactions) { [BitexBot::ApiWrappers::Transaction.new('7891011', 1234, 1234, Time.now.to_i, 'raw_transaction')] }
     let(:store) { BitexBot::Store.create }
 
     subject(:open_market) { described_class.open_market(1_000.to_d, taker_orders, taker_transactions, 0.25.to_d, 0.50.to_d) }

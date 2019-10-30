@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe KrakenApiWrapper do
+describe BitexBot::ApiWrappers::Kraken do
   before(:each) do
     stub_assets
     BitexBot::Settings.stub(taker: BitexBot::SettingsClass.new(kraken: taker_settings))
@@ -16,7 +16,7 @@ describe KrakenApiWrapper do
     )
   end
 
-  let(:wrapper) { KrakenApiWrapper.new(taker_settings) }
+  let(:wrapper) { described_class.new(taker_settings) }
   let(:api_client) { wrapper.client }
 
   def stub_request_helper(method:, path: '', status: 200, result: {}, error: [], header_params: {})
@@ -132,9 +132,9 @@ describe KrakenApiWrapper do
     stub_trade_volume
 
     balance = wrapper.balance
-    balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.crypto.should be_a(ApiWrapper::Balance)
-    balance.fiat.should be_a(ApiWrapper::Balance)
+    balance.should be_a(BitexBot::ApiWrappers::BalanceSummary)
+    balance.crypto.should be_a(BitexBot::ApiWrappers::Balance)
+    balance.fiat.should be_a(BitexBot::ApiWrappers::Balance)
 
     crypto = balance.crypto
     crypto.total.should be_a(BigDecimal)
@@ -174,9 +174,9 @@ describe KrakenApiWrapper do
     stub_order_book
 
     order_book = wrapper.market
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.should be_a(BitexBot::ApiWrappers::OrderBook)
+    order_book.bids.all? { |bid| bid.should be_a(BitexBot::ApiWrappers::OrderSummary) }
+    order_book.asks.all? { |ask| ask.should be_a(BitexBot::ApiWrappers::OrderSummary) }
     order_book.timestamp.should be_a(Integer)
 
     bid = order_book.bids.sample
@@ -230,7 +230,7 @@ describe KrakenApiWrapper do
   it '#orders' do
     stub_orders
 
-    wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    wrapper.orders.all? { |o| o.should be_a(BitexBot::ApiWrappers::Order) }
 
     order = wrapper.orders.sample
     order.id.should be_a(String)
@@ -256,7 +256,7 @@ describe KrakenApiWrapper do
   it '#transactions' do
     stub_transactions
 
-    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    wrapper.transactions.all? { |o| o.should be_a(BitexBot::ApiWrappers::Transaction) }
 
     transaction = wrapper.transactions.sample
     transaction.id.should be_a(Integer)

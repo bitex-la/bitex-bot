@@ -91,7 +91,7 @@ module BitexBot
     end
 
     def exchange_class(exchange)
-      "#{exchange_name(exchange).capitalize}ApiWrapper".constantize
+      "BitexBot::ApiWrappers::#{exchange_name(exchange).capitalize}".constantize
     end
 
     def exchange_settings(exchange)

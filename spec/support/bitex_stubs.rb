@@ -10,23 +10,23 @@ module BitexStubs
   end
 
   def stub_bitex_active_orders
-    allow_any_instance_of(BitexApiWrapper).to receive(:orders) do
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:orders) do
       BitexStubs.active_bids + BitexStubs.active_asks
     end
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:bid_by_id) do |id|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:bid_by_id) do |id|
       found = BitexStubs.bids.find { |bid| bid.id == id.to_s }
       raise "Bid #{id} not found in #{BitexStubs.bids} (##{BitexStubs.bids.object_id} - ##{bids.object_id})" unless found
       found
     end
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:ask_by_id) do |id|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:ask_by_id) do |id|
       found = BitexStubs.asks.find { |ask| ask.id == id.to_s }
       raise "Ask #{id} not found in #{BitexStubs.asks} (##{BitexStubs.asks.object_id} - ##{asks.object_id})" unless found
       found
     end
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:send_order) do |type, price, amount|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:send_order) do |type, price, amount|
       type = type == :buy ? :bid : :ask
       orderbook_code = BitexBot::Robot.maker.base_quote.to_sym
 
@@ -39,13 +39,13 @@ module BitexStubs
       end
     end
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:cancel_order) do |order|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:cancel_order) do |order|
       if order.type == :bid
         [BitexStubs.bids, BitexStubs.active_bids]
       else
         [BitexStubs.asks, BitexStubs.active_asks]
       end.tap do |all_orders, active_orders|
-        all_orders.find { |o| o.id == order.id  }.status = :cancelled
+        all_orders.find { |o| o.id == order.id  }.raw.status = :cancelled
         active_orders.delete_if { |o| o.id == order.id }
       end
       []
@@ -58,17 +58,17 @@ module BitexStubs
     buy = build_bitex_user_transaction(:buy, 1, 123, 600, 2, 300, 0.05, orderbook_code)
     sell = build_bitex_user_transaction(:sell, 2, 246, 600, 2, 300, 0.05, orderbook_code)
 
-    allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return(extra_trades + [buy, sell])
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:trades).and_return(extra_trades + [buy, sell])
   end
 
   # @param [Hash] crypto. {:total, :availabe}
   # @param [Hash] fiat. {:total, :availabe}
   # @param [Numeric] trading_fee.
   #
-  # return [BitexApiWrapper::BalanceSummary]
+  # return [BitexBot::ApiWrappers::BalanceSummary]
   def stub_bitex_balance(crypto: {}, fiat: {}, trading_fee: 0.05)
-    allow_any_instance_of(BitexApiWrapper).to receive(:balance) do
-      BitexApiWrapper::BalanceSummary.new(
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:balance) do
+      BitexBot::ApiWrappers::BalanceSummary.new(
         build_bitex_balance(crypto),
         build_bitex_balance(fiat),
         trading_fee.to_d
@@ -77,7 +77,7 @@ module BitexStubs
   end
 
   def build_bitex_balance(balance)
-    BitexApiWrapper::Balance.new(
+    BitexBot::ApiWrappers::Balance.new(
       balance[:total].to_d,
       (balance[:total] - balance[:available]).to_d,
       balance[:available].to_d
@@ -118,7 +118,7 @@ module BitexStubs
       }
     )
 
-    ApiWrapper::UserTransaction.new(
+    BitexBot::ApiWrappers::UserTransaction.new(
       id.to_s,
       order_id.to_s,
       cash_amount.to_d,
@@ -138,7 +138,7 @@ module BitexStubs
   # @param [Symbol] status. <:executing|:completed|:cancelled>
   # @param [Time] created_at. UTC.
   #
-  # return [BitexApiWrapper::Order]
+  # return [BitexBot::ApiWrappers::Order]
   def build_bitex_order(type, price, amount, orderbook_code, status = :executing, created_at = Time.now.utc, id = next_bitex_order_id)
     raw = double(
       type: type.to_s.pluralize,
@@ -150,8 +150,11 @@ module BitexStubs
       orderbook_code: orderbook_code,
       created_at: created_at
     )
+    allow(raw).to receive(:status=) do |s|
+      allow(raw).to receive(:status).and_return(s)
+    end
 
-    BitexApiWrapper::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, status, raw)
+    BitexBot::ApiWrappers::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, raw)
   end
 
   def stub_bitex_reset
