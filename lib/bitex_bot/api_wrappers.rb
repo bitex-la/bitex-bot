@@ -16,7 +16,7 @@ module BitexBot
       end
 
       # @return [OrderBook]
-      def market(_retries = 20)
+      def market
         raise 'self subclass responsibility'
       end
 
