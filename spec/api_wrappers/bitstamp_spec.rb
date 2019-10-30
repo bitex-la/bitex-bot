@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BitstampApiWrapper do
+describe BitexBot::ApiWrappers::Bitstamp do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       {
@@ -12,7 +12,7 @@ describe BitstampApiWrapper do
     )
   end
 
-  let(:wrapper) { BitstampApiWrapper.new(taker_settings) }
+  let(:wrapper) { described_class.new(taker_settings) }
 
   describe 'Sends User-Agent header' do
     let(:url) { 'https://www.bitstamp.net/api/v2/balance/btcusd/' }
@@ -47,14 +47,14 @@ describe BitstampApiWrapper do
   describe '#balance', vcr: { cassette_name: 'bitstamp/balance' } do
     subject { wrapper.balance }
 
-    it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::BalanceSummary) }
 
     its(:members) { is_expected.to eq(%i[crypto fiat fee]) }
 
     shared_examples_for 'currency balance' do |currency_type|
       subject { wrapper.balance.send(currency_type) }
 
-      it { is_expected.to be_a(ApiWrapper::Balance) }
+      it { is_expected.to be_a(BitexBot::ApiWrappers::Balance) }
 
       its(:members) { is_expected.to eq(%i[total reserved available]) }
 
@@ -72,13 +72,13 @@ describe BitstampApiWrapper do
   end
 
   describe '#market', vcr: { cassette_name: 'bitstamp/market' } do
-    # Travel to cassette recording date, otherwise BitstampApiWrapper#market would consider
+    # Travel to cassette recording date, otherwise BitexBot::ApiWrappers::Bitstamp#market would consider
     # the response to be stale.
     before(:each) { Timecop.freeze(Date.new(2019, 02, 05)) }
 
     subject(:market) { wrapper.market }
 
-    it { is_expected.to be_a(ApiWrapper::OrderBook) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::OrderBook) }
 
     its(:members) { is_expected.to eq(%i[timestamp bids asks]) }
 
@@ -89,7 +89,7 @@ describe BitstampApiWrapper do
     shared_examples_for :orders do |order_type|
       subject(:sample) { market.send(order_type).sample }
 
-      it { is_expected.to be_a(ApiWrapper::OrderSummary) }
+      it { is_expected.to be_a(BitexBot::ApiWrappers::OrderSummary) }
 
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:quantity) { is_expected.to be_a(BigDecimal) }
@@ -103,7 +103,7 @@ describe BitstampApiWrapper do
     context 'successful buy', vcr: { cassette_name: 'bitstamp/orders/successful_buy' } do
       subject { wrapper.send_order(:buy, 1.01, 1) }
 
-      it { is_expected.to be_a(ApiWrapper::Order) }
+      it { is_expected.to be_a(BitexBot::ApiWrappers::Order) }
 
       its(:members) { is_expected.to eq(%i[id type price amount timestamp raw]) }
 
@@ -112,7 +112,7 @@ describe BitstampApiWrapper do
       its(:price) { is_expected.to be_a(BigDecimal) }
       its(:amount) { is_expected.to be_a(BigDecimal) }
       its(:timestamp) { is_expected.to be_a(Integer) }
-      its(:raw) { is_expected.to be_a(Bitstamp::Order) }
+      its(:raw) { is_expected.to be_a(::Bitstamp::Order) }
 
       context 'raw order' do
         subject { wrapper.send_order(:buy, 1.01, 1).raw }
@@ -135,7 +135,7 @@ describe BitstampApiWrapper do
   describe '#transactions', vcr: { cassette_name: 'bitstamp/transactions' } do
     subject { wrapper.transactions.sample }
 
-    it { is_expected.to be_a(ApiWrapper::Transaction) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::Transaction) }
 
     its(:members) { is_expected.to eq(%i[id price amount timestamp raw]) }
 
@@ -143,13 +143,13 @@ describe BitstampApiWrapper do
     its(:price) { is_expected.to be_a(BigDecimal) }
     its(:amount) { is_expected.to be_a(BigDecimal) }
     its(:timestamp) { is_expected.to be_a(Integer) }
-    its(:raw) { is_expected.to be_a(Bitstamp::Transactions) }
+    its(:raw) { is_expected.to be_a(::Bitstamp::Transactions) }
   end
 
   describe '#user_transaction', vcr: { cassette_name: 'bitstamp/user_transactions' } do
     subject { wrapper.user_transactions.sample }
 
-    it { is_expected.to be_a(ApiWrapper::UserTransaction) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::UserTransaction) }
 
     its(:members) { is_expected.to eq(%i[id order_id fiat crypto price fee type timestamp raw])  }
 
@@ -166,7 +166,7 @@ describe BitstampApiWrapper do
   describe '#orders', vcr: { cassette_name: 'bitstamp/orders/all' } do
     subject { wrapper.orders.sample }
 
-    it { is_expected.to be_a(ApiWrapper::Order) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::Order) }
 
     its(:id) { is_expected.to be_a(String) }
     its(:type) { is_expected.to be_a(Symbol) }

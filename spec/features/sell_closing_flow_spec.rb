@@ -5,11 +5,11 @@ describe BitexBot::SellClosingFlow do
   before(:each) do
     allow(BitexBot::Robot)
       .to receive(:maker)
-      .and_return(BitexApiWrapper.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
+      .and_return(BitexBot::ApiWrappers::Bitex.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
 
     allow(BitexBot::Robot)
       .to receive(:taker)
-      .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
+      .and_return(BitexBot::ApiWrappers::Bitstamp.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
 
     allow(BitexBot::Settings).to receive(:selling_fx_rate).and_return(1.to_d)
   end
@@ -106,7 +106,7 @@ describe BitexBot::SellClosingFlow do
   describe 'when sync executed orders' do
     before(:each) do
       stub_bitstamp_active_orders
-      allow_any_instance_of(BitstampApiWrapper).to receive(:user_transactions).and_return([])
+      allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:user_transactions).and_return([])
 
       create(:tiny_open_sell, id: 39)
       create(:open_sell, id: 40)
@@ -233,12 +233,12 @@ describe BitexBot::SellClosingFlow do
   end
 
   describe 'when there are errors placing the closing order' do
-    before(:each) { allow_any_instance_of(BitstampApiWrapper).to receive(:send_order).with(:buy, 290, 2).and_return(nil) }
+    before(:each) { allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:send_order).with(:buy, 290, 2).and_return(nil) }
 
     let(:flow) { described_class.last }
 
     it 'keeps trying to place a closed position on bitstamp errors' do
-      allow_any_instance_of(BitstampApiWrapper).to receive(:find_lost).and_return(nil)
+      allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:find_lost).and_return(nil)
 
       open_trade = create(:open_sell, id: 162)
 
@@ -265,7 +265,7 @@ describe BitexBot::SellClosingFlow do
 
     it 'retries until it finds the lost order' do
       order = build_bitstamp_order(:buy, 290, 2, 1.minute.ago)
-      allow_any_instance_of(BitstampApiWrapper).to receive(:orders).and_return([order])
+      allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:orders).and_return([order])
 
       open_trade = create(:open_sell)
       expect { described_class.close_market }.to change { BitexBot::CloseSell.count }.by(1)

@@ -77,7 +77,7 @@ module BitexBot
     rescue Curl::Err::TimeoutError, ApiWrapperError => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
       sleep_for(15.seconds)
-    rescue OrderNotFound, OrderArgumentError => e
+    rescue OrderNotFound => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")
     rescue StandardError => e
       Notifier.notify("#{e.class} - #{e.message}\n\n#{e.backtrace.join("\n")}")

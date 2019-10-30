@@ -88,7 +88,7 @@ describe BitexBot::Settings do
         before(:each) { described_class.stub(taker: BitexBot::SettingsClass.new(taker_hash)) }
 
         let(:taker_hash) { { market => market_settings } }
-        let(:taker_class) { "#{market.capitalize}ApiWrapper".constantize }
+        let(:taker_class) { "BitexBot::ApiWrappers::#{market.capitalize}".constantize }
 
         context "for #{market}" do
           it { described_class.taker.to_hash.should eq(taker_hash) }

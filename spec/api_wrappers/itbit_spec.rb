@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ItbitApiWrapper do
+describe BitexBot::ApiWrappers::Itbit do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       {
@@ -14,7 +14,7 @@ describe ItbitApiWrapper do
     )
   end
 
-  let(:wrapper) { ItbitApiWrapper.new(taker_settings) }
+  let(:wrapper) { described_class.new(taker_settings) }
 
   it 'Sends User-Agent header' do
     url = "https://api.itbit.com/v1/markets/#{wrapper.currency_pair[:name].upcase}/order_book"
@@ -27,12 +27,12 @@ describe ItbitApiWrapper do
   end
 
   def stub_default_wallet_id
-    Itbit.stub(:default_wallet_id) { 'wallet-000' }
+    ::Itbit.stub(:default_wallet_id) { 'wallet-000' }
   end
 
   def stub_balance(count: 1, total: 1.5, available: 2.5)
     stub_default_wallet_id
-    Itbit::Wallet.stub(:all) do
+    ::Itbit::Wallet.stub(:all) do
       count.times.map do |i|
         {
           id: "wallet-#{i.to_s.rjust(3, '0')}",
@@ -53,9 +53,9 @@ describe ItbitApiWrapper do
     stub_balance
 
     balance = wrapper.balance
-    balance.should be_a(ApiWrapper::BalanceSummary)
-    balance.crypto.should be_a(ApiWrapper::Balance)
-    balance.fiat.should be_a(ApiWrapper::Balance)
+    balance.should be_a(BitexBot::ApiWrappers::BalanceSummary)
+    balance.crypto.should be_a(BitexBot::ApiWrappers::Balance)
+    balance.fiat.should be_a(BitexBot::ApiWrappers::Balance)
 
     crypto = balance.crypto
     crypto.total.should be_a(BigDecimal)
@@ -77,7 +77,7 @@ describe ItbitApiWrapper do
   end
 
   def stub_order_book(count: 3, price: 1.5, amount: 2.5)
-    Itbit::XBTUSDMarketData.stub(:orders) do
+    ::Itbit::XBTUSDMarketData.stub(:orders) do
       {
         bids: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] },
         asks: count.times.map { |i| [(price + i).to_d, (amount + i).to_d] }
@@ -89,9 +89,9 @@ describe ItbitApiWrapper do
     stub_order_book
 
     order_book = wrapper.market
-    order_book.should be_a(ApiWrapper::OrderBook)
-    order_book.bids.all? { |bid| bid.should be_a(ApiWrapper::OrderSummary) }
-    order_book.asks.all? { |ask| ask.should be_a(ApiWrapper::OrderSummary) }
+    order_book.should be_a(BitexBot::ApiWrappers::OrderBook)
+    order_book.bids.all? { |bid| bid.should be_a(BitexBot::ApiWrappers::OrderSummary) }
+    order_book.asks.all? { |ask| ask.should be_a(BitexBot::ApiWrappers::OrderSummary) }
     order_book.timestamp.should be_a(Integer)
 
     bid = order_book.bids.sample
@@ -104,9 +104,9 @@ describe ItbitApiWrapper do
   end
 
   def stub_orders(count: 1, amount: 1.5, price: 2.5)
-    Itbit::Order.stub(:all).with(hash_including(status: :open)) do
+    ::Itbit::Order.stub(:all).with(hash_including(status: :open)) do
       count.times.map do |i|
-        Itbit::Order.new({
+        ::Itbit::Order.new({
           id: "id-#{i.to_s.rjust(3, '0')}",
           wallet_id: "wallet-#{i.to_s.rjust(3, '0')}",
           side: :buy,
@@ -129,7 +129,7 @@ describe ItbitApiWrapper do
   it '#orders' do
     stub_orders
 
-    wrapper.orders.all? { |o| o.should be_a(ApiWrapper::Order) }
+    wrapper.orders.all? { |o| o.should be_a(BitexBot::ApiWrappers::Order) }
 
     order = wrapper.orders.sample
     order.id.should be_a(String)
@@ -140,7 +140,7 @@ describe ItbitApiWrapper do
   end
 
   def stub_transactions(count: 1, price: 1.5, amount: 2.5)
-    Itbit::XBTUSDMarketData.stub(:trades) do
+    ::Itbit::XBTUSDMarketData.stub(:trades) do
       count.times.map do |i|
         {
           tid: i,
@@ -155,7 +155,7 @@ describe ItbitApiWrapper do
   it '#transactions' do
     stub_transactions
 
-    wrapper.transactions.all? { |o| o.should be_a(ApiWrapper::Transaction) }
+    wrapper.transactions.all? { |o| o.should be_a(BitexBot::ApiWrappers::Transaction) }
 
     transaction = wrapper.transactions.sample
     transaction.id.should be_a(Integer)

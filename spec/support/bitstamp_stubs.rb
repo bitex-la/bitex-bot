@@ -11,11 +11,11 @@ module BitstampStubs
   end
 
   def stub_bitstamp_active_orders
-    allow_any_instance_of(BitstampApiWrapper).to receive(:orders) do
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:orders) do
       BitstampStubs.active_bids + BitstampStubs.active_asks
     end
 
-    allow_any_instance_of(BitstampApiWrapper).to receive(:send_order) do |type, price, amount|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:send_order) do |type, price, amount|
       type = type == :buy ? :bid : :ask
       # TODO asumes that this stub acts as taker
 
@@ -28,7 +28,7 @@ module BitstampStubs
       end
     end
 
-    allow_any_instance_of(BitstampApiWrapper).to receive(:cancel_order) do |order|
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:cancel_order) do |order|
       if order.type == :bid
         BitstampStubs.active_bids
       else
@@ -39,7 +39,7 @@ module BitstampStubs
   end
 
   def stub_bitstamp_transactions(price: 0.2, amount: 1, count: 5)
-    allow_any_instance_of(BitstampApiWrapper).to receive(:transactions) do
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:transactions) do
       count.times.map { |i| build_bitstamp_transaction(i, price, amount, (i+1).seconds.ago) }
     end
   end
@@ -53,7 +53,7 @@ module BitstampStubs
       fiat = order.amount * order.price
       fiat, crypto, trade_type = order.type == :bid ? [-fiat, order.amount, 'buys'] : [fiat, -order.amount, 'sells']
 
-      BitstampStubs.user_transactions << BitstampApiWrapper::UserTransaction.new(
+      BitstampStubs.user_transactions << BitexBot::ApiWrappers::UserTransaction.new(
         rand(10).to_s,
         order.id,
         fiat * ratio,
@@ -67,28 +67,28 @@ module BitstampStubs
     end
 
     [BitstampStubs.active_bids, BitstampStubs.active_asks].each(&:clear) if ratio == 1
-    allow_any_instance_of(BitstampApiWrapper).to receive(:user_transactions).and_return(BitstampStubs.user_transactions)
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:user_transactions).and_return(BitstampStubs.user_transactions)
   end
 
    def stub_bitstamp_balance(fiat = nil, crypto = nil, fee = nil)
-     allow_any_instance_of(BitstampApiWrapper).to receive(:balance) do
-      ApiWrapper::BalanceSummary.new(
-        ApiWrapper::Balance.new((crypto || 10).to_d, 0, (crypto || 10).to_d),
-        ApiWrapper::Balance.new((fiat || 100).to_d, 0, (fiat || 100).to_d),
+     allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:balance) do
+      BitexBot::ApiWrappers::BalanceSummary.new(
+        BitexBot::ApiWrappers::Balance.new((crypto || 10).to_d, 0, (crypto || 10).to_d),
+        BitexBot::ApiWrappers::Balance.new((fiat || 100).to_d, 0, (fiat || 100).to_d),
         (fee || 0.5).to_d
       )
     end
   end
 
   def stub_bitstamp_market
-    allow_any_instance_of(BitstampApiWrapper).to receive(:market) do
-      ApiWrapper::OrderBook.new(
+    allow_any_instance_of(BitexBot::ApiWrappers::Bitstamp).to receive(:market) do
+      BitexBot::ApiWrappers::OrderBook.new(
         Time.now.to_i,
         [[30, 3], [25, 2], [20, 1.5], [15, 4], [10, 5]].map do |price, quantity|
-          ApiWrapper::OrderSummary.new(price.to_d, quantity.to_d)
+          BitexBot::ApiWrappers::OrderSummary.new(price.to_d, quantity.to_d)
         end,
         [[10, 2], [15, 3], [20, 1.5], [25, 3], [30, 3]].map do |price, quantity|
-          ApiWrapper::OrderSummary.new(price.to_d, quantity.to_d)
+          BitexBot::ApiWrappers::OrderSummary.new(price.to_d, quantity.to_d)
         end
       )
     end
@@ -101,7 +101,7 @@ module BitstampStubs
   # @param [Symbol] status. <:executing|:completed|:cancelled>
   # @param [Time] created_at. UTC.
   #
-  # return [BitexApiWrapper::Order]
+  # return [BitexBots::ApiWrappers::Order]
   def build_bitstamp_order(type, price, amount, created_at = Time.now.utc, id = next_bitex_order_id)
     raw_type = type == :buy ? 0 : 1 # { 0: buy/bid, 1: sell/ask }
     raw = double(
@@ -114,7 +114,7 @@ module BitstampStubs
 
     # TODO add orderbook and status to parsed orders
     order_type = type == :buy ? :bid : :ask
-    ApiWrapper::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, raw)
+    BitexBot::ApiWrappers::Order.new(raw.id, type, price.to_d, amount.to_d, created_at.to_i, raw)
   end
 
   # @param [Numeric] id. IDs trade.
@@ -122,9 +122,9 @@ module BitstampStubs
   # @param [Numeric] amount.
   # @param [Time] created_at. UTC.
   #
-  # return [BitexApiWrapper::Order]
+  # return [BitexBot::ApiWrappers::Order]
   def build_bitstamp_transaction(id, price, amount, created_at = Time.now.utc)
-    BitstampApiWrapper::Transaction.new(id.to_s, price.to_d, amount.to_d, created_at.to_i, double)
+    BitexBot::ApiWrappers::Transaction.new(id.to_s, price.to_d, amount.to_d, created_at.to_i, double)
   end
 
   def stub_bitstamp_reset

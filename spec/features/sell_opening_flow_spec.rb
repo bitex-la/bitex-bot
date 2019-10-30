@@ -5,11 +5,11 @@ describe BitexBot::SellOpeningFlow do
   before(:each) do
     allow(BitexBot::Robot)
       .to receive(:maker)
-      .and_return(BitexApiWrapper.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
+      .and_return(BitexBot::ApiWrappers::Bitex.new(double(api_key: 'key', sandbox: true, trading_fee: 0.05, orderbook_code: 'btc_usd')))
 
     allow(BitexBot::Robot)
       .to receive(:taker)
-      .and_return(BitstampApiWrapper.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
+      .and_return(BitexBot::ApiWrappers::Bitstamp.new(double(api_key: 'key', secret: 'xxx', client_id: 'yyy', order_book: 'btcusd')))
 
     described_class.store = store
   end
@@ -199,7 +199,7 @@ describe BitexBot::SellOpeningFlow do
 
       it 'does not register buys from another order book' do
         trade = build_bitex_user_transaction(:sell, 777, 888, 600, 2, 300, 0.05, :boo)
-        allow_any_instance_of(BitexApiWrapper).to receive(:trades).and_return([trade])
+        allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:trades).and_return([trade])
 
         expect { expect(described_class.sync_positions).to be_empty }.not_to change { BitexBot::OpenSell.count }
       end

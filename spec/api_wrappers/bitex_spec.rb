@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe BitexApiWrapper do
+describe BitexBot::ApiWrappers::Bitex do
   let(:taker_settings) do
     BitexBot::SettingsClass.new(
       {
@@ -12,7 +12,7 @@ describe BitexApiWrapper do
     )
   end
 
-  let(:wrapper) { BitexApiWrapper.new(taker_settings) }
+  let(:wrapper) { described_class.new(taker_settings) }
 
   it '#currency_pair' do
     expect(wrapper.currency_pair).to eq({ name: 'btc_usd', base: 'btc', quote: 'usd'})
@@ -35,17 +35,17 @@ describe BitexApiWrapper do
 
     before(:each) do
       cash_wallet = double(type: 'coin_wallets', id: 'btc', balance: 50.to_d, available: 30.to_d, currency: 'btc')
-      allow_any_instance_of(Bitex::Client).to receive_message_chain(:cash_wallets, :find).with('usd') { cash_wallet }
+      allow_any_instance_of(::Bitex::Client).to receive_message_chain(:cash_wallets, :find).with('usd') { cash_wallet }
 
 
       coin_wallet = double(type: 'cash_wallets', id: 'usd', balance: 500.to_d, available: 300.to_d, currency: 'usd')
-      allow_any_instance_of(Bitex::Client).to receive_message_chain(:coin_wallets, :find).with('btc') { coin_wallet }
+      allow_any_instance_of(::Bitex::Client).to receive_message_chain(:coin_wallets, :find).with('btc') { coin_wallet }
     end
 
-    it { is_expected.to be_a(ApiWrapper::BalanceSummary) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::BalanceSummary) }
 
-    its(:crypto) { is_expected.to be_a(ApiWrapper::Balance) }
-    its(:fiat) { is_expected.to be_a(ApiWrapper::Balance) }
+    its(:crypto) { is_expected.to be_a(BitexBot::ApiWrappers::Balance) }
+    its(:fiat) { is_expected.to be_a(BitexBot::ApiWrappers::Balance) }
     its(:fee) { is_expected.to be_a(BigDecimal) }
 
     context 'about crypto balance' do
@@ -68,10 +68,10 @@ describe BitexApiWrapper do
   context '#market', vcr: { cassette_name: 'bitex/market' } do
     subject(:market) { wrapper.market }
 
-    it { is_expected.to be_a(ApiWrapper::OrderBook) }
+    it { is_expected.to be_a(BitexBot::ApiWrappers::OrderBook) }
 
-    its(:bids) { is_expected.to all(be_a(ApiWrapper::OrderSummary)) }
-    its(:asks) { is_expected.to all(be_a(ApiWrapper::OrderSummary)) }
+    its(:bids) { is_expected.to all(be_a(BitexBot::ApiWrappers::OrderSummary)) }
+    its(:asks) { is_expected.to all(be_a(BitexBot::ApiWrappers::OrderSummary)) }
     its(:timestamp) { is_expected.to be_a(Integer) }
 
     context 'about bids' do
@@ -92,7 +92,7 @@ describe BitexApiWrapper do
   context '#orders', vcr: { cassette_name: 'bitex/orders/all' } do
     subject(:orders) { wrapper.orders }
 
-    it { is_expected.to all(be_a(BitexApiWrapper::Order)) }
+    it { is_expected.to all(be_a(BitexBot::ApiWrappers::Order)) }
 
     it 'orders belong to setuped orderbook' do
       expect(orders.map(&:orderbook_code)).to all(eq(taker_settings.orderbook_code.to_sym))
@@ -107,7 +107,7 @@ describe BitexApiWrapper do
       its(:amount) { is_expected.to be_a(BigDecimal) }
       its(:timestamp) { is_expected.to be_a(Integer) }
       its(:status) { is_expected.to be_a(Symbol) }
-      its(:raw) { is_expected.to be_a(Bitex::Resources::Orders::Order) }
+      its(:raw) { is_expected.to be_a(::Bitex::Resources::Orders::Order) }
     end
   end
 
@@ -136,33 +136,33 @@ describe BitexApiWrapper do
   context '#place_order' do
     context 'raises OrderNotFound error on Bitex errors' do
       before(:each) do
-        allow_any_instance_of(Bitex::Client).to receive_message_chain(:asks, :create).and_return(nil)
-        allow_any_instance_of(Bitex::Client).to receive_message_chain(:bids, :create).and_return(nil)
-        allow_any_instance_of(BitexApiWrapper).to receive(:find_lost).and_return(nil)
+        allow_any_instance_of(::Bitex::Client).to receive_message_chain(:asks, :create).and_return(nil)
+        allow_any_instance_of(::Bitex::Client).to receive_message_chain(:bids, :create).and_return(nil)
+        allow_any_instance_of(BitexBot::ApiWrappers::Bitex).to receive(:find_lost).and_return(nil)
       end
 
-      it { expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(OrderNotFound) }
-      it { expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(OrderNotFound) }
+      it { expect { wrapper.place_order(:buy, 10, 100) }.to raise_exception(BitexBot::OrderNotFound) }
+      it { expect { wrapper.place_order(:sell, 10, 100) }.to raise_exception(BitexBot::OrderNotFound) }
     end
 
     context 'sucessfull', vcr: { cassette_name: 'bitex/place_bid' } do
       subject(:order) { wrapper.send_order(:buy, 3_500, 2) }
 
-      it { is_expected.to be_a(BitexApiWrapper::Order) }
+      it { is_expected.to be_a(BitexBot::ApiWrappers::Order) }
 
       its(:id) { is_expected.to be_present }
       its(:type) { is_expected.to eq(:bid) }
       its(:price) { is_expected.to eq(3_500) }
       its(:amount) { is_expected.to eq(2) }
       its(:timestamp) { is_expected.to be_present }
-      its(:raw) { is_expected.to be_a(Bitex::Resources::Orders::Bid) }
+      its(:raw) { is_expected.to be_a(::Bitex::Resources::Orders::Bid) }
     end
   end
 
   context '#transactions', vcr: { cassette_name: 'bitex/transactions' }do
     subject(:transactions) { wrapper.transactions }
 
-    it { is_expected.to all(be_a(ApiWrapper::Transaction)) }
+    it { is_expected.to all(be_a(BitexBot::ApiWrappers::Transaction)) }
 
     context 'about sample' do
       subject(:sample) { transactions.sample }
@@ -177,7 +177,7 @@ describe BitexApiWrapper do
   context '#user_transaction', vcr: { cassette_name: 'bitex/user_transactions' } do
     subject(:user_transactions) { wrapper.user_transactions }
 
-    it { is_expected.to all(be_a(ApiWrapper::UserTransaction)) }
+    it { is_expected.to all(be_a(BitexBot::ApiWrappers::UserTransaction)) }
 
     context 'about sample' do
       subject(:sample) { user_transactions.sample }
@@ -207,7 +207,7 @@ describe BitexApiWrapper do
   context '#trades', vcr: { cassette_name: 'bitex/trades' } do
     subject(:trades) { wrapper.trades }
 
-    it { is_expected.to all(be_a(ApiWrapper::UserTransaction)) }
+    it { is_expected.to all(be_a(BitexBot::ApiWrappers::UserTransaction)) }
 
     context 'about sample' do
       subject(:sample) { trades.sample }

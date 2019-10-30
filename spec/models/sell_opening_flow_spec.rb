@@ -277,7 +277,7 @@ describe BitexBot::SellOpeningFlow do
   describe '#finalise!'do 
     before(:each) { allow_any_instance_of(described_class).to receive(:order).and_return(order) }
 
-    let(:order) { BitexApiWrapper::Order.new('12', :fuck, 1, 1, Time.now.to_i, status, double) }
+    let(:order) { BitexBot::ApiWrappers::Order.new('12', :fuck, 1, 1, Time.now.to_i, double(status: status)) }
 
     subject(:flow) { create(:sell_opening_flow) }
 
