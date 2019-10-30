@@ -1,7 +1,7 @@
-# Wrapper implementation for Itbit API.
-# https://api.itbit.com/docs
 module BitexBot
   module ApiWrappers
+    # Wrapper implementation for Itbit API.
+    # https://api.itbit.com/docs
     class Itbit < Base
       attr_accessor :client_key, :secret, :user_id, :default_wallet_id, :sandbox
 

@@ -1,6 +1,6 @@
-# This class represents the general behaviour for trading platform wrappers.
 module BitexBot
   module ApiWrappers
+    # This class represents the general behaviour for trading platform wrappers.
     class Base
       attr_accessor :client, :currency_pair
 

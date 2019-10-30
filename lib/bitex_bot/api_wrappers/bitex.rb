@@ -1,7 +1,7 @@
-# Wrapper implementation for Bitex API.
-# https://bitex.la/developers
 module BitexBot
   module ApiWrappers
+    # Wrapper implementation for Bitex API.
+    # https://bitex.la/developers
     class Bitex < Base
       attr_accessor :trading_fee
 

@@ -1,7 +1,7 @@
-# Wrapper implementation for Bitstamp API.
-# https://www.bitstamp.net/api/
 module BitexBot
   module ApiWrappers
+    # Wrapper implementation for Bitstamp API.
+    # https://www.bitstamp.net/api/
     class Bitstamp < Base
       attr_accessor :key, :secret, :client_id
 
@@ -40,19 +40,23 @@ module BitexBot
         orders.find { |o| o.type == type && o.price == price && o.timestamp >= 5.minutes.ago.to_i }
       end
 
-      def market(retries = 20)
-        book = client.order_book(currency_pair[:name]).deep_symbolize_keys
-        age = Time.now.to_i - book[:timestamp].to_i
-        return order_book_parser(book) if age <= 300
-
-        BitexBot::Robot.log(:info, "Refusing to continue as orderbook is #{age} seconds old")
-        market(retries)
+      def raw_order_book(retries = 20)
+        client.order_book(currency_pair[:name]).deep_symbolize_keys
       rescue StandardError
         raise if retries.zero?
 
         BitexBot::Robot.log(:info, "Bitstamp order book failed, retrying #{retries} more times")
         BitexBot::Robot.sleep_for 1
-        market(retries - 1)
+        raw_order_book(retries - 1)
+      end
+
+      def market
+        book = raw_order_book
+        age = Time.now.to_i - book[:timestamp].to_i
+        return order_book_parser(book) if age <= 300
+
+        BitexBot::Robot.log(:info, "Refusing to continue as orderbook is #{age} seconds old")
+        market
       end
 
       def orders

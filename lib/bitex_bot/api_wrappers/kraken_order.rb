@@ -1,6 +1,6 @@
-# Wrapper for Kraken orders.
 module BitexBot
   module ApiWrappers
+    # Wrapper for Kraken orders.
     class KrakenOrder
       cattr_accessor :last_closed_order, :api_wrapper
       attr_accessor :id, :amount, :executed_amount, :price, :avg_price, :type, :datetime

@@ -1,7 +1,7 @@
-# Wrapper implementation for Kraken API.
-# https://www.kraken.com/en-us/help/api
 module BitexBot
   module ApiWrappers
+    # Wrapper implementation for Kraken API.
+    # https://www.kraken.com/en-us/help/api
     class Kraken < Base
       attr_accessor :api_key, :api_secret
 
