@@ -80,7 +80,7 @@ module BitexBot
     #
     # @return [BigDecimal]
     def price_variation
-      close_positions.count**2 * 0.03.to_d
+      close_positions.count**2 * 0.3.to_d
     end
   end
 end
