@@ -11,6 +11,7 @@ describe BitexBot::Settings do
         selling: { quantity_to_sell_per_order: 0.1, profit: 0.5 },
         buying_foreign_exchange_rate: 1,
         selling_foreign_exchange_rate: 1,
+        closing_price_variation_rate: 0.3.to_d,
 
         maker: { bitex: { api_key: 'your_bitex_api_key', orderbook_code: 'btc_usd', sandbox: false, trading_fee: 0.05 } },
         # By default Bitstamp is taker market.

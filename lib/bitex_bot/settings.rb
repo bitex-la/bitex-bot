@@ -63,6 +63,10 @@ module BitexBot
       exchange_settings(taker)
     end
 
+    def price_variation_rate
+      closing_price_variation_rate || 0.3.to_d
+    end
+
     private
 
     def load_settings(path)

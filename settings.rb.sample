@@ -47,6 +47,10 @@ selling_foreign_exchange_rate 1.to_d
 # Quote fx rate for buying for order book
 buying_foreign_exchange_rate 1.to_d
 
+# Price variation for closing flows is calculated using this rate:
+# <unsuccessful_close_attempts_count> ** 2 * price_variation_rate
+closing_price_variation_rate 0.3.to_d
+
 # This is your maker, at the moment only will operates with bitex
 #   api_key: it's passed in to the bitex gem: https://github.com/bitex-la/bitex-ruby.
 #   sandbox: Use sandbox environments instead of live environments.
