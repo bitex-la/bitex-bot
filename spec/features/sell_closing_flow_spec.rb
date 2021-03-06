@@ -188,10 +188,10 @@ describe BitexBot::SellClosingFlow do
 
       close_trade = flow.reload.close_positions.last
       expect(close_trade.amount.truncate(8)).to eq(291.94_999_999)
-      expect(close_trade.quantity.truncate(8)).to eq(1.00_489_622)
+      expect(close_trade.quantity.truncate(8)).to eq(1.00_396_319)
 
       expect(flow).to be_done
-      expect(flow.crypto_profit.truncate(8)).to eq(-0.00_010_377)
+      expect(flow.crypto_profit.truncate(8)).to eq(-0.0_010_368)
       expect(flow.fiat_profit.truncate(8)).to eq(20.1)
       expect(flow.fx_rate).to eq(1)
     end
@@ -226,7 +226,7 @@ describe BitexBot::SellClosingFlow do
       described_class.sync_positions
 
       expect(flow).to be_done
-      expect(flow.crypto_profit.truncate(8)).to eq(-0.17_093_047)
+      expect(flow.crypto_profit.truncate(8)).to eq(-0.96_824_693)
       expect(flow.fiat_profit.truncate(8)).to eq(20.1)
       expect(flow.fx_rate).to eq(1)
     end

@@ -291,7 +291,7 @@ describe BitexBot::SellClosingFlow do
 
     let(:flow) { create(:sell_closing_flow) }
 
-    it { is_expected.to eq(3) }
+    it { is_expected.to eq(30) }
     it { is_expected.to be_a(BigDecimal) }
   end
 
