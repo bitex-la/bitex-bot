@@ -5,8 +5,6 @@ module BitexBot
     class Kraken < Base
       attr_accessor :api_key, :api_secret
 
-      MIN_AMOUNT = 0.002
-
       def initialize(settings)
         self.api_key = settings.api_key
         self.api_secret = settings.api_secret
@@ -30,7 +28,7 @@ module BitexBot
       end
 
       def enough_order_size?(quantity, _price)
-        quantity >= MIN_AMOUNT
+        quantity >= currency_pair['ordermin'].to_d
       end
 
       def find_lost(type, price, quantity)
