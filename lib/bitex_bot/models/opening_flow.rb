@@ -173,6 +173,8 @@ module BitexBot
 
       Robot.maker.cancel_order(order)
       settling! unless settling?
+    rescue OrderNotFound
+      finalised!
     end
 
     private
