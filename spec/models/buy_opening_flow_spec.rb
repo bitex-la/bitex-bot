@@ -275,7 +275,7 @@ describe BitexBot::BuyOpeningFlow do
   end
 
   describe '#finalise!'do 
-    before(:each) { allow_any_instance_of(described_class).to receive(:order).and_return(order) }
+    before(:each) { allow_any_instance_of(described_class).to receive(:order) { order } }
 
     let(:order) { BitexBot::ApiWrappers::Order.new('12', :fuck, 1, 1, Time.now.to_i, double(status: status)) }
 
@@ -294,6 +294,16 @@ describe BitexBot::BuyOpeningFlow do
 
       context 'order completed' do
         let(:status) { :completed }
+
+        it do
+          flow.finalise!
+
+          expect(flow.finalised?).to be_truthy
+        end
+      end
+
+      context 'order not found' do
+        before(:each) { allow_any_instance_of(described_class).to receive(:order).and_raise(BitexBot::OrderNotFound) }
 
         it do
           flow.finalise!
